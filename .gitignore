@@ -1,0 +1,14 @@
+datasets/
+checkpoints/
+*.pt
+*.pth
+*.bin
+__pycache__/
+*.pyc
+*.egg-info/
+.env
+.venv/
+.DS_Store
+logs/
+*.log
+Reference/
