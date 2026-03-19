@@ -143,6 +143,8 @@ doc = project.generate_and_review(inputs={...}, max_revisions=2)
 | 代码规范与 SOP | `CLAUDE.md`（本文件） | 开发流程与规则 |
 | 审查标准 | `REVIEW_GUIDE.md` | 代码审查依据 |
 
+！！！请注意，`Reference`文件夹中的所有内容只是用于参考的！不代表本项目的内容和代码！
+
 ### 核心模块速查
 
 | 模块 | 路径 | 职责 |
