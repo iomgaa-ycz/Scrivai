@@ -1,0 +1,23 @@
+{{ prompt_content }}
+
+---
+
+待处理文本：
+{{ text }}
+
+---
+
+已有术语：
+{% for term in existing_terms %}
+- {{ term }}
+{% endfor %}
+
+---
+
+请以 JSON 格式输出，例如：
+```json
+{
+  "术语1": "定义1",
+  "术语2": "定义2"
+}
+```
