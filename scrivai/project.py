@@ -12,11 +12,11 @@ from typing import Any
 import yaml
 from dotenv import load_dotenv
 
-from core.audit.engine import AuditEngine
-from core.generation.context import GenerationContext
-from core.generation.engine import GenerationEngine
-from core.knowledge.store import KnowledgeStore
-from core.llm import LLMClient, LLMConfig
+from scrivai.audit.engine import AuditEngine
+from scrivai.generation.context import GenerationContext
+from scrivai.generation.engine import GenerationEngine
+from scrivai.knowledge.store import KnowledgeStore
+from scrivai.llm import LLMClient, LLMConfig
 
 logger = logging.getLogger(__name__)
 

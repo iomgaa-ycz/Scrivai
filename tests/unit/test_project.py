@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from core.llm import LLMConfig
-from core.project import Project, ProjectConfig
+from scrivai.llm import LLMConfig
+from scrivai.project import Project, ProjectConfig
 
 
 def _create_config_file(content: str) -> str:
@@ -34,7 +34,7 @@ llm:
 """
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_project_init_basic(mock_completion):
     """基本初始化，验证所有组件创建。"""
     mock_completion.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="ok"))])
@@ -53,7 +53,7 @@ def test_project_init_basic(mock_completion):
         os.unlink(config_path)
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_project_init_without_knowledge(mock_completion):
     """无 knowledge 配置时的初始化。"""
     mock_completion.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="ok"))])
@@ -74,7 +74,7 @@ llm:
         os.unlink(config_path)
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_project_load_yaml(mock_completion):
     """YAML 配置正确加载。"""
     mock_completion.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="ok"))])
@@ -106,7 +106,7 @@ knowledge:
 
 
 @patch.dict(os.environ, {"LLM_API_KEY": "sk-env-override"})
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_project_env_override(mock_completion):
     """.env 中 API key 覆盖 YAML。"""
     mock_completion.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="ok"))])
@@ -149,7 +149,7 @@ knowledge:
         os.unlink(config_path)
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_project_expose_components(mock_completion):
     """暴露的组件可独立调用。"""
     mock_completion.return_value = MagicMock(
@@ -172,7 +172,7 @@ def test_project_expose_components(mock_completion):
         os.unlink(config_path)
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_project_config_property(mock_completion):
     """config 属性可访问原始配置。"""
     mock_completion.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="ok"))])
@@ -189,7 +189,7 @@ def test_project_config_property(mock_completion):
         os.unlink(config_path)
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_project_db_directory_created(mock_completion):
     """db_path 目录自动创建。"""
     mock_completion.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="ok"))])

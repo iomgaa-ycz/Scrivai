@@ -257,7 +257,7 @@ class DocPipeline:
 ### 4.4 典型用法
 
 ```python
-from core.llm import LLMClient
+from scrivai.llm import LLMClient
 from utils.doc_pipeline import DoclingAdapter, MonkeyOCRAdapter, MarkdownCleaner, DocPipeline
 
 # Docling（本地，无需服务）
@@ -309,7 +309,7 @@ def _load_template(name: str) -> str:
 
 ```python
 # 内部调用（用户通常不需要直接使用）
-from core.llm import _load_template
+from scrivai.llm import _load_template
 
 prompt = _load_template("summarize")  # 加载 summarize.j2 + summarize.md
 ```

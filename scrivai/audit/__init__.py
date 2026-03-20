@@ -3,6 +3,6 @@
 提供文档审核引擎。
 """
 
-from core.audit.engine import AuditEngine, AuditResult
+from scrivai.audit.engine import AuditEngine, AuditResult
 
 __all__ = ["AuditEngine", "AuditResult"]

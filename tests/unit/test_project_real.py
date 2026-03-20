@@ -8,7 +8,7 @@ import tempfile
 
 import yaml
 
-from core.project import Project
+from scrivai.project import Project
 from tests.conftest import skip_if_no_api
 
 

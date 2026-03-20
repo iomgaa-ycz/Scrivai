@@ -3,7 +3,7 @@
 使用真实 LLM API 验证清洗功能。
 """
 
-from core.llm import LLMClient
+from scrivai.llm import LLMClient
 from tests.conftest import skip_if_no_api
 from utils.doc_pipeline import MarkdownCleaner
 

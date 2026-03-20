@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from core.llm import LLMClient
+from scrivai.llm import LLMClient
 from tests.conftest import skip_if_no_api
 
 
@@ -66,8 +66,8 @@ class TestGenerationAuditCycle:
 
     def test_generate_audit_revise(self, real_llm_client_long: LLMClient) -> None:
         """验证生成 → 审核 → 修正循环。"""
-        from core.audit.engine import AuditEngine
-        from core.generation.engine import GenerationEngine
+        from scrivai.audit.engine import AuditEngine
+        from scrivai.generation.engine import GenerationEngine
 
         gen_engine = GenerationEngine(real_llm_client_long)
         audit_engine = AuditEngine(real_llm_client_long)
@@ -176,8 +176,8 @@ class TestGenerationAuditCycle:
 
     def test_max_revisions(self, real_llm_client_long: LLMClient) -> None:
         """验证最大修正次数限制。"""
-        from core.audit.engine import AuditEngine
-        from core.generation.engine import GenerationEngine
+        from scrivai.audit.engine import AuditEngine
+        from scrivai.generation.engine import GenerationEngine
 
         gen_engine = GenerationEngine(real_llm_client_long)
         audit_engine = AuditEngine(real_llm_client_long)

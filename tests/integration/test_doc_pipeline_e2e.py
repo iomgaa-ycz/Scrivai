@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from core.llm import LLMClient
+from scrivai.llm import LLMClient
 from tests.conftest import skip_if_no_api
 from utils.doc_pipeline import DocPipeline, MarkdownCleaner
 

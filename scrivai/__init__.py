@@ -3,12 +3,12 @@
 提供文档生成与审核能力。
 """
 
-from core.audit.engine import AuditEngine, AuditResult
-from core.generation.context import GenerationContext
-from core.generation.engine import GenerationEngine
-from core.knowledge.store import KnowledgeStore, SearchResult
-from core.llm import LLMClient, LLMConfig
-from core.project import Project, ProjectConfig
+from scrivai.audit.engine import AuditEngine, AuditResult
+from scrivai.generation.context import GenerationContext
+from scrivai.generation.engine import GenerationEngine
+from scrivai.knowledge.store import KnowledgeStore, SearchResult
+from scrivai.llm import LLMClient, LLMConfig
+from scrivai.project import Project, ProjectConfig
 
 __all__ = [
     # 入口

@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 import requests
 
 if TYPE_CHECKING:
-    from core.llm import LLMClient
+    from scrivai.llm import LLMClient
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from core.llm import LLMClient
+from scrivai.llm import LLMClient
 from tests.conftest import skip_if_no_api
 
 
@@ -69,8 +69,8 @@ class TestMultichapterFlow:
             Phase 4: 更新术语表
             Phase 5: 生成第三章（投资概算）— 使用更新后的上下文
         """
-        from core.generation.context import GenerationContext
-        from core.generation.engine import GenerationEngine
+        from scrivai.generation.context import GenerationContext
+        from scrivai.generation.engine import GenerationEngine
 
         engine = GenerationEngine(real_llm_client_long)
         ctx = GenerationContext(real_llm_client_long)
@@ -199,7 +199,7 @@ class TestMultichapterFlow:
 
     def test_glossary_propagation(self, real_llm_client_long: LLMClient) -> None:
         """验证术语表在章节间传递。"""
-        from core.generation.context import GenerationContext
+        from scrivai.generation.context import GenerationContext
 
         ctx = GenerationContext(real_llm_client_long)
 
@@ -263,8 +263,8 @@ class TestMultichapterFlow:
 
     def test_summary_propagation(self, real_llm_client_long: LLMClient) -> None:
         """验证摘要在章节间传递。"""
-        from core.generation.context import GenerationContext
-        from core.generation.engine import GenerationEngine
+        from scrivai.generation.context import GenerationContext
+        from scrivai.generation.engine import GenerationEngine
 
         ctx = GenerationContext(real_llm_client_long)
         engine = GenerationEngine(real_llm_client_long)

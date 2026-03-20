@@ -5,9 +5,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from core.generation import GenerationContext, GenerationEngine
-from core.knowledge.store import KnowledgeStore, SearchResult
-from core.llm import LLMClient
+from scrivai.generation import GenerationContext, GenerationEngine
+from scrivai.knowledge.store import KnowledgeStore, SearchResult
+from scrivai.llm import LLMClient
 
 # =============================================================================
 # GenerationEngine 测试

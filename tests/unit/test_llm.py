@@ -7,7 +7,7 @@ import os
 import tempfile
 from unittest.mock import MagicMock, patch
 
-from core.llm import LLMClient, LLMConfig
+from scrivai.llm import LLMClient, LLMConfig
 
 
 def _make_config(**overrides) -> LLMConfig:
@@ -31,7 +31,7 @@ def _mock_response(content: str) -> MagicMock:
     return resp
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_chat_basic(mock_completion):
     """验证消息格式正确传递、返回值正确提取。"""
     mock_completion.return_value = _mock_response("你好世界")
@@ -48,7 +48,7 @@ def test_chat_basic(mock_completion):
     assert call_kwargs["max_tokens"] == 1024
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_chat_with_template_string(mock_completion):
     """模板字符串渲染 + LLM 调用。"""
     mock_completion.return_value = _mock_response("回答")
@@ -61,7 +61,7 @@ def test_chat_with_template_string(mock_completion):
     assert sent_content == "请分析：AI"
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_chat_with_template_file(mock_completion):
     """从文件路径加载模板 + 渲染 + LLM 调用。"""
     mock_completion.return_value = _mock_response("文件模板回答")
@@ -80,7 +80,7 @@ def test_chat_with_template_file(mock_completion):
         os.unlink(tmp_path)
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_chat_with_template_variables(mock_completion):
     """复杂变量（dict/list/中文）注入正确。"""
     mock_completion.return_value = _mock_response("ok")
@@ -100,7 +100,7 @@ def test_chat_with_template_variables(mock_completion):
     assert "张三" in sent
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_config_api_key_passthrough(mock_completion):
     """api_key 正确传递给 litellm。"""
     mock_completion.return_value = _mock_response("ok")
@@ -111,7 +111,7 @@ def test_config_api_key_passthrough(mock_completion):
     assert mock_completion.call_args[1]["api_key"] == "sk-test-123"
 
 
-@patch("core.llm.litellm.completion")
+@patch("scrivai.llm.litellm.completion")
 def test_config_api_base(mock_completion):
     """自定义 api_base 正确传递。"""
     mock_completion.return_value = _mock_response("ok")

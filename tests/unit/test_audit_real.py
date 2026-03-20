@@ -3,8 +3,8 @@
 使用真实 LLM API 验证审核功能。
 """
 
-from core.audit.engine import AuditEngine, AuditResult
-from core.llm import LLMClient
+from scrivai.audit.engine import AuditEngine, AuditResult
+from scrivai.llm import LLMClient
 from tests.conftest import skip_if_no_api
 
 

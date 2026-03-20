@@ -13,7 +13,7 @@ from typing import Any
 
 import jinja2
 
-from core.llm import LLMClient
+from scrivai.llm import LLMClient
 
 logger = logging.getLogger(__name__)
 

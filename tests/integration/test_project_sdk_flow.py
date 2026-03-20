@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from core.llm import LLMClient
+from scrivai.llm import LLMClient
 from tests.conftest import skip_if_no_api
 
 
@@ -81,9 +81,9 @@ class TestProjectSDKFlow:
             Phase 3: 执行审核
             Phase 4: 生成测试报告
         """
-        from core.audit.engine import AuditEngine
-        from core.generation.context import GenerationContext
-        from core.generation.engine import GenerationEngine
+        from scrivai.audit.engine import AuditEngine
+        from scrivai.generation.context import GenerationContext
+        from scrivai.generation.engine import GenerationEngine
 
         # Phase 1: 初始化组件
         gen_engine = GenerationEngine(real_llm_client_long)
@@ -189,7 +189,7 @@ class TestProjectSDKFlow:
         由于集成测试不依赖真实 qmd，验证 GenerationEngine 在无知识库时正常工作，
         同时验证接口设计正确。
         """
-        from core.generation.engine import GenerationEngine
+        from scrivai.generation.engine import GenerationEngine
 
         # Phase 1: 创建无知识库的引擎
         engine = GenerationEngine(real_llm_client_long, store=None)

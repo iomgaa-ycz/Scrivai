@@ -6,7 +6,7 @@
 import os
 import tempfile
 
-from core.llm import LLMClient
+from scrivai.llm import LLMClient
 from tests.conftest import skip_if_no_api
 
 

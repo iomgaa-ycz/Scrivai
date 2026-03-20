@@ -8,8 +8,8 @@ import tempfile
 
 import yaml
 
-from core.audit.engine import AuditEngine, AuditResult
-from core.llm import LLMClient
+from scrivai.audit.engine import AuditEngine, AuditResult
+from scrivai.llm import LLMClient
 from tests.conftest import skip_if_no_api
 
 

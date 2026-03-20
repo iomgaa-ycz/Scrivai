@@ -1,6 +1,6 @@
 """切片工具单元测试。"""
 
-from core.chunkers import split_by_clause, split_by_heading
+from scrivai.chunkers import split_by_clause, split_by_heading
 
 
 class TestSplitByHeading:

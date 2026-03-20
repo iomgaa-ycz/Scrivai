@@ -5,9 +5,9 @@
 
 import pytest
 
-from core.generation.context import GenerationContext
-from core.generation.engine import GenerationEngine
-from core.llm import LLMClient
+from scrivai.generation.context import GenerationContext
+from scrivai.generation.engine import GenerationEngine
+from scrivai.llm import LLMClient
 from tests.conftest import skip_if_no_api
 
 

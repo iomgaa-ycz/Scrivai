@@ -6,7 +6,7 @@
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
 
-from core.knowledge import KnowledgeStore, SearchResult
+from scrivai.knowledge import KnowledgeStore, SearchResult
 
 
 @dataclass
@@ -41,7 +41,7 @@ def _mock_qmd():
     return mock_qmd, mock_db, mock_store, mock_llm
 
 
-@patch("core.knowledge.store.qmd")
+@patch("scrivai.knowledge.store.qmd")
 def test_init(mock_qmd):
     """验证 __init__ 正确初始化 db/store/llm_backend。"""
     _, mock_db, mock_store, mock_llm = _mock_qmd()
@@ -58,7 +58,7 @@ def test_init(mock_qmd):
     assert ks._llm_backend is mock_llm
 
 
-@patch("core.knowledge.store.qmd")
+@patch("scrivai.knowledge.store.qmd")
 def test_add_success(mock_qmd):
     """验证 add() 调用 index_document + embed_documents，返回正确条数。"""
     _, mock_db, mock_store, mock_llm = _mock_qmd()
@@ -76,7 +76,7 @@ def test_add_success(mock_qmd):
     mock_store.embed_documents.assert_called_once_with(mock_db, mock_llm)
 
 
-@patch("core.knowledge.store.qmd")
+@patch("scrivai.knowledge.store.qmd")
 def test_add_length_mismatch(mock_qmd):
     """验证 add() texts/metadatas 长度不一致时 raise ValueError。"""
     _, mock_db, mock_store, mock_llm = _mock_qmd()
@@ -92,7 +92,7 @@ def test_add_length_mismatch(mock_qmd):
         assert "长度不一致" in str(e)
 
 
-@patch("core.knowledge.store.qmd")
+@patch("scrivai.knowledge.store.qmd")
 def test_search_conversion(mock_qmd):
     """验证 search() 转换结果格式正确。"""
     _, mock_db, mock_store, mock_llm = _mock_qmd()
@@ -115,7 +115,7 @@ def test_search_conversion(mock_qmd):
     mock_qmd.search.assert_called_once()
 
 
-@patch("core.knowledge.store.qmd")
+@patch("scrivai.knowledge.store.qmd")
 def test_search_with_filters(mock_qmd):
     """验证 search() filters 参数正确传递。"""
     _, mock_db, mock_store, mock_llm = _mock_qmd()
@@ -130,7 +130,7 @@ def test_search_with_filters(mock_qmd):
     assert call_kwargs["filters"] == {"type": "case"}
 
 
-@patch("core.knowledge.store.qmd")
+@patch("scrivai.knowledge.store.qmd")
 def test_count_delegation(mock_qmd):
     """验证 count() 委托调用正确。"""
     _, mock_db, mock_store, mock_llm = _mock_qmd()
@@ -144,7 +144,7 @@ def test_count_delegation(mock_qmd):
     mock_db.get_document_count.assert_called_once_with("test_ns", filters={"type": "case"})
 
 
-@patch("core.knowledge.store.qmd")
+@patch("scrivai.knowledge.store.qmd")
 def test_delete_empty_filters(mock_qmd):
     """验证 delete() filters 为空时 raise ValueError。"""
     _, mock_db, mock_store, mock_llm = _mock_qmd()
@@ -160,7 +160,7 @@ def test_delete_empty_filters(mock_qmd):
         assert "非空 filters" in str(e)
 
 
-@patch("core.knowledge.store.qmd")
+@patch("scrivai.knowledge.store.qmd")
 def test_delete_success(mock_qmd):
     """验证 delete() 正常删除返回条数。"""
     _, mock_db, mock_store, mock_llm = _mock_qmd()

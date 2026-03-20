@@ -19,3 +19,8 @@ custom/
 
 # 测试输出（生成的报告）
 tests/outputs/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/

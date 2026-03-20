@@ -7,9 +7,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from core.audit.engine import AuditEngine, AuditResult
-from core.knowledge.store import KnowledgeStore, SearchResult
-from core.llm import LLMClient
+from scrivai.audit.engine import AuditEngine, AuditResult
+from scrivai.knowledge.store import KnowledgeStore, SearchResult
+from scrivai.llm import LLMClient
 
 # === Fixtures ===
 

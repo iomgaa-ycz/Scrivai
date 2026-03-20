@@ -12,8 +12,8 @@ from pathlib import Path
 import jinja2
 import yaml
 
-from core.knowledge.store import KnowledgeStore
-from core.llm import LLMClient
+from scrivai.knowledge.store import KnowledgeStore
+from scrivai.llm import LLMClient
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-from core.llm import LLMClient, LLMConfig
+from scrivai.llm import LLMClient, LLMConfig
 
 # 加载 .env 文件
 load_dotenv()

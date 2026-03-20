@@ -6,8 +6,8 @@
 import logging
 from typing import Any
 
-from core.knowledge.store import KnowledgeStore, SearchResult
-from core.llm import LLMClient
+from scrivai.knowledge.store import KnowledgeStore, SearchResult
+from scrivai.llm import LLMClient
 
 logger = logging.getLogger(__name__)
 
