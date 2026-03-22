@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from utils.doc_pipeline import (
+from scrivai.utils.doc_pipeline import (
     DoclingAdapter,
     DocPipeline,
     DocPipelineResult,
@@ -69,21 +69,53 @@ class TestOCRAdapterValidation:
 class TestMonkeyOCRAdapter:
     """MonkeyOCRAdapter 测试组。"""
 
-    def test_monkey_ocr_success(self, tmp_path: Path) -> None:
-        """Mock requests，验证完整 OCR 流程。"""
-        # 创建测试 PDF 文件
+    def test_monkey_ocr_success_new_format(self, tmp_path: Path) -> None:
+        """新格式 (success + 顶层 download_url) 测试。"""
         pdf_file = tmp_path / "test.pdf"
         pdf_file.write_bytes(b"%PDF-1.4 fake pdf content")
 
-        # 创建模拟 ZIP 响应
         md_content = "# 测试文档\n\n这是 OCR 输出的 Markdown 内容。"
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w") as zf:
             zf.writestr("output.md", md_content)
         zip_data = zip_buffer.getvalue()
 
-        with patch("utils.doc_pipeline.requests") as mock_requests:
-            # 模拟 POST /parse 响应
+        with patch("scrivai.utils.doc_pipeline.requests") as mock_requests:
+            mock_post_response = MagicMock()
+            mock_post_response.json.return_value = {
+                "success": True,
+                "message": "PDF parsing completed",
+                "download_url": "/static/result.zip",
+            }
+            mock_post_response.raise_for_status = MagicMock()
+
+            mock_get_response = MagicMock()
+            mock_get_response.content = zip_data
+            mock_get_response.raise_for_status = MagicMock()
+
+            mock_requests.post.return_value = mock_post_response
+            mock_requests.get.return_value = mock_get_response
+
+            adapter = MonkeyOCRAdapter("http://localhost", timeout=60)
+            result = adapter.to_markdown(str(pdf_file))
+
+            assert result == md_content
+            mock_requests.get.assert_called_once_with(
+                "http://localhost/static/result.zip", timeout=60
+            )
+
+    def test_monkey_ocr_success_legacy_format(self, tmp_path: Path) -> None:
+        """旧格式 (code=0 + data.download_url) 兼容测试。"""
+        pdf_file = tmp_path / "test.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4 fake pdf content")
+
+        md_content = "# 测试文档\n\n这是 OCR 输出的 Markdown 内容。"
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w") as zf:
+            zf.writestr("output.md", md_content)
+        zip_data = zip_buffer.getvalue()
+
+        with patch("scrivai.utils.doc_pipeline.requests") as mock_requests:
             mock_post_response = MagicMock()
             mock_post_response.json.return_value = {
                 "code": 0,
@@ -91,7 +123,6 @@ class TestMonkeyOCRAdapter:
             }
             mock_post_response.raise_for_status = MagicMock()
 
-            # 模拟 GET 下载 ZIP 响应
             mock_get_response = MagicMock()
             mock_get_response.content = zip_data
             mock_get_response.raise_for_status = MagicMock()
@@ -106,12 +137,30 @@ class TestMonkeyOCRAdapter:
             mock_requests.post.assert_called_once()
             mock_requests.get.assert_called_once()
 
-    def test_monkey_ocr_api_error(self, tmp_path: Path) -> None:
-        """API 返回错误时应抛 RuntimeError。"""
+    def test_monkey_ocr_api_error_new_format(self, tmp_path: Path) -> None:
+        """新格式 (success=false) 错误测试。"""
         pdf_file = tmp_path / "test.pdf"
         pdf_file.write_bytes(b"%PDF-1.4 fake pdf content")
 
-        with patch("utils.doc_pipeline.requests") as mock_requests:
+        with patch("scrivai.utils.doc_pipeline.requests") as mock_requests:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "success": False,
+                "message": "PDF 解析失败",
+            }
+            mock_response.raise_for_status = MagicMock()
+            mock_requests.post.return_value = mock_response
+
+            adapter = MonkeyOCRAdapter("http://localhost")
+            with pytest.raises(RuntimeError, match="PDF 解析失败"):
+                adapter.to_markdown(str(pdf_file))
+
+    def test_monkey_ocr_api_error_legacy_format(self, tmp_path: Path) -> None:
+        """旧格式 (code!=0) 错误测试。"""
+        pdf_file = tmp_path / "test.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4 fake pdf content")
+
+        with patch("scrivai.utils.doc_pipeline.requests") as mock_requests:
             mock_response = MagicMock()
             mock_response.json.return_value = {
                 "code": 1,
@@ -121,7 +170,7 @@ class TestMonkeyOCRAdapter:
             mock_requests.post.return_value = mock_response
 
             adapter = MonkeyOCRAdapter("http://localhost")
-            with pytest.raises(RuntimeError, match="MonkeyOCR 处理失败"):
+            with pytest.raises(RuntimeError, match="处理失败"):
                 adapter.to_markdown(str(pdf_file))
 
     def test_monkey_ocr_missing_download_url(self, tmp_path: Path) -> None:
@@ -129,9 +178,9 @@ class TestMonkeyOCRAdapter:
         pdf_file = tmp_path / "test.pdf"
         pdf_file.write_bytes(b"%PDF-1.4 fake pdf content")
 
-        with patch("utils.doc_pipeline.requests") as mock_requests:
+        with patch("scrivai.utils.doc_pipeline.requests") as mock_requests:
             mock_response = MagicMock()
-            mock_response.json.return_value = {"code": 0, "data": {}}
+            mock_response.json.return_value = {"success": True, "data": {}}
             mock_response.raise_for_status = MagicMock()
             mock_requests.post.return_value = mock_response
 

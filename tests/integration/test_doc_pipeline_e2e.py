@@ -8,8 +8,8 @@ from datetime import datetime
 from pathlib import Path
 
 from scrivai.llm import LLMClient
+from scrivai.utils.doc_pipeline import DocPipeline, MarkdownCleaner
 from tests.conftest import skip_if_no_api
-from utils.doc_pipeline import DocPipeline, MarkdownCleaner
 
 
 def _write_report(
@@ -283,7 +283,7 @@ CHINA SOUTHERN POWER GRID
             Phase 3: 执行管道
             Phase 4: 验证警告生成
         """
-        from utils.doc_pipeline import OCRAdapter
+        from scrivai.utils.doc_pipeline import OCRAdapter
 
         steps = []
         inputs = {"测试目标": "警告检测"}

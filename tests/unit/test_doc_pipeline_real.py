@@ -4,8 +4,8 @@
 """
 
 from scrivai.llm import LLMClient
+from scrivai.utils.doc_pipeline import MarkdownCleaner
 from tests.conftest import skip_if_no_api
-from utils.doc_pipeline import MarkdownCleaner
 
 
 @skip_if_no_api

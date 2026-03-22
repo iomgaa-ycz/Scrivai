@@ -3,7 +3,7 @@
 提供文档预处理等辅助功能。
 """
 
-from utils.doc_pipeline import (
+from scrivai.utils.doc_pipeline import (
     DoclingAdapter,
     DocPipeline,
     DocPipelineResult,

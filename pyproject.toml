@@ -42,7 +42,7 @@ Repository = "https://github.com/iomgaa/scrivai"
 Issues = "https://github.com/iomgaa/scrivai/issues"
 
 [tool.setuptools.packages.find]
-include = ["scrivai*", "utils*"]
+include = ["scrivai*"]
 
 [tool.ruff]
 target-version = "py311"

@@ -113,12 +113,20 @@ class MonkeyOCRAdapter(OCRAdapter):
                 raise RuntimeError(f"MonkeyOCR 上传失败: {e}") from e
 
         result = response.json()
-        if result.get("code") != 0:
-            raise RuntimeError(f"MonkeyOCR 处理失败: {result.get('msg', '未知错误')}")
 
-        download_url = result.get("data", {}).get("download_url")
+        # 兼容新旧格式：优先检查 success，其次检查 code
+        if result.get("success") is False or (result.get("code") not in (0, None)):
+            error_msg = result.get("message") or result.get("msg") or "未知错误"
+            raise RuntimeError(f"MonkeyOCR 处理失败: {error_msg}")
+
+        # 获取 download_url（支持顶层和嵌套路径）
+        download_url = result.get("download_url") or result.get("data", {}).get("download_url")
         if not download_url:
             raise RuntimeError("MonkeyOCR 返回数据中缺少 download_url")
+
+        # 处理相对路径
+        if not download_url.startswith("http"):
+            download_url = f"{self._base_url}{download_url}"
 
         # Phase 3: 下载 ZIP
         try:
