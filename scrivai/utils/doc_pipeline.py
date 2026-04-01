@@ -77,12 +77,15 @@ class MonkeyOCRAdapter(OCRAdapter):
 
     Args:
         base_url: MonkeyOCR 服务地址
-        timeout: 请求超时时间（秒）
+        timeout: 请求超时时间（秒），默认 300
+        trust_env: 是否继承系统代理等环境变量，默认 True
     """
 
-    def __init__(self, base_url: str, timeout: int = 120) -> None:
+    def __init__(self, base_url: str, timeout: int = 300, *, trust_env: bool = True) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
+        self._session = requests.Session()
+        self._session.trust_env = trust_env
 
     def to_markdown(self, file_path: str) -> str:
         """将 PDF 转换为原始 Markdown。
@@ -107,7 +110,7 @@ class MonkeyOCRAdapter(OCRAdapter):
         with open(file_path, "rb") as f:
             files = {"file": (os.path.basename(file_path), f, "application/pdf")}
             try:
-                response = requests.post(upload_url, files=files, timeout=self._timeout)
+                response = self._session.post(upload_url, files=files, timeout=self._timeout)
                 response.raise_for_status()
             except requests.RequestException as e:
                 raise RuntimeError(f"MonkeyOCR 上传失败: {e}") from e
@@ -130,7 +133,7 @@ class MonkeyOCRAdapter(OCRAdapter):
 
         # Phase 3: 下载 ZIP
         try:
-            zip_response = requests.get(download_url, timeout=self._timeout)
+            zip_response = self._session.get(download_url, timeout=self._timeout)
             zip_response.raise_for_status()
         except requests.RequestException as e:
             raise RuntimeError(f"下载 OCR 结果失败: {e}") from e

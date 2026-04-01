@@ -69,6 +69,31 @@ class TestOCRAdapterValidation:
 class TestMonkeyOCRAdapter:
     """MonkeyOCRAdapter 测试组。"""
 
+    def test_monkey_ocr_default_timeout_is_300(self) -> None:
+        """默认 timeout 应为 300 秒，并保持 requests 的默认代理行为。"""
+
+        with patch("scrivai.utils.doc_pipeline.requests.Session") as mock_session_cls:
+            mock_session = MagicMock()
+            mock_session_cls.return_value = mock_session
+
+            adapter = MonkeyOCRAdapter("http://localhost")
+
+            assert adapter._timeout == 300
+            assert adapter._session is mock_session
+            assert mock_session.trust_env is True
+
+    def test_monkey_ocr_can_disable_trust_env(self) -> None:
+        """调用方可显式关闭系统代理继承。"""
+
+        with patch("scrivai.utils.doc_pipeline.requests.Session") as mock_session_cls:
+            mock_session = MagicMock()
+            mock_session_cls.return_value = mock_session
+
+            adapter = MonkeyOCRAdapter("http://localhost", trust_env=False)
+
+            assert adapter._session is mock_session
+            assert mock_session.trust_env is False
+
     def test_monkey_ocr_success_new_format(self, tmp_path: Path) -> None:
         """新格式 (success + 顶层 download_url) 测试。"""
         pdf_file = tmp_path / "test.pdf"
@@ -80,7 +105,9 @@ class TestMonkeyOCRAdapter:
             zf.writestr("output.md", md_content)
         zip_data = zip_buffer.getvalue()
 
-        with patch("scrivai.utils.doc_pipeline.requests") as mock_requests:
+        with patch("scrivai.utils.doc_pipeline.requests.Session") as mock_session_cls:
+            mock_session = MagicMock()
+            mock_session_cls.return_value = mock_session
             mock_post_response = MagicMock()
             mock_post_response.json.return_value = {
                 "success": True,
@@ -93,14 +120,14 @@ class TestMonkeyOCRAdapter:
             mock_get_response.content = zip_data
             mock_get_response.raise_for_status = MagicMock()
 
-            mock_requests.post.return_value = mock_post_response
-            mock_requests.get.return_value = mock_get_response
+            mock_session.post.return_value = mock_post_response
+            mock_session.get.return_value = mock_get_response
 
             adapter = MonkeyOCRAdapter("http://localhost", timeout=60)
             result = adapter.to_markdown(str(pdf_file))
 
             assert result == md_content
-            mock_requests.get.assert_called_once_with(
+            mock_session.get.assert_called_once_with(
                 "http://localhost/static/result.zip", timeout=60
             )
 
@@ -115,7 +142,9 @@ class TestMonkeyOCRAdapter:
             zf.writestr("output.md", md_content)
         zip_data = zip_buffer.getvalue()
 
-        with patch("scrivai.utils.doc_pipeline.requests") as mock_requests:
+        with patch("scrivai.utils.doc_pipeline.requests.Session") as mock_session_cls:
+            mock_session = MagicMock()
+            mock_session_cls.return_value = mock_session
             mock_post_response = MagicMock()
             mock_post_response.json.return_value = {
                 "code": 0,
@@ -127,29 +156,31 @@ class TestMonkeyOCRAdapter:
             mock_get_response.content = zip_data
             mock_get_response.raise_for_status = MagicMock()
 
-            mock_requests.post.return_value = mock_post_response
-            mock_requests.get.return_value = mock_get_response
+            mock_session.post.return_value = mock_post_response
+            mock_session.get.return_value = mock_get_response
 
             adapter = MonkeyOCRAdapter("http://localhost", timeout=60)
             result = adapter.to_markdown(str(pdf_file))
 
             assert result == md_content
-            mock_requests.post.assert_called_once()
-            mock_requests.get.assert_called_once()
+            mock_session.post.assert_called_once()
+            mock_session.get.assert_called_once()
 
     def test_monkey_ocr_api_error_new_format(self, tmp_path: Path) -> None:
         """新格式 (success=false) 错误测试。"""
         pdf_file = tmp_path / "test.pdf"
         pdf_file.write_bytes(b"%PDF-1.4 fake pdf content")
 
-        with patch("scrivai.utils.doc_pipeline.requests") as mock_requests:
+        with patch("scrivai.utils.doc_pipeline.requests.Session") as mock_session_cls:
+            mock_session = MagicMock()
+            mock_session_cls.return_value = mock_session
             mock_response = MagicMock()
             mock_response.json.return_value = {
                 "success": False,
                 "message": "PDF 解析失败",
             }
             mock_response.raise_for_status = MagicMock()
-            mock_requests.post.return_value = mock_response
+            mock_session.post.return_value = mock_response
 
             adapter = MonkeyOCRAdapter("http://localhost")
             with pytest.raises(RuntimeError, match="PDF 解析失败"):
@@ -160,14 +191,16 @@ class TestMonkeyOCRAdapter:
         pdf_file = tmp_path / "test.pdf"
         pdf_file.write_bytes(b"%PDF-1.4 fake pdf content")
 
-        with patch("scrivai.utils.doc_pipeline.requests") as mock_requests:
+        with patch("scrivai.utils.doc_pipeline.requests.Session") as mock_session_cls:
+            mock_session = MagicMock()
+            mock_session_cls.return_value = mock_session
             mock_response = MagicMock()
             mock_response.json.return_value = {
                 "code": 1,
                 "msg": "处理失败",
             }
             mock_response.raise_for_status = MagicMock()
-            mock_requests.post.return_value = mock_response
+            mock_session.post.return_value = mock_response
 
             adapter = MonkeyOCRAdapter("http://localhost")
             with pytest.raises(RuntimeError, match="处理失败"):
@@ -178,11 +211,13 @@ class TestMonkeyOCRAdapter:
         pdf_file = tmp_path / "test.pdf"
         pdf_file.write_bytes(b"%PDF-1.4 fake pdf content")
 
-        with patch("scrivai.utils.doc_pipeline.requests") as mock_requests:
+        with patch("scrivai.utils.doc_pipeline.requests.Session") as mock_session_cls:
+            mock_session = MagicMock()
+            mock_session_cls.return_value = mock_session
             mock_response = MagicMock()
             mock_response.json.return_value = {"success": True, "data": {}}
             mock_response.raise_for_status = MagicMock()
-            mock_requests.post.return_value = mock_response
+            mock_session.post.return_value = mock_response
 
             adapter = MonkeyOCRAdapter("http://localhost")
             with pytest.raises(RuntimeError, match="缺少 download_url"):
