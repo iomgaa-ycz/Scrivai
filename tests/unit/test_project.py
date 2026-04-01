@@ -22,6 +22,15 @@ def _create_config_file(content: str) -> str:
     return path
 
 
+def _create_config_file_in_dir(directory: Path, content: str) -> str:
+    """在指定目录创建临时配置文件，返回路径。"""
+
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / "project.yaml"
+    path.write_text(content, encoding="utf-8")
+    return str(path)
+
+
 def _basic_config_yaml() -> str:
     """基本配置 YAML 内容。"""
     return """
@@ -189,26 +198,59 @@ def test_project_config_property(mock_completion):
         os.unlink(config_path)
 
 
+@patch("scrivai.project.KnowledgeStore")
 @patch("scrivai.llm.litellm.completion")
-def test_project_db_directory_created(mock_completion):
+def test_project_db_directory_created(mock_completion, mock_store):
     """db_path 目录自动创建。"""
     mock_completion.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="ok"))])
 
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = os.path.join(tmpdir, "subdir", "nested", "test.db")
+        db_path_yaml = db_path.replace("\\", "/")
         yaml_content = f"""
 llm:
-  model: "gpt-4o"
-  temperature: 0.7
-  max_tokens: 1024
+    model: "gpt-4o"
+    temperature: 0.7
+    max_tokens: 1024
 knowledge:
-  db_path: "{db_path}"
-  namespace: "test"
+    db_path: "{db_path_yaml}"
+    namespace: "test"
 """
         config_path = _create_config_file(yaml_content)
         try:
             Project(config_path)
+            mock_store.assert_called_once()
             # 目录已创建
             assert Path(db_path).parent.exists()
         finally:
             os.unlink(config_path)
+
+
+@patch("scrivai.project.KnowledgeStore")
+@patch("scrivai.llm.litellm.completion")
+def test_project_resolves_relative_db_path_against_config_dir(mock_completion, mock_store):
+    """relative db_path 应按配置文件所在目录解析，而不是按 cwd 解析。"""
+
+    mock_completion.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="ok"))])
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base_dir = Path(tmpdir)
+        config_dir = base_dir / "configs"
+        config_path = _create_config_file_in_dir(
+            config_dir,
+            """
+llm:
+    model: "gpt-4o"
+    temperature: 0.7
+    max_tokens: 1024
+knowledge:
+    db_path: "../data/test.db"
+    namespace: "test-ns"
+""",
+        )
+
+        Project(config_path)
+
+        expected_db_path = str((config_dir / "../data/test.db").resolve())
+        mock_store.assert_called_once_with(expected_db_path, "test-ns")
+        assert (base_dir / "data").exists()

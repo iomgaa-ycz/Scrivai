@@ -71,7 +71,8 @@ class Project:
             Phase 6: 实例化 AuditEngine
         """
         # Phase 1: 加载 YAML
-        config = self._load_config(config_path)
+        self._config_path = Path(config_path).resolve()
+        config = self._load_config(str(self._config_path))
 
         # Phase 2: 从 .env 读取 API key
         load_dotenv()
@@ -93,7 +94,11 @@ class Project:
         self.store: KnowledgeStore | None = None
         kb_cfg = config.knowledge
         if kb_cfg is not None and kb_cfg is not False:
-            db_path = kb_cfg.get("db_path", "data/scrivai.db")
+            db_path = self._resolve_path(
+                self._config_path.parent,
+                kb_cfg.get("db_path"),
+                default="data/scrivai.db",
+            )
             namespace = kb_cfg.get("namespace", "default")
             # 确保 db 目录存在
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -111,6 +116,19 @@ class Project:
 
         # 保存原始配置（供用户访问）
         self._config = config
+
+    @staticmethod
+    def _resolve_path(base_dir: Path, value: str | None, default: str | None = None) -> str:
+        """按配置文件目录解析路径型配置。"""
+
+        resolved = value if value is not None else default
+        if resolved is None:
+            raise ValueError("路径配置不能为空")
+
+        path = Path(resolved)
+        if path.is_absolute():
+            return str(path)
+        return str((base_dir / path).resolve())
 
     def _load_config(self, config_path: str) -> ProjectConfig:
         """加载 YAML 配置文件。
