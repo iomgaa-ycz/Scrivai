@@ -1,367 +1,170 @@
-# Scrivai 架构设计
+# 附录 A：Scrivai 模块拆分
 
-## 1. 核心定位
+> **版本**: v3（2026-04-15）
+> **定位**: 本文是 `docs/design.md` 的附录，专责补充 **模块级职责与边界**。权威信息以 `design.md` 为准；若本文与 `design.md` 冲突，以 `design.md` 为准。
+> **对应章节**: `design.md §5 内部架构`
 
-可配置的通用文档生成与审核框架（Python 库）。面向横向项目中反复出现的两类需求：
-- **审核**：基于规章制度/标准，逐要点审核文档合规性，输出审核报告
-- **生成**：基于用户输入 + 历史案例库，按固定章节模板生成长文档，保证全文连贯
+## A.1 为什么要这份附录
 
-设计原则：
-- **库优先**：核心交付物是 Python 包，硕士们 `import scrivai` 直接用
-- **原子化**：每个组件独立可用，不强制组合
-- **可配置**：不同项目通过配置文件接入，不改框架代码
-- **MVP**：先跑通一个项目，再泛化
+`design.md §5` 给出了目录树和两个核心模块（`AgentSession` / `WorkspaceManager`）的实现要点。本附录补充：
 
-## 2. 系统总览
+1. **10 个模块的统一总表**：每个模块的职责边界、对外出口、内部依赖
+2. **模块依赖拓扑**：谁能 import 谁、反向依赖是否被禁止
+3. **分模块测试策略**：单元 / 契约 / 集成测试的归属
 
-```
-┌─────────────────────────────┐
-│      Project (入口)         │  ← 极简配置加载 + 组件组装
-│   .llm / .store / .gen /    │
-│   .ctx / .audit             │
-└──────────────┬──────────────┘
-               │
-        ┌──────┴──────┐
-        ▼             ▼
-┌───────┴────┐  ┌────┴────────┐
-│  生成引擎  │  │   审核引擎    │  ← 两个独立、解耦的核心引擎
-│ Generation │  │    Audit     │
-└───────┬────┘  └────┬────────┘
-        │             │
-┌───────┴───┐   ┌────┴───────┐
-│ 上下文工具 │   │            │  ← 独立的上下文管理组件
-│   Context │   │            │
-└───────┬───┘   └────────────┘
-        │
-┌───────┴─────────────────────┐
-│         LLM 调用层           │  ← 统一 LLM 封装（litellm）
-│        LLM Client           │
-└──────────────┬──────────────┘
-               │
-┌──────────────┴──────────────┐
-│         知识库               │  ← 基于 qmd 的统一检索
-│    Knowledge Store          │
-│  (案例/规则统一管理)        │
-└─────────────────────────────┘
+目的是让"新加一个功能应该落在哪个模块"这类问题有确定答案。
 
-┌─────────────────┐   ┌─────────────────┐
-│   切片工具      │   │   Doc Pipeline  │  ← 旁路工具
-└─────────────────┘   └─────────────────┘
-```
+## A.2 模块总表
 
-## 3. LLM 调用层
+| # | 路径 | 职责 | 公开出口（`scrivai/__init__.py` 可见） |
+|---|---|---|---|
+| 1 | `scrivai/models/` | pydantic + Protocol（单一真相） | `ModelConfig, PhaseConfig, AgentProfile, WorkspaceSpec, WorkspaceSnapshot, WorkspaceHandle, WorkspaceManager, PhaseResult, AgentRunResult, AgentSession, LibraryEntry, Library, EvolutionConfig, Evaluator` + re-export `ChunkRef/SearchResult/CollectionInfo/Collection/QmdClient` |
+| 2 | `scrivai/agent/` | **PES 引擎**：session + profile + runner + 消息解析 | `build_agent_session()`（内部用 `_AgentSession`） |
+| 3 | `scrivai/workspace/` | Workspace 生命周期（snapshot + fcntl lock + archive） | `build_workspace_manager()` |
+| 4 | `scrivai/llm/` | Claude Agent SDK 客户端工厂 + `ClaudeAgentOptions` 构造 | 不对外暴露；仅被 `agent/session.py` 使用 |
+| 5 | `scrivai/prompts/` | PromptManager（j2+md 模板装载 / system prompt 组装） | `PromptManager`（轻量，无状态） |
+| 6 | `scrivai/knowledge/` | Library 实现（Rule/Case/Template + factory） | `RuleLibrary, CaseLibrary, TemplateLibrary, build_qmd_client_from_config` |
+| 7 | `scrivai/io/` | 旁路工具：docx/pdf→md、DocxRenderer | `docx_to_markdown, pdf_to_markdown, DocxRenderer` |
+| 8 | `scrivai/evolution/` | **进化引擎**：EvoSkill adapter | `EvolutionRunner, EvolutionConfig`（见 `design.md §4.8`） |
+| 9 | `scrivai/cli/` | `scrivai-cli` 子命令（library/io/workspace） | 非 Python API；通过 console_scripts 暴露二进制 |
+| 10 | `scrivai/testing/` | MockAgentSession + FakeQmdClient + contract plugin | `MockAgentSession, FakeQmdClient, contract`（pytest plugin） |
 
-基于 litellm 的薄封装，支持多 provider。
+**源 skills / agents**（不在 `scrivai/` 包内、但属于 Scrivai 仓库）：
+- `skills/search-knowledge/SKILL.md`
+- `skills/inspect-document/SKILL.md`
+- `skills/render-output/SKILL.md`
+- `skills/available-tools/SKILL.md`
+- `agents/extractor.yaml` / `auditor.yaml` / `generator.yaml`
 
-```python
-class LLMClient:
-    def chat(self, messages: list[dict]) -> str
-    def chat_with_template(self, template: str, variables: dict) -> str
-```
+运行时由 `WorkspaceManager.create` 以内容快照方式复制到 workspace 的 `working/.claude/`（见 `design.md §5.3`）。
 
-**不使用 Agent 框架**——Scrivai 的编排逻辑由代码控制，LLM 只负责内容生成和判断。
+## A.3 依赖拓扑
 
-## 4. Prompt 模板管理
-
-统一使用 Jinja2 管理所有 prompt 模板，采用 **j2 + md 分离模式**。
-
-### 模板文件结构
+允许的 import 方向（上游 → 下游）：
 
 ```
-templates/prompts/
-├── base.j2              # 基础骨架模板（包含 {{ prompt_content }} 变量）
-├── summarize.j2         # 摘要模板骨架
-├── summarize.md         # 摘要模板内容（实际指令）
-├── extract_terms.j2     # 术语提取骨架
-├── extract_terms.md     # 术语提取内容
-├── extract_references.j2
-├── extract_references.md
-├── audit.j2
-├── audit.md
-├── clean.j2
-└── clean.md
+          ┌─────────────┐
+          │   models    │  ← 被所有模块依赖；自身仅依赖 pydantic + qmd 类型
+          └──────┬──────┘
+                 │
+      ┌──────────┼──────────┬─────────┬──────────┐
+      ▼          ▼          ▼         ▼          ▼
+  ┌───────┐  ┌───────┐  ┌───────┐ ┌───────┐  ┌───────┐
+  │prompts│  │  llm  │  │ knowl │ │  io   │  │testing│
+  └───┬───┘  └───┬───┘  └───┬───┘ └───┬───┘  └───┬───┘
+      │          │          │         │          │
+      └──────────┴────┬─────┴─────────┘          │
+                     ▼                           │
+              ┌──────────────┐                   │
+              │    agent     │ ◀─── workspace ◀──┘（被 agent 注入）
+              └──────┬───────┘       (独立模块)
+                     │
+                     ▼
+              ┌──────────────┐
+              │  evolution   │（调 agent 产出 trajectory 给 EvoSkill）
+              └──────────────┘
+
+  cli 独立层：聚合 knowledge / io / workspace 为 subcommand，不被 agent 直接 import
 ```
 
-### j2 + md 分离模式
+**禁止的反向依赖**：
+- `models` 禁止 import 任何其它 scrivai 子模块
+- `prompts / llm / knowledge / io` 不能 import `agent`（防止循环）
+- `knowledge` 不能 import `cli`（cli 是 knowledge 的 Bash 封装，反向依赖会形成环）
+- `testing` 只能被 tests 目录 import，不能出现在生产代码里
 
-每个 prompt 由两个文件组成：
-- **`.j2` 文件**：Jinja2 骨架模板，包含 `{{ prompt_content }}` 变量占位
-- **`.md` 文件**：实际的 prompt 指令内容
+## A.4 分模块详表
 
-加载时，`_load_template()` 函数将 `.md` 内容注入 `.j2` 骨架，生成完整 prompt。
+### A.4.1 `models/` — 契约单一真相
 
-### 模板类型
+- **文件**: `agent.py` / `workspace.py` / `evolution.py` / `knowledge.py` / `__init__.py`
+- **依赖**: 仅 `pydantic`, `qmd`（re-export 用）
+- **禁止**: 任何运行时行为（IO / 网络 / 文件系统）
+- **测试**: schema 兼容性快照测试（pydantic `.model_json_schema()`）
 
-| 类型 | 用途 | 文件 |
-|------|------|------|
-| 摘要提取 | 前文摘要 | `summarize.j2` + `summarize.md` |
-| 术语提取 | 术语表构建 | `extract_terms.j2` + `extract_terms.md` |
-| 引用提取 | 交叉引用 | `extract_references.j2` + `extract_references.md` |
-| 审核 | checkpoint 判定 | `audit.j2` + `audit.md` |
-| 清洗 | 文档清洗 | `clean.j2` + `clean.md` |
+### A.4.2 `agent/` — PES 引擎
 
-### 章节生成模板变量
+- **文件**: `session.py` / `profile.py` / `runner.py` / `messages.py`
+- **核心类型**: `_AgentSession`（内部） + `PESRunner`（编排 plan→execute→summarize）
+- **依赖**: `models, prompts, llm, workspace`（通过注入）
+- **测试**: `testing/mock_agent.py` 支持契约测试；集成测试用真 SDK
 
-用户自定义章节模板时，可使用以下变量：
+### A.4.3 `workspace/` — 沙箱生命周期
 
-```jinja2
-## 工程概况
+- **文件**: `manager.py` / `snapshot.py` / `lock.py` / `archive.py`
+- **关键不变量**（见 `design.md §5.2`）：
+  - `create()` 先拿 fcntl 独占锁再创建目录
+  - skills/agents 走 `shutil.copytree(symlinks=False)` 内容快照
+  - `meta.json` 记录 `skills_git_hash`、`agents_git_hash`
+  - `WorkspaceSpec.force=True` 才允许覆盖已存在的 `run_id`
+- **测试**: 并发锁契约测试（两个进程同时 create 同一 run_id） + 快照完整性测试
 
-请根据以下信息撰写本章：
+### A.4.4 `llm/` — Claude Agent SDK 适配层
 
-### 用户输入
-{{ user_inputs | tojson }}
+- **文件**: `sdk_client.py`（构造 `ClaudeAgentOptions`） / `tools_policy.py`（PES allowed_tools 矩阵）
+- **细节见附录 B `sdk_design.md`**
+- **依赖**: `claude_agent_sdk`, `models`
+- **测试**: 字段构造单元测试；不跑真 SDK
 
-### 相关历史案例
-{% for case in retrieved_cases %}
---- 案例 {{ loop.index }} ---
-{{ case.content }}
-{% endfor %}
+### A.4.5 `prompts/` — PromptManager
 
-### 前文摘要
-{{ previous_summary }}
+- **文件**: `manager.py` / `loader.py`
+- **职责**: 装载 `templates/prompts/*.j2 + *.md`，组装 `system_prompt`（agent.prompt_text + phase.additional_system_prompt + 上阶段结果引用），**无状态**
+- **替代**: 旧 `GenerationContext`（v2 遗留）被彻底删除；`summarize/extract_terms/extract_references` 功能不再以 Python 函数存在，而是成为 agent prompt 的一部分
+- **测试**: 模板渲染单元测试 + 变量缺失检测
 
-### 术语表
-{{ glossary | tojson }}
-```
+### A.4.6 `knowledge/` — Library
 
-## 5. 知识库（Knowledge Store）
+- **文件**: `base.py` / `rules.py` / `cases.py` / `templates.py` / `factory.py`
+- **职责**: 在 qmd 上封装固定 collection 约定（`rules` / `cases` / `templates`）；业务层不直接调 `qmd.connect`，用 `build_qmd_client_from_config(cfg)`
+- **依赖**: `qmd`, `models`
+- **测试**: 契约测试（`FakeQmdClient`） + 集成测试（真 qmd）
 
-统一基于 qmd 构建，**不区分子库**，通过 metadata 字段区分案例/规则。
+### A.4.7 `io/` — 文档旁路工具
 
-### namespace
+- **文件**: `convert.py`（docx/pdf → md）/ `render.py`（`DocxRenderer`，docxtpl 封装）/ `markdown.py`
+- **约束**: `DocxRenderer` 的模板必须手工 Word 制作（见 `design.md §4.3` 与 `INTEGRATION_ISSUES.md ISSUE-002`）
+- **测试**: 单元（小 docx fixture） + 契约（程序化生成模板应报错）
 
-每个项目一个 namespace，物理隔离。一个 db_path 可有多个 namespace。
+### A.4.8 `evolution/` — 进化引擎
 
-### 核心接口
+- **文件**: `config.py` / `runner.py` / `proposer.py`（可选） / `generator.py` / `frontier.py`
+- **职责**: 桥接 EvoSkill：封装 CSV dataset + scorer `(question, predicted, ground_truth) -> float` + LoopConfig
+- **依赖**: `evoskill`（外部包）, `agent`（跑 trajectory）, `models`
+- **限制**: 仅 M2+ 启用；M0/M1 不编译、不测试
+- **测试**: adapter 单元测试（mock evoskill）
 
-```python
-class KnowledgeStore:
-    def add(self, texts: list[str], metadatas: list[dict]) -> int
-    def search(self, query: str, top_k: int, filters: dict | None) -> list[SearchResult]
-    def count(self, filters: dict | None) -> int
-    def delete(self, filters: dict) -> int
-```
+### A.4.9 `cli/` — Bash 工具入口
 
-### 入库预处理
+- **文件**: `__main__.py`（路由） / `library.py` / `io.py` / `workspace.py`
+- **职责**: 把 `knowledge / io / workspace` 的 Python API 封成 `scrivai-cli <group> <cmd>`，以 JSON 输出 stdout
+- **规范**: 所有命令退出码 0=成功 / 1=业务错误 / 2=参数错误；stderr 走 logging，stdout 只放 JSON
+- **测试**: 每个子命令一个契约测试（argparse 解析 + JSON schema 校验）
 
-```python
-split_by_heading(text, level=2)   # 按标题切（案例文档）
-split_by_clause(text, pattern)    # 按条款切（规章制度）
-```
+### A.4.10 `testing/` — 测试支持
 
-### 检索模式
+- **文件**: `mock_agent.py` / `tmp_workspace.py` / `fake_qmd.py` / `contract.py`（pytest plugin）
+- **职责**: 下游项目（GovDoc-Auditor）也能 `import scrivai.testing` 跑契约测试
+- **依赖**: `pytest`, `models`
+- **约束**: 生产代码不能 import
 
-- 案例检索：纯语义，`store.search(query, top_k=3)`
-- 规则检索：过滤+语义，`store.search(query, top_k=5, filters={"type": "rule", "status": "active"})`
+## A.5 和 design.md 的章节映射
 
-### qmd 依赖
+| 本附录章节 | 对应 design.md 章节 |
+|---|---|
+| A.2 模块总表 | §5 内部架构（目录树） |
+| A.3 依赖拓扑 | — 新增（design.md 未正式描述） |
+| A.4.2 agent 详述 | §4.1 / §4.1.1 / §5.1 |
+| A.4.3 workspace 详述 | §5.2 / §5.3 |
+| A.4.4 llm + PES allowed_tools | 附录 B `sdk_design.md` |
+| A.4.6 knowledge | §4.2 |
+| A.4.7 io | §4.3 |
+| A.4.9 cli | §4.4 |
+| A.4.8 evolution | §4.8 |
+| A.4.10 testing | §4.5（契约测试覆盖面） |
 
-| 能力 | 说明 |
-|------|------|
-| metadata 存储 | documents 表加 `metadata TEXT` 列 |
-| 入库传 metadata | `index_document()` 接受 metadata 参数 |
-| 过滤检索 | search(filters) 转为 json_extract 条件 |
-| 非文件入库 | 直接接收文本+元数据 |
+## A.6 变更纪律
 
-## 6. 生成引擎（Generation Engine）
+新增 / 删除 / 合并模块 → 先走 `GOVDOC_PROGRAM_PLAN.md §8 变更流程`，更新 `design.md §5` 目录树与本附录 A.2 表格；两处同步改动。
 
-两层设计：单章生成（原子操作）+ 上下文工具（独立辅助函数）。
-
-### 单章生成
-
-```python
-class GenerationEngine:
-    def generate_chapter(self, template: str, variables: dict) -> str
-```
-
-variables: `user_inputs`, `retrieved_cases`, `previous_summary`, `glossary`
-
-### 上下文工具
-
-```python
-class GenerationContext:
-    def summarize(self, text: str) -> str                      # 前文摘要
-    def extract_terms(self, text: str, existing: dict) -> dict  # 术语表
-    def extract_references(self, text: str) -> list[dict]      # 交叉引用
-```
-
-### 连贯性保障
-
-长文档（8-10章）生成时 LLM 上下文窗口有限，通过以下机制保证连贯：
-
-1. **术语表**：每章生成后提取术语，合并到全局字典，后续章节注入
-2. **前文摘要**：每章生成后压缩上下文为摘要，后续章节携带
-3. **交叉引用追踪**：记录跨章节引用，后续章节引用时强制一致
-
-### 典型用法
-
-```python
-glossary, summary = {}, ""
-for ch in chapters:
-    cases = store.search(ch.topic, top_k=3)
-    text = gen.generate_chapter(ch.tpl, {"user_inputs": i, "retrieved_cases": cases, "previous_summary": summary, "glossary": glossary})
-    summary = ctx.summarize(text)
-    glossary = ctx.extract_terms(text, glossary)
-```
-
-## 7. 审核引擎（Audit Engine）
-
-原子操作：单要点审核 + 批量便利方法。**四种检查统一走同一个接口**，差异在 checkpoint 配置层面解决。
-
-### 核心接口
-
-```python
-class AuditEngine:
-    def check_one(self, document: str, checkpoint: dict) -> AuditResult
-    def check_many(self, document: str, checkpoints: list[dict]) -> list[AuditResult]
-    def load_checkpoints(self, path: str) -> list[dict]
-```
-
-### AuditResult
-
-```python
-@dataclass
-class AuditResult:
-    passed: bool
-    severity: str              # error / warning / info
-    checkpoint_id: str
-    chapter_id: str | None
-    finding: str
-    evidence: str
-    suggestion: str
-```
-
-### checkpoint 配置
-
-```python
-{
-    "id": "...",
-    "description": "...",
-    "severity": "error",
-    "scope": "full",                    # "full" | "chapter:ch03"
-    "prompt_template": "...",
-    "rule_refs": [                       # 支撑条文
-        {"source": "GB50150", "clause_id": "3.2.1"},
-        {"query": "变压器安装要求"},
-    ]
-}
-```
-
-### 四维检查处理
-
-| 维度 | 处理方式 |
-|------|----------|
-| 结构合规 | checkpoint prompt 模板写"检查章节完整性" |
-| 引用有效性 | checkpoint 配 rule_refs，自动检索验证 |
-| 语义合规 | checkpoint prompt + rule_refs |
-| 内部一致性 | scope=full，prompt 让 LLM 检查前后矛盾 |
-
-`check_many()` 返回 `list[AuditResult]`，即为审核报告。汇总格式/输出渲染由用户自行处理。
-
-### 引用有效性检查流程
-
-```
-文档引用 "GB50150 第3.2.1条"
-  → LLM 提取引用列表（source + clause）
-  → 查规则库：
-    - 找到 + status=active     → ✅ 通过
-    - 找到 + status=superseded → ⚠️ 建议更新
-    - 找到 + status=revoked    → ❌ 引用已废止
-    - 未找到                   → ⚠️ 可能库不全，不直接判错
-```
-
-## 8. Doc Pipeline（旁路）
-
-独立的文档预处理工具，将原始文档转换为 Markdown。
-
-```
-PDF / Word / 扫描件 → OCR → 清洗 → 结构化解析
-```
-
-用途：历史文档入库、待审文档预处理。不在主引擎调用链上。
-
-## 9. Project 入口
-
-极简入口：配置加载 + 组件组装。不做 magic，用户可自由访问底层组件。
-
-```python
-class Project:
-    def __init__(self, config_path: str):
-        self.llm = LLMClient(...)           # LLM 客户端
-        self.store = KnowledgeStore(...)    # 知识库（可选）
-        self.gen = GenerationEngine(...)    # 生成引擎
-        self.ctx = GenerationContext(...)   # 上下文工具（独立组件）
-        self.audit = AuditEngine(...)       # 审核引擎
-```
-
-**属性说明**：
-- `llm`: LLMClient，统一的 LLM 调用层
-- `store`: KnowledgeStore | None，知识库实例（配置中未指定则不初始化）
-- `gen`: GenerationEngine，章节生成引擎
-- `ctx`: GenerationContext，上下文管理工具（摘要、术语、引用提取）
-- `audit`: AuditEngine，文档审核引擎
-
-**环境变量**：
-- `LLM_API_KEY`：API 密钥（优先）
-- `API_KEY`：API 密钥（备选）
-
-## 10. 不包含的内容
-
-- **Orchestrator**：GenerationEngine + AuditEngine 原子接口已够用，用户自己写循环
-- **Agent 框架**：流程确定，代码控制即可，不需要 LLM 自主决策
-- **CLI**：MVP 阶段不做，SDK 做扎实后 CLI 是 thin wrapper
-
-## 11. 文件结构
-
-```
-Scrivai/
-├── core/
-│   ├── llm.py              # LLMClient
-│   ├── knowledge/          # 知识库子包
-│   │   ├── __init__.py
-│   │   └── store.py        # KnowledgeStore, SearchResult
-│   ├── chunkers.py         # split_by_heading, split_by_clause
-│   ├── generation/
-│   │   ├── __init__.py
-│   │   ├── engine.py       # GenerationEngine
-│   │   └── context.py      # GenerationContext
-│   ├── audit/
-│   │   ├── __init__.py
-│   │   └── engine.py       # AuditEngine, AuditResult
-│   └── project.py          # Project
-├── templates/
-│   └── prompts/            # Prompt 模板（j2 + md 分离）
-│       ├── base.j2         # 基础骨架模板
-│       ├── summarize.j2 / summarize.md
-│       ├── extract_terms.j2 / extract_terms.md
-│       ├── extract_references.j2 / extract_references.md
-│       ├── audit.j2 / audit.md
-│       └── clean.j2 / clean.md
-├── utils/
-│   ├── __init__.py
-│   └── doc_pipeline.py     # OCRAdapter, MarkdownCleaner, DocPipeline
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-├── docs/
-│   ├── architecture.md
-│   ├── sdk_design.md
-│   └── ...
-├── CLAUDE.md
-├── REVIEW_GUIDE.md
-└── .gitignore
-```
-
-## 12. 与南网项目的关系
-
-南网项目是 Scrivai 的**第一个实例项目**：
-
-| 南网已有 | Scrivai 抽象 |
-|----------|-------------|
-| MonkeyOCR + 清洗管道 | Doc Pipeline（借鉴） |
-| ChromaDB 知识库 | KnowledgeStore（重做，统一用 qmd） |
-| 9 Agent 串行生成 | Generation Engine（抽象） |
-| 三维度检测 | Audit Engine（抽象） |
-| LangChain + LangGraph | 不使用（litellm + 代码编排） |
+**禁止**：只改本附录不动 `design.md`（会导致附录反客为主）。

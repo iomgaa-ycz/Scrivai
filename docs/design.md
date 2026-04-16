@@ -19,6 +19,15 @@
 > 本文档是 Scrivai 在 GovDoc 三项目体系中的设计。顶层计划见 `/home/iomgaa/Projects/GOVDOC_PROGRAM_PLAN.md`。
 > 范式更新（2026-04-15）：从 LLMClient + Chain 切换为 Claude Agent SDK + Workspace + PES + Skill。
 
+### 配套附录（本文档的附录，权威性低于本文）
+
+| 文件 | 职责 | 对应本文章节 |
+|---|---|---|
+| [`architecture.md`](architecture.md) | **附录 A**：10 个模块的职责 / 对外出口 / 依赖拓扑 / 测试策略 | §5 内部架构 |
+| [`sdk_design.md`](sdk_design.md) | **附录 B**：Claude Agent SDK 集成（`ClaudeAgentOptions` 字段、`allowed_tools` 矩阵、CLI+Bash vs MCP 决策、hook / 错误处理） | §5.1 AgentSession |
+
+附录与本文冲突时以本文为准。附录变更必须同步更新本文对应章节（见各附录末节的"变更纪律"）。
+
 ---
 
 ## 1. 定位
@@ -407,6 +416,8 @@ EvoSkill 硬编码读写 `project_root/.claude/skills/`。但本项目 v3 设计
 
 ## 5. 内部架构
 
+> 模块级职责与依赖拓扑详见附录 A [`architecture.md`](architecture.md)；本节给出顶层目录结构与两个关键模块（AgentSession / WorkspaceManager）的实现要点。
+
 ```
 Scrivai/
 ├── scrivai/
@@ -457,12 +468,16 @@ Scrivai/
 │   ├── integration/       ← 真实 SDK + 真实 qmd
 │   └── fixtures/
 ├── docs/
-│   ├── design.md
+│   ├── design.md          ← 本文（权威）
+│   ├── architecture.md    ← 附录 A：模块拆分
+│   ├── sdk_design.md      ← 附录 B：Claude Agent SDK 集成
 │   └── TD.md
 └── pyproject.toml
 ```
 
 ### 5.1 AgentSession 实现要点
+
+> `ClaudeAgentOptions` 字段在 PES 三阶段的差异、`allowed_tools` 矩阵、CLI+Bash vs MCP 的决策记录详见附录 B [`sdk_design.md`](sdk_design.md)。
 
 ```python
 # scrivai/agent/session.py（伪代码）

@@ -1,328 +1,139 @@
-# Scrivai SDK 设计
+# 附录 B：Claude Agent SDK 集成
 
-> **定位**：工具库，硕士同学基于此构建具体项目  
-> **原则**：原子化 · 低封装 · 可组合 · MVP
+> **版本**: v3（2026-04-15）
+> **定位**: 本文是 `docs/design.md` 的附录，专责补充 **Claude Agent SDK 层面的调用模式**。权威信息以 `design.md` 为准；若冲突以 `design.md` 为准。
+> **对应章节**: `design.md §5.1 AgentSession 实现要点`
 
----
+## B.1 为什么要这份附录
 
-## 1. 模块总览
+`design.md §5.1` 已给出 `_AgentSession.run(...)` 的伪代码骨架，但 PES 三阶段在 `ClaudeAgentOptions` 字段层面的差异、`allowed_tools` 策略、以及"为什么不走 MCP"这类决策都应有固定位置。本附录补这个空缺。
 
-| 模块 | 核心类/函数 | 说明 |
-|------|------------|------|
-| LLM | `LLMClient` | litellm 薄封装 |
-| 知识库 | `KnowledgeStore` | qmd 封装，统一管理案例/规则 |
-| 切片 | `split_by_heading()`, `split_by_clause()` | 入库预处理 |
-| 生成 | `GenerationEngine`, `GenerationContext` | 单章生成 + 上下文工具 |
-| 审核 | `AuditEngine` | 单/批量审核 |
-| 入口 | `Project` | 极简配置加载 |
-| 文档预处理 | `DocPipeline`, `OCRAdapter` | PDF → Markdown（旁路工具） |
+## B.2 Claude Agent SDK 调用范式
 
-**不包含**：Orchestrator（用户自己写循环）、Agent 框架（流程确定不需要）、CLI（MVP 阶段不做）
-
----
-
-## 2. API 详解
-
-### 2.1 LLMClient
+Scrivai 通过 `claude_agent_sdk.query()` 异步迭代器消费 SDK：
 
 ```python
-client = LLMClient(config)
-client.chat(messages)                     # → str
-client.chat_with_template(template, vars)  # → str (Jinja2 + LLM)
+from claude_agent_sdk import query, ClaudeAgentOptions
+
+async for message in query(prompt=task_prompt, options=options):
+    # message: UserMessage | AssistantMessage | ResultMessage | ToolUseMessage | ...
+    ...
 ```
 
----
+**不用** `Client` 长连接模式 —— Scrivai 每个 PES 阶段独立调一次 `query()`，阶段间状态通过 workspace 文件传递（见 `design.md §4.1.1`），不共享 SDK 会话。
 
-### 2.2 KnowledgeStore
+理由：
+1. 每阶段 `allowed_tools` 不同，独立 options 更清晰
+2. 阶段间失败可重跑单阶段，不必重放整个会话
+3. trajectory 分阶段归档，便于 EvoSkill 评估粒度控制
 
-**统一知识库**：不区分子库，用 `metadata["type"]` 区分案例/规则。
+## B.3 `ClaudeAgentOptions` 字段规范
+
+以下字段在三阶段可能不同（❗ 表示必须按阶段定制），其余统一：
+
+| 字段 | plan | execute | summarize | 说明 |
+|---|---|---|---|---|
+| `model` | agent.model | agent.model | agent.model | 一般全程同模型 |
+| `fallback_model` | 可选 | 可选 | 可选 | 对齐 model 配置 |
+| `base_url` / `api_key` | 同 | 同 | 同 | 从 `ModelConfig` 注入 |
+| `cwd` | `workspace/working` | `workspace/working` | `workspace/working` | 所有阶段运行在 working/ 内 |
+| `system_prompt` ❗ | plan prompt | execute prompt | summarize prompt | `PromptManager` 组装（agent.prompt_text + phase.additional_system_prompt + 上阶段摘要引用） |
+| `allowed_tools` ❗ | 见 B.4 | 见 B.4 | 见 B.4 | 每阶段不同 |
+| `permission_mode` | `"default"` | `"default"` | `"default"` | 不使用 `"bypassPermissions"` |
+| `max_turns` | `phase.max_turns` | `phase.max_turns` | `phase.max_turns` | 从 `PhaseConfig` 读 |
+| `hooks` | 同 | 同 | 同 | 见 B.6 |
+| `mcp_servers` | `[]` | `[]` | `[]` | **恒空**（见 B.5） |
+
+`PhaseConfig` 字段（见 `design.md §4.1` / `scrivai/models/agent.py`）：
 
 ```python
-store = KnowledgeStore(db_path, namespace)
-
-# 入库
-store.add(texts=[...], metadatas=[{...}])
-store.add_from_directory(path, pattern, metadata)
-
-# 检索
-store.search(query, top_k, filters)  # → list[SearchResult]
-# filters 示例: {"type": "rule", "status": "active"}
-
-# 管理
-store.count(filters)
-store.delete(filters)  # filters 必填
+class PhaseConfig(BaseModel):
+    additional_system_prompt: str
+    allowed_tools: list[str]
+    max_turns: int
 ```
 
-**SearchResult**: `content`, `metadata`, `score`
+## B.4 `allowed_tools` 矩阵
 
-**namespace**: 物理隔离，不存在则自动创建
+v3 已收紧 summarize 的工具集。三阶段策略如下：
 
----
+| 工具 | plan | execute | summarize | 备注 |
+|---|---|---|---|---|
+| `Bash` | ✅ | ✅ | ✅ | CLI 工具调用入口 |
+| `Read` | ✅ | ✅ | ✅ | 读 working/ 下文件 |
+| `Write` | ✅ | ✅ | ✅ | 写 plan.md / findings / output.json |
+| `Edit` | ❌ | ✅ | ❌ | 仅 execute 编辑 findings |
+| `Glob` | ✅ | ✅ | ❌ | summarize 不需要探索，避免发散（v3 变更） |
+| `Grep` | ✅ | ✅ | ❌ | 同上 |
+| `WebSearch` / `WebFetch` | ❌ | ❌ | ❌ | 禁止联网，避免非确定性 |
+| `Task`（subagent） | ❌ | ❌ | ❌ | v3 M0–M2 禁用，简化问题 |
+| `TodoWrite` | ❌ | ❌ | ❌ | agent 不维护 todo，flow 由 PESRunner 控 |
 
-### 2.3 切片工具
+**强制不变量**：summarize 阶段 `allowed_tools == ["Bash", "Read", "Write"]`。由 `scrivai/llm/tools_policy.py` 集中实现，PESRunner 装配时校验。
+
+## B.5 CLI + Bash vs MCP：决策记录
+
+**决策**：v3 **不使用** MCP server 模式，所有 Scrivai 工具通过 `scrivai-cli <group> <cmd>` + Agent 的 `Bash` tool 暴露。
+
+**理由**：
+1. **Herald2 验证**：CLI+Bash 模式已在 Herald2（`Reference/Herald2/`）走通，可预测性高
+2. **调试简单**：agent 调的是标准 subprocess，stdout/stderr 可重放；MCP 协议栈增加断点成本
+3. **快照兼容**：CLI 二进制在 PATH 里，workspace snapshot 只管 skills；MCP server 要嵌入配置反倒破坏隔离
+4. **无状态约束**：CLI 每次调用短进程，不留 session；MCP 长连接会引入隐藏状态
+
+**什么时候会重新评估**：
+- 若 Claude Agent SDK 对 MCP 提供原生 trajectory 支持并优于 subprocess logging
+- 若单次调用的冷启动开销（python import）在生产中成为瓶颈（M3 再测）
+
+## B.6 Hook 策略
+
+`ClaudeAgentOptions.hooks` 统一装配三类：
 
 ```python
-# 按标题切（案例文档）
-split_by_heading(text, level=2)  # → list[Chunk]
-
-# 按条款切（规章制度）
-split_by_clause(text, pattern)   # → list[Chunk]
-# pattern: 正则，默认匹配 "第X条" / "X.X.X"
-# Chunk: text + metadata (含 clause_id, heading, index)
+hooks = {
+    "PreToolUse": [log_tool_call_hook],      # 记录 agent 调用的每个 Bash 命令
+    "PostToolUse": [log_tool_result_hook],   # 记录返回值（truncated to 10KB）
+    "Stop": [check_phase_output_hook],       # 阶段结束时校验 working/ 下必须产物存在
+}
 ```
 
----
+- `PreToolUse` / `PostToolUse`：写 `workspace/logs/trajectory_<phase>.jsonl`，EvoSkill 训练数据来源
+- `Stop`：校验（plan 阶段必须有 `working/plan.md` + `plan.json`；execute 阶段至少有一个 `findings/*.json`；summarize 阶段必须有 `working/output.json`），未通过则 `PESRunner` 抛 `PhaseContractError`
 
-### 2.4 GenerationEngine
+## B.7 Session 生命周期与错误处理
 
-**单章生成**：
-```python
-gen = GenerationEngine(llm, store=None)  # store 可选
-gen.generate_chapter(template, variables)  # → str
-# variables: user_inputs, retrieved_cases, previous_summary, glossary
-```
+| 情形 | 处理 |
+|---|---|
+| 阶段达到 `max_turns` | `PhaseResult.status="max_turns_exceeded"`；下阶段不启动；`AgentRunResult` 整体失败 |
+| SDK 抛 `RateLimitError` | 指数退避重试 3 次（1s / 4s / 16s）；仍失败则抛出 |
+| SDK 抛 `AnthropicError`（其它） | 不重试，直接冒泡；保留 workspace 供排查 |
+| Python 侧 `KeyboardInterrupt` | 取消当前 `query()`；当前阶段记为 `status="interrupted"`；workspace 不清理 |
+| Hook `Stop` 校验失败 | 当前阶段记 `status="contract_violation"` + 缺失文件列表；不继续下阶段 |
 
-**参数说明**：
-- `llm`: LLMClient 实例（必传）
-- `store`: KnowledgeStore 实例（可选，传 None 时不进行案例检索）
+**取消语义**：SDK 的异步迭代器在 `cancel()` 时会优雅终止，当前工具调用的子进程由 SDK 负责发 SIGTERM。Scrivai 不额外追加 kill -9 逻辑。
 
-**上下文工具**（独立可用）：
-```python
-ctx = GenerationContext(llm)
-ctx.summarize(text)                    # → str (前文摘要)
-ctx.extract_terms(text, existing)      # → dict[str, str] (术语表)
-ctx.extract_references(text)           # → list[dict] (交叉引用)
-```
+## B.8 PES 阶段间契约落地在 SDK 层的表现
 
-**典型用法**：
-```python
-# 方式一：通过 Project 入口（推荐）
-proj = Project("config.yaml")
-glossary, summary = {}, ""
-for ch in chapters:
-    cases = proj.store.search(ch.topic, top_k=3) if proj.store else []
-    text = proj.gen.generate_chapter(ch.tpl, {"user_inputs": i, "retrieved_cases": cases, "previous_summary": summary, "glossary": glossary})
-    summary = proj.ctx.summarize(text)
-    glossary = proj.ctx.extract_terms(text, glossary)
+`design.md §4.1.1` 规定阶段间通过文件传递（plan.md / findings/ / output.json）。在 SDK 层的具体表现：
 
-# 方式二：直接实例化各组件
-ctx = GenerationContext(llm)
-glossary, summary = {}, ""
-for ch in chapters:
-    cases = store.search(ch.topic, top_k=3)
-    text = gen.generate_chapter(ch.tpl, {"user_inputs": i, "retrieved_cases": cases, "previous_summary": summary, "glossary": glossary})
-    summary = ctx.summarize(text)
-    glossary = ctx.extract_terms(text, glossary)
-```
+1. **plan 阶段的 `system_prompt`** 末尾强制追加：`"After planning, you MUST write working/plan.md and working/plan.json. Do not call execute-phase tools."`
+2. **execute 阶段的 `system_prompt`** 开头追加：`"Read working/plan.json first. For each item, write working/findings/<item_id>.json."`（agent 通过 Read 读计划）
+3. **summarize 阶段的 `system_prompt`** 开头追加：`"Read all working/findings/*.json. Write working/output.json with the final summary."`
 
----
+这些追加由 `PromptManager.build_system_prompt(phase, ...)` 固定拼接，agent profile 的 YAML 无需手写。
 
-### 2.5 AuditEngine
+## B.9 和 design.md 的章节映射
 
-**AuditResult**: `passed`, `severity`, `checkpoint_id`, `chapter_id`, `finding`, `evidence`, `suggestion`
+| 本附录章节 | 对应 design.md 章节 |
+|---|---|
+| B.2 调用范式 | §5.1 |
+| B.3 Options 字段 | §5.1（伪代码） |
+| B.4 allowed_tools | §4.1 `PhaseConfig` + v3 变更第 5 条 |
+| B.5 CLI+Bash vs MCP | §2 系统关系图 + §4.4 |
+| B.6 Hooks | §4.5 不变量 |
+| B.7 错误处理 | — 新增 |
+| B.8 阶段间契约 | §4.1.1 PES 文件契约 |
 
-**单要点审核**：
-```python
-audit = AuditEngine(llm, store)
-audit.check_one(doc, checkpoint)  # → AuditResult
-# checkpoint: id, description, severity, scope, prompt_template, rule_refs
-# scope: "full" | "chapter:ch03"
-# rule_refs: [{"source": "X", "clause_id": "Y"} | {"query": "..."}]
-```
+## B.10 变更纪律
 
-**批量审核**：
-```python
-audit.check_many(doc, checkpoints)     # → list[AuditResult]
-audit.load_checkpoints(path)          # 从 YAML 加载
-```
-
-**四维检查处理**：统一走 `check_one()`，差异在 checkpoint 配置（prompt + rule_refs）
-
----
-
-### 2.6 Project
-
-极简入口：配置加载 + 组件组装
-
-```python
-proj = Project("config.yaml")
-proj.llm      # LLMClient
-proj.store    # KnowledgeStore | None
-proj.gen      # GenerationEngine
-proj.ctx      # GenerationContext（独立组件）
-proj.audit    # AuditEngine
-```
-
-**属性说明**：
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `llm` | LLMClient | LLM 调用客户端 |
-| `store` | KnowledgeStore \| None | 知识库实例（配置中未指定则不初始化） |
-| `gen` | GenerationEngine | 章节生成引擎 |
-| `ctx` | GenerationContext | 上下文工具（摘要、术语、引用提取） |
-| `audit` | AuditEngine | 文档审核引擎 |
-
----
-
-## 3. 文件结构
-
-```
-core/
-├── llm.py              # LLMClient
-├── knowledge/          # 知识库子包
-│   ├── __init__.py     # 导出 KnowledgeStore, SearchResult
-│   └── store.py        # KnowledgeStore 实现
-├── chunkers.py         # split_by_heading, split_by_clause
-├── generation/
-│   ├── __init__.py     # 导出 GenerationEngine, GenerationContext
-│   ├── engine.py       # GenerationEngine
-│   └── context.py      # GenerationContext
-├── audit/
-│   ├── __init__.py     # 导出 AuditEngine, AuditResult
-│   └── engine.py       # AuditEngine, AuditResult
-└── project.py          # Project
-utils/
-├── __init__.py
-└── doc_pipeline.py     # OCRAdapter, MonkeyOCRAdapter, DoclingAdapter,
-                        # MarkdownCleaner, DocPipeline, DocPipelineResult
-templates/
-└── prompts/            # Prompt 模板（j2 + md 分离）
-    ├── base.j2         # 基础骨架
-    ├── summarize.j2 / summarize.md
-    ├── extract_terms.j2 / extract_terms.md
-    ├── extract_references.j2 / extract_references.md
-    ├── audit.j2 / audit.md
-    └── clean.j2 / clean.md
-```
-
----
-
-## 4. Doc Pipeline（文档预处理）
-
-**定位**：旁路工具，独立于主引擎，用于将 PDF 转换为 Markdown 后入库。
-
-### 4.1 OCRAdapter
-
-抽象基类，统一两种 OCR 后端接口。两个实现均只接受 PDF，传入非 PDF 文件时抛 `ValueError`。
-
-```python
-class OCRAdapter(ABC):
-    def to_markdown(self, file_path: str) -> str
-    # 输入：本地 PDF 文件路径
-    # 输出：原始 Markdown（未清洗）
-    # 非 PDF 文件抛 ValueError
-
-class MonkeyOCRAdapter(OCRAdapter):
-    def __init__(self, base_url: str, timeout: int = 120)
-    def to_markdown(self, file_path: str) -> str
-    # 实现：POST /parse 上传 PDF → 下载 ZIP → 提取 .md
-
-class DoclingAdapter(OCRAdapter):
-    def __init__(self)
-    def to_markdown(self, file_path: str) -> str
-    # 实现：DocumentConverter().convert(path) → document.export_to_markdown()
-```
-
-### 4.2 MarkdownCleaner
-
-两阶段清洗，LLM 阶段可选。
-
-```python
-class MarkdownCleaner:
-    def __init__(self, llm: Optional[LLMClient] = None)
-    # llm 来自 core/llm.py，传 None 则跳过 LLM 清洗阶段
-
-    def clean(self, text: str) -> str
-    # Phase 1（正则）：水印、异常表格分隔行、残留 HTML 标签、LaTeX 符号 → Unicode
-    # Phase 2（LLM）：分块 → 语义清洗 → 后处理；llm=None 时跳过
-```
-
-### 4.3 DocPipeline
-
-组合 adapter + cleaner，对外暴露单一入口。
-
-```python
-@dataclass
-class DocPipelineResult:
-    raw_md: str          # OCR 原始输出
-    cleaned_md: str      # 清洗后输出
-    warnings: list[str]  # 验证警告（字数损失、幻觉短语、表格结构），空列表表示无问题
-    # 调用方自行决定如何处理 warnings，Pipeline 本身不抛异常
-
-class DocPipeline:
-    def __init__(self, adapter: OCRAdapter, cleaner: MarkdownCleaner)
-    def run(self, file_path: str) -> DocPipelineResult
-```
-
-### 4.4 典型用法
-
-```python
-from scrivai.llm import LLMClient
-from utils.doc_pipeline import DoclingAdapter, MonkeyOCRAdapter, MarkdownCleaner, DocPipeline
-
-# Docling（本地，无需服务）
-pipeline = DocPipeline(DoclingAdapter(), MarkdownCleaner())
-result = pipeline.run("path/to/doc.pdf")
-
-# MonkeyOCR + LLM 清洗
-llm = LLMClient(config)
-pipeline = DocPipeline(MonkeyOCRAdapter("http://localhost:8080"), MarkdownCleaner(llm=llm))
-result = pipeline.run("path/to/doc.pdf")
-
-# 清洗后入库
-if not result.warnings:
-    store.add(texts=[result.cleaned_md], metadatas=[{"source": "doc.pdf", "type": "case"}])
-```
-
----
-
-## 5. 模板加载机制
-
-SDK 内部使用 **j2 + md 分离模式** 管理 prompt 模板。
-
-### 5.1 模板结构
-
-每个 prompt 由两个文件组成：
-- **`.j2` 文件**：Jinja2 骨架模板，包含 `{{ prompt_content }}` 变量
-- **`.md` 文件**：实际的 prompt 指令内容
-
-```
-templates/prompts/
-├── base.j2              # 基础骨架
-├── summarize.j2         # 摘要骨架
-├── summarize.md         # 摘要指令
-└── ...
-```
-
-### 5.2 加载函数
-
-```python
-def _load_template(name: str) -> str:
-    """加载 prompt 模板，将 .md 内容注入 .j2 骨架"""
-    # 1. 读取 templates/prompts/{name}.j2
-    # 2. 读取 templates/prompts/{name}.md
-    # 3. 将 md 内容注入 j2 的 {{ prompt_content }} 变量
-    # 4. 返回完整 prompt
-```
-
-### 5.3 使用示例
-
-```python
-# 内部调用（用户通常不需要直接使用）
-from scrivai.llm import _load_template
-
-prompt = _load_template("summarize")  # 加载 summarize.j2 + summarize.md
-```
-
----
-
-## 6. qmd 依赖
-
-SDK 依赖 qmd 提供以下能力（如 qmd 尚未实现，需补充）：
-
-| 能力 | 说明 |
-|------|------|
-| metadata 列 | documents 表加 `metadata TEXT` 存 JSON |
-| 入库传 metadata | `index_document()` 接受 metadata 参数 |
-| 过滤检索 | `search(filters)` 转为 `json_extract()` 条件 |
-| 非文件入库 | 直接接收文本+元数据，不依赖磁盘文件 |
+`ClaudeAgentOptions` 字段映射 / `allowed_tools` 矩阵变更 → 先走 `GOVDOC_PROGRAM_PLAN.md §8 变更流程`，同步更新 `design.md §5.1` 与本附录 B.3 / B.4 表格。
