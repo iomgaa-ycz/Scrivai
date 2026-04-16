@@ -129,42 +129,25 @@ def test_force_recreate(ws_mgr, fake_project_root: Path) -> None:
     assert not (handle2.working_dir / "marker.txt").exists()
 
 
-def test_concurrent_create_rejected(
-    ws_mgr, fake_project_root: Path, tmp_path: Path, monkeypatch
-) -> None:
-    """两个进程同时 create 同 run_id:后者拿不到 fcntl 锁,抛 WorkspaceError。
+def test_concurrent_create_rejected(ws_mgr, fake_project_root: Path, monkeypatch) -> None:
+    """create() 把 _acquire_lock 抛出的 WorkspaceError 正确向上传播。
 
-    简化策略:用 monkeypatch 把 _acquire_lock 替换为"直接抛 WorkspaceError",
-    模拟"另一个进程已持有锁"。这避开了真两线程/两进程的 race(易 flaky),
-    同时验证调用方对 WorkspaceError 的传播路径正确。
-
-    生产代码 _acquire_lock 内部用 fcntl.LOCK_EX | LOCK_NB,真有持锁冲突时
-    会抛 BlockingIOError → catch 转 WorkspaceError(实现已通过手动多终端验证)。
+    单元层只测"WorkspaceError 传播路径";真实 fcntl 跨进程锁的覆盖
+    见 ContractRunner integration smoke (M0.5+)。
+    fcntl flock 在同一进程内部多次 acquire 不会阻塞(per-fd 而非 per-process),
+    所以 same-process 真锁测试本身就不可行,需要走 multiprocessing/手动验证。
     """
-    import fcntl
-
     from scrivai import WorkspaceSpec
     from scrivai.exceptions import WorkspaceError
     from scrivai.workspace.manager import LocalWorkspaceManager
 
-    # 主线程先抓住 lock,模拟"另一个进程持有锁"
-    lock_path = ws_mgr.workspaces_root / ".lock-test.lock"
-    lock_fd = open(lock_path, "w")
-    fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-
-    # 让 create() 用同一个 lock_path
     monkeypatch.setattr(
         LocalWorkspaceManager,
         "_acquire_lock",
         lambda self, run_id: (_ for _ in ()).throw(WorkspaceError(f"workspace {run_id} is locked")),
     )
-    try:
-        with pytest.raises(WorkspaceError, match="is locked"):
-            ws_mgr.create(WorkspaceSpec(run_id="lock-test", project_root=fake_project_root))
-    finally:
-        fcntl.flock(lock_fd, fcntl.LOCK_UN)
-        lock_fd.close()
-        lock_path.unlink(missing_ok=True)
+    with pytest.raises(WorkspaceError, match="is locked"):
+        ws_mgr.create(WorkspaceSpec(run_id="lock-test", project_root=fake_project_root))
 
 
 def test_archive_portability(ws_mgr, fake_project_root: Path, tmp_path: Path) -> None:

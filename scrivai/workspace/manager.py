@@ -21,6 +21,7 @@ import json
 import shutil
 import subprocess
 import tarfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import IO
@@ -132,8 +133,6 @@ class LocalWorkspaceManager:
 
     def cleanup_old(self, days: int = 30) -> None:
         """同时清 archives/<run>.tar.gz 与 workspaces/<run>/(若有 .failed),按 mtime 阈值。"""
-        import time
-
         threshold = time.time() - days * 86400
 
         # 清 archives
@@ -164,7 +163,7 @@ class LocalWorkspaceManager:
             if result.returncode != 0:
                 return None
             return result.stdout.strip() or None
-        except (FileNotFoundError, subprocess.TimeoutExpired):
+        except (OSError, subprocess.SubprocessError):
             return None
 
     def _git_is_dirty(self, path: Path) -> bool:
@@ -180,11 +179,11 @@ class LocalWorkspaceManager:
             if result.returncode != 0:
                 return False
             return bool(result.stdout.strip())
-        except (FileNotFoundError, subprocess.TimeoutExpired):
+        except (OSError, subprocess.SubprocessError):
             return False
 
     def _acquire_lock(self, run_id: str) -> IO[str]:
-        """对 run_id 取独占锁。冲突抛 WorkspaceError;返回 file descriptor 供 release。"""
+        """对 run_id 取独占锁。冲突抛 WorkspaceError;返回 file object(其 close() 比 fd 更安全)。"""
         lock_path = self.workspaces_root / f".{run_id}.lock"
         lock_fd = open(lock_path, "w")
         try:
