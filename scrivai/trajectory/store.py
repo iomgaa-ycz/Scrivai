@@ -19,6 +19,7 @@ import os
 import sqlite3
 import threading
 import time
+from contextlib import AbstractContextManager, nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, TypeVar
@@ -60,7 +61,9 @@ class TrajectoryStore:
         """
         self.db_path: Path | str
         self._memory_conn: sqlite3.Connection | None = None
-        # 跨线程串行锁:to_thread 多 worker 时保护单 conn / 同进程文件 conn
+        # 跨线程串行锁:仅保护 :memory: 共享 conn(防 to_thread 多 worker 在
+        # execute→commit 边界相互踩踏);文件模式每次 record 新建 conn,
+        # 由 SQLite WAL 处理并发,无需 Python 层加锁。
         self._write_lock = threading.Lock()
 
         if db_path == ":memory:":
@@ -110,7 +113,11 @@ class TrajectoryStore:
         """
 
         def _runner() -> T:
-            with self._write_lock:
+            # 仅 :memory: 模式锁保护;文件模式靠 WAL,跳锁以保 BasePES 多 run 并发吞吐
+            lock_ctx: AbstractContextManager[Any] = (
+                self._write_lock if self._memory_conn is not None else nullcontext()
+            )
+            with lock_ctx:
                 for attempt in (1, 2):
                     conn = self._get_connection()
                     try:
@@ -214,15 +221,21 @@ class TrajectoryStore:
         def _work(
             conn: sqlite3.Connection,
         ) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+            prev_factory = conn.row_factory
             conn.row_factory = sqlite3.Row
-            run_row = conn.execute("SELECT * FROM runs WHERE run_id=?", (run_id,)).fetchone()
-            if run_row is None:
-                return None, []
-            phase_rows = conn.execute(
-                "SELECT * FROM phases WHERE run_id=? ORDER BY phase_order, attempt_no",
-                (run_id,),
-            ).fetchall()
-            return dict(run_row), [dict(r) for r in phase_rows]
+            try:
+                run_row = conn.execute(
+                    "SELECT * FROM runs WHERE run_id=?", (run_id,)
+                ).fetchone()
+                if run_row is None:
+                    return None, []
+                phase_rows = conn.execute(
+                    "SELECT * FROM phases WHERE run_id=? ORDER BY phase_order, attempt_no",
+                    (run_id,),
+                ).fetchall()
+                return dict(run_row), [dict(r) for r in phase_rows]
+            finally:
+                conn.row_factory = prev_factory
 
         run_row, phase_rows = await self._execute_with_retry(_work)
         if run_row is None:
@@ -253,9 +266,13 @@ class TrajectoryStore:
         params.append(limit)
 
         def _work(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+            prev_factory = conn.row_factory
             conn.row_factory = sqlite3.Row
-            rows = conn.execute(sql, tuple(params)).fetchall()
-            return [dict(r) for r in rows]
+            try:
+                rows = conn.execute(sql, tuple(params)).fetchall()
+                return [dict(r) for r in rows]
+            finally:
+                conn.row_factory = prev_factory
 
         rows = await self._execute_with_retry(_work)
         return [self._row_to_trajectory_record(r) for r in rows]
@@ -278,7 +295,8 @@ class TrajectoryStore:
 
         def _work(conn: sqlite3.Connection) -> int:
             cur = conn.execute(sql, params)
-            return cur.lastrowid or 0
+            assert cur.lastrowid is not None, "INSERT 必须设置 lastrowid"
+            return cur.lastrowid
 
         return await self._execute_with_retry(_work)
 
@@ -336,7 +354,8 @@ class TrajectoryStore:
 
         def _work(conn: sqlite3.Connection) -> int:
             cur = conn.execute(sql, params)
-            return cur.lastrowid or 0
+            assert cur.lastrowid is not None, "INSERT 必须设置 lastrowid"
+            return cur.lastrowid
 
         return await self._execute_with_retry(_work)
 
@@ -427,15 +446,19 @@ class TrajectoryStore:
             clauses.append("feedback.confidence >= ?")
             params.append(min_confidence)
         where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
-        limit_sql = f"LIMIT {int(limit)}" if limit else ""
+        limit_sql = f"LIMIT {int(limit)}" if limit is not None else ""
         sql = (
             f"SELECT feedback.* FROM feedback {join} {where} "
             f"ORDER BY feedback.submitted_at ASC {limit_sql}"
         )
 
         def _work(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+            prev_factory = conn.row_factory
             conn.row_factory = sqlite3.Row
-            return [dict(r) for r in conn.execute(sql, tuple(params)).fetchall()]
+            try:
+                return [dict(r) for r in conn.execute(sql, tuple(params)).fetchall()]
+            finally:
+                conn.row_factory = prev_factory
 
         rows = await self._execute_with_retry(_work)
         return [self._row_to_feedback_record(r) for r in rows]
