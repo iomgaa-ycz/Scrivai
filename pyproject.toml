@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scrivai"
-version = "0.1.2"
-description = "可配置的通用文档生成与审核框架"
+version = "0.2.0a0"
+description = "Claude Agent 编排框架 — 文档审核 / 生成场景"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
@@ -19,14 +19,12 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Text Processing :: Linguistic",
 ]
 dependencies = [
-    "litellm>=1.0",
-    "jinja2>=3.1",
+    "pydantic>=2.6",
     "pyyaml>=6.0",
     "python-dotenv>=1.0",
-    "qmd>=0.1.0",
+    "qmd>=0.1.2",
 ]
 
 [project.optional-dependencies]
@@ -34,6 +32,7 @@ dev = [
     "ruff>=0.4",
     "pytest>=8.0",
     "pytest-cov>=5.0",
+    "mypy>=1.10",
 ]
 
 [project.urls]
@@ -51,13 +50,18 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
 
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+python_version = "3.11"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
 markers = [
-    "integration: 真实 API 调用测试（需要网络和 API key）",
-    "unit: 单元测试（使用 mock）",
+    "contract: 契约测试(契约稳定性 / 跨项目协议)",
+    "integration: 真实 API 调用测试(需要网络和 API key)",
+    "unit: 单元测试(使用 mock)",
 ]
 addopts = "-v --tb=short"

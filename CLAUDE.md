@@ -146,14 +146,22 @@ doc = project.generate_and_review(inputs={...}, max_revisions=2)
 
 ### 核心模块速查
 
-| 模块 | 路径 | 职责 |
-|------|------|------|
-| 知识库 | `core/knowledge/` | qmd 封装，案例/规则/模板库管理 |
-| 生成引擎 | `core/generation/` | 逐章生成 + 上下文管理 + 连贯性保障 |
-| 审核引擎 | `core/audit/` | 结构/引用/语义/一致性四维检查 |
-| 编排层 | `core/orchestrator.py` | Pipeline 串联（只审/只生/生成+自审） |
-| SDK 入口 | `core/project.py` | `scrivai.Project` 对外接口 |
-| 文档解析 | `utils/doc_pipeline.py` | PDF→OCR→MD 旁路工具 |
+| 模块 | 路径 | 职责 | 里程碑 |
+|------|------|------|------|
+| 数据模型 | `scrivai/models/` | 全部 pydantic + Protocol(单一真相) | M0 |
+| 异常层 | `scrivai/exceptions.py` | Scrivai 异常根基与子类 | M0 |
+| PES config | `scrivai/pes/config.py` | PESConfig YAML 加载器 | M0 |
+| Evolution 占位 | `scrivai/evolution/` | EvolutionTrigger / run_evolution(M2 实现) | M0 |
+| Workspace | `scrivai/workspace/` | WorkspaceManager 沙箱 + snapshot + 归档 | M0.25 |
+| Hook 系统 | `scrivai/pes/hooks.py` | HookManager + 9 hook 触点 | M0.25 |
+| 轨迹存储 | `scrivai/trajectory/` | TrajectoryStore + Recorder Hook | M0.25 |
+| BasePES | `scrivai/pes/base.py` | 三阶段执行引擎(plan/execute/summarize) | M0.5 |
+| 测试套件 | `scrivai/testing/` | MockPES / FakeTrajectoryStore / contract plugin | M0.5+ |
+| 知识库 | `scrivai/knowledge/` | qmd 封装(Rule / Case / Template 三兄弟) | M0.75 |
+| IO 工具 | `scrivai/io/` | docx/doc/pdf↔md + DocxRenderer | M0.75 |
+| CLI | `scrivai/cli/` | scrivai-cli library/io/workspace/trajectory | M0.75 |
+| 预置 PES | `scrivai/agents/` | ExtractorPES / AuditorPES / GeneratorPES | M1 |
+| Public API | `scrivai/__init__.py` | 顶层符号清单(M0.75 冻结) | M0/M0.75 |
 
 ## 6. 输出规范
 <!-- 通用模板，一般不改 -->
