@@ -21,6 +21,26 @@
 conda activate scrivai
 ```
 
+### 默认 LLM 配置(开发环境)
+
+本地开发默认走**私有网关 + GLM-5.1**。Claude Agent SDK 通过标准 env 自动识别:
+
+```bash
+# 首次接入:复制示例后填入真实值
+cp .env.example .env
+```
+
+`.env` 字段说明(已在 `.gitignore`,不入 git):
+
+| Env | 用途 |
+|---|---|
+| `ANTHROPIC_BASE_URL` | Claude SDK base URL(开发期填私有网关地址) |
+| `ANTHROPIC_AUTH_TOKEN` | Claude SDK token(网关 key,接受 GLM / MiniMax 等多供应商) |
+| `SCRIVAI_DEFAULT_MODEL` | `ModelConfig.model` 默认值(如 `glm-5.1`) |
+| `SCRIVAI_DEFAULT_PROVIDER` | `runs.provider` 默认值(如 `glm`,写入 trajectory) |
+
+**多供应商仍支持**:`ModelConfig.base_url + model + api_key` 可在代码层覆盖 env,切换 Claude / GLM / MiniMax。env 只是开发期默认。
+
 ### 代码质量
 ```bash
 ruff check . --fix

@@ -224,9 +224,7 @@ class TrajectoryStore:
             prev_factory = conn.row_factory
             conn.row_factory = sqlite3.Row
             try:
-                run_row = conn.execute(
-                    "SELECT * FROM runs WHERE run_id=?", (run_id,)
-                ).fetchone()
+                run_row = conn.execute("SELECT * FROM runs WHERE run_id=?", (run_id,)).fetchone()
                 if run_row is None:
                     return None, []
                 phase_rows = conn.execute(

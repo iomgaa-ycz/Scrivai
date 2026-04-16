@@ -19,6 +19,7 @@ from scrivai.models.workspace import (
     WorkspaceSpec,
 )
 from scrivai.pes.hooks import HookManager, hookimpl
+from scrivai.testing import FakeTrajectoryStore, TempWorkspaceManager
 from scrivai.trajectory.store import TrajectoryStore
 from scrivai.workspace.manager import build_workspace_manager
 
@@ -41,4 +42,7 @@ __all__ = [
     "hookimpl",
     # M0.25 T0.7 — Trajectory
     "TrajectoryStore",
+    # M0.25 T0.10 — Testing helpers
+    "FakeTrajectoryStore",
+    "TempWorkspaceManager",
 ]
