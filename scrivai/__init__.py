@@ -19,6 +19,7 @@ from scrivai.models.workspace import (
     WorkspaceSpec,
 )
 from scrivai.pes.hooks import HookManager, hookimpl
+from scrivai.trajectory.store import TrajectoryStore
 from scrivai.workspace.manager import build_workspace_manager
 
 __all__ = [
@@ -38,4 +39,6 @@ __all__ = [
     # M0.25 T0.5 — Hooks
     "HookManager",
     "hookimpl",
+    # M0.25 T0.7 — Trajectory
+    "TrajectoryStore",
 ]
