@@ -77,9 +77,7 @@ def test_assistant_with_tool_use() -> None:
     assert turn.role == "assistant"
     assert turn.content_type == "tool_use"
     assert turn.data["text"] == "I'll list files."
-    assert turn.data["tool_uses"] == [
-        {"id": "tu_1", "name": "Bash", "input": {"command": "ls"}}
-    ]
+    assert turn.data["tool_uses"] == [{"id": "tu_1", "name": "Bash", "input": {"command": "ls"}}]
     assert "tu_1" in pending
     assert pending["tu_1"] == {
         "name": "Bash",
@@ -183,9 +181,7 @@ async def test_result_message_success() -> None:
             uuid="u1",
         ),
         UserMessage(
-            content=[
-                ToolResultBlock(tool_use_id="tu_1", content="a.txt\nb.txt", is_error=False)
-            ],
+            content=[ToolResultBlock(tool_use_id="tu_1", content="a.txt\nb.txt", is_error=False)],
             uuid="u2",
             parent_tool_use_id=None,
             tool_use_result={"stdout": "a.txt\nb.txt", "stderr": ""},

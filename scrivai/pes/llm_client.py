@@ -152,9 +152,7 @@ class LLMClient:
             if isinstance(block, TextBlock):
                 text_parts.append(block.text)
             elif isinstance(block, ToolUseBlock):
-                tool_uses.append(
-                    {"id": block.id, "name": block.name, "input": block.input}
-                )
+                tool_uses.append({"id": block.id, "name": block.name, "input": block.input})
                 pending[block.id] = {
                     "name": block.name,
                     "input": block.input,
@@ -269,9 +267,7 @@ class LLMClient:
             elif isinstance(message, ResultMessage):
                 # stop_sequence / end_turn 是正常终止原因(私有网关可能将 is_error 置 True)
                 _NORMAL_STOP_REASONS = {"end_turn", "stop_sequence"}
-                is_normal = (not message.is_error) or (
-                    message.stop_reason in _NORMAL_STOP_REASONS
-                )
+                is_normal = (not message.is_error) or (message.stop_reason in _NORMAL_STOP_REASONS)
                 if not is_normal:
                     if message.stop_reason == "max_turns":
                         raise _MaxTurnsError(message.num_turns)

@@ -78,6 +78,7 @@ class BasePES:
         # 延迟 import(避免无 SDK 场景下 BasePES 无法 import)
         if llm_client is None:
             from scrivai.pes.llm_client import LLMClient as _LLMClient
+
             llm_client = _LLMClient(model)
         self._llm = llm_client
 

@@ -22,7 +22,6 @@ from scrivai.models.pes import (
 from scrivai.models.workspace import WorkspaceHandle, WorkspaceSnapshot
 from scrivai.pes.config import load_pes_config
 
-
 # ──────────────── Fixtures ────────────────
 
 
@@ -91,9 +90,7 @@ def _run(pes: GeneratorPES) -> PESRun:
 # ──────────────── build_execution_context ────────────────
 
 
-async def test_build_execution_context_plan_parses_placeholders(
-    workspace, config, template_path
-):
+async def test_build_execution_context_plan_parses_placeholders(workspace, config, template_path):
     pes = GeneratorPES(
         config=config,
         model=ModelConfig(model="mock"),
