@@ -11,9 +11,12 @@ import asyncio
 import json
 import shutil
 from datetime import datetime, timezone
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
-from scrivai.exceptions import PhaseError
+if TYPE_CHECKING:
+    from scrivai.pes.llm_client import LLMClient
+
+from scrivai.exceptions import PhaseError, _SDKError
 from scrivai.models.pes import (
     CancelHookContext,
     FailureHookContext,
@@ -64,6 +67,7 @@ class BasePES:
         hooks: HookManager | None = None,
         trajectory_store: TrajectoryStore | None = None,
         runtime_context: dict[str, Any] | None = None,
+        llm_client: "LLMClient | None" = None,
     ) -> None:
         self.config = config
         self.model = model
@@ -71,6 +75,11 @@ class BasePES:
         self.hooks: HookManager | _NullHookManager = hooks or _NullHookManager()
         self.trajectory_store = trajectory_store
         self.runtime_context = runtime_context or {}
+        # 延迟 import(避免无 SDK 场景下 BasePES 无法 import)
+        if llm_client is None:
+            from scrivai.pes.llm_client import LLMClient as _LLMClient
+            llm_client = _LLMClient(model)
+        self._llm = llm_client
 
     # ── 公共 API ──────────────────────────────────────────
 
@@ -211,10 +220,37 @@ class BasePES:
         attempt_no: int,
         on_turn: Callable[[PhaseTurn], None],
     ) -> tuple[str, dict[str, Any], list[PhaseTurn]]:
-        """调 Claude SDK;M0.5 默认 NotImplementedError,MockPES override 回放。"""
-        raise NotImplementedError(
-            "M1 安装 claude-agent-sdk 后实现;测试请使用 MockPES 或子类 override 此方法。"
-        )
+        """调 LLMClient,翻译异常为 _SDKError(error_type=...)。
+
+        - _MaxTurnsError → _SDKError("max_turns_exceeded", ...)
+        - _SDKExecutionError / CLIConnectionError / ProcessError / ClaudeSDKError / RuntimeError
+          → _SDKError("sdk_other", ...)
+        - KeyboardInterrupt / CancelledError 不接,直接冒泡到 BasePES.run()
+        """
+        from claude_agent_sdk import ClaudeSDKError, CLIConnectionError, ProcessError
+
+        from scrivai.exceptions import _SDKError
+        from scrivai.pes.llm_client import _MaxTurnsError, _SDKExecutionError
+
+        try:
+            resp = await self._llm.execute_task(
+                prompt=prompt,
+                system_prompt=self.config.prompt_text + "\n\n" + phase_cfg.additional_system_prompt,
+                allowed_tools=phase_cfg.allowed_tools,
+                max_turns=phase_cfg.max_turns,
+                permission_mode=phase_cfg.permission_mode,
+                cwd=self.workspace.working_dir,
+                on_turn=on_turn,
+            )
+            return resp.result, resp.usage, resp.turns
+        except _MaxTurnsError as e:
+            raise _SDKError("max_turns_exceeded", str(e)) from e
+        except _SDKExecutionError as e:
+            raise _SDKError("sdk_other", str(e)) from e
+        # RuntimeError 覆盖 LLMClient.execute_task 内部的 RuntimeError("未收到 ResultMessage")
+        # 哨兵异常;非 SDK 来源的 RuntimeError 也归并到 sdk_other(L2 retry 兜底)
+        except (CLIConnectionError, ProcessError, ClaudeSDKError, RuntimeError) as e:
+            raise _SDKError("sdk_other", str(e)) from e
 
     # ── 内部:phase 级重试 ────────────────────────────────
 
@@ -322,6 +358,9 @@ class BasePES:
         except (KeyboardInterrupt, asyncio.CancelledError):
             raise
         except Exception as e:
+            # _SDKError 携带 error_type;其他 Exception(理论上不应到这,LLMClient 已覆盖)→ sdk_other
+            error_type = e.error_type if isinstance(e, _SDKError) else "sdk_other"
+            # M1.0 契约:所有 SDK 失败 is_retryable=True(L2 phase 重试兜底替代 L1 退避)
             result = PhaseResult(
                 phase=phase,
                 attempt_no=attempt_no,
@@ -331,8 +370,8 @@ class BasePES:
                 usage={},
                 produced_files=self._list_produced_files(phase),
                 error=str(e),
-                error_type="sdk_other",
-                is_retryable=False,
+                error_type=error_type,
+                is_retryable=True,
                 started_at=started_at,
                 ended_at=_utcnow(),
             )
