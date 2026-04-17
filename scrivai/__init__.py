@@ -1,10 +1,10 @@
-"""Scrivai v3 — Claude Agent 编排框架(M0 / M0.25)。
+"""Scrivai v3 — Claude Agent 编排框架(M0 / M0.25 / M0.5)。
 
-完整 Public API 在 M0.75 冻结;本里程碑(M0.25)在 M0 5 个符号基础上新增 9 个:
-- WorkspaceSpec / WorkspaceSnapshot / WorkspaceHandle / WorkspaceManager / build_workspace_manager
-- HookManager / hookimpl(M0.25 T0.5 后填充)
-- TrajectoryStore(M0.25 T0.7 后填充)
-- TempWorkspaceManager / FakeTrajectoryStore(M0.25 T0.10 后填充)
+完整 Public API 在 M0.75 冻结;本里程碑(M0.5)在 M0.25 基础上新增:
+- BasePES(三阶段执行引擎抽象基类)
+- MockPES / PhaseOutcome(测试替身)
+- TrajectoryRecorderHook(自动轨迹落盘 hook)
+- PhaseLogHook(phase 日志 dump hook)
 
 参考 docs/design.md §4.1。
 """
@@ -18,8 +18,11 @@ from scrivai.models.workspace import (
     WorkspaceSnapshot,
     WorkspaceSpec,
 )
+from scrivai.pes.base import BasePES
 from scrivai.pes.hooks import HookManager, hookimpl
-from scrivai.testing import FakeTrajectoryStore, TempWorkspaceManager
+from scrivai.pes.phase_log import PhaseLogHook
+from scrivai.testing import FakeTrajectoryStore, MockPES, PhaseOutcome, TempWorkspaceManager
+from scrivai.trajectory.hooks import TrajectoryRecorderHook
 from scrivai.trajectory.store import TrajectoryStore
 from scrivai.workspace.manager import build_workspace_manager
 
@@ -45,4 +48,12 @@ __all__ = [
     # M0.25 T0.10 — Testing helpers
     "FakeTrajectoryStore",
     "TempWorkspaceManager",
+    # M0.5 T0.6 — BasePES
+    "BasePES",
+    # M0.5 T0.8 — Trajectory hooks
+    "TrajectoryRecorderHook",
+    "PhaseLogHook",
+    # M0.5 T0.9 — MockPES
+    "MockPES",
+    "PhaseOutcome",
 ]
