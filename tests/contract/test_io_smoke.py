@@ -166,3 +166,77 @@ def test_docx_renderer_render_failure_no_halfproduct(sample_template: Path, tmp_
         renderer.render(context={"project_name": "p"}, output_path=bad_out)
 
     assert not bad_out.exists()
+
+
+# ─── M1.5b T1.8 edge DoD ───────────────────────────────────
+
+
+FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "io_samples"
+
+
+@pytest.mark.skipif(not shutil.which("pandoc"), reason="需要 pandoc 二进制")
+def test_docx_to_markdown_preserves_table() -> None:
+    """pandoc 把含表格的 docx 转 markdown,保留表格结构(内容 + 表格语法)。"""
+    import re
+
+    from scrivai.io import docx_to_markdown
+
+    fixture = FIXTURES_DIR / "table_sample.docx"
+    assert fixture.is_file(), f"fixture 不存在:{fixture}"
+
+    md = docx_to_markdown(fixture)
+    # 内容必须全部出现
+    assert "Checkpoint" in md
+    assert "Verdict" in md
+    assert "Insulation resistance" in md
+    assert "Pass" in md
+    assert "Grounding continuity" in md
+    assert "Fail" in md
+    # pandoc 表格可能走 pipe / grid / simple / multiline 四种 markdown 方言;任一即可
+    has_pipe = "|" in md
+    has_grid = "+-" in md
+    has_simple = bool(re.search(r"^[ \t]*-{5,}", md, re.MULTILINE))
+    assert has_pipe or has_grid or has_simple, (
+        f"pandoc 输出应保留表格结构(pipe/grid/simple/multiline);实际:{md[:500]}"
+    )
+
+
+def test_docx_renderer_list_placeholders_in_loop() -> None:
+    """loop_template.docx 含 `{{ project_name }}` 简单占位 + `{{ item.name }}` 复杂占位;
+    现行 list_placeholders 正则 `[a-zA-Z_][a-zA-Z0-9_]*` 只识别简单标识符,
+    所以只断言 project_name 必出现,item.name 因含点号不入列表(行为契约)。"""
+    from scrivai.io import DocxRenderer
+
+    fixture = FIXTURES_DIR / "loop_template.docx"
+    assert fixture.is_file(), f"fixture 不存在:{fixture}"
+
+    renderer = DocxRenderer(fixture)
+    names = renderer.list_placeholders()
+    assert "project_name" in names, f"project_name 必在;actual={names}"
+    # item.name 因含 "." 不被当前正则捕获;不做否定断言(实现可能升级)
+
+
+def test_docx_renderer_render_loop(tmp_path: Path) -> None:
+    """loop_template.docx 渲染 3 item 后,每 item 应在输出中各出现一次。"""
+    from docx import Document as _Doc
+
+    from scrivai.io import DocxRenderer
+
+    fixture = FIXTURES_DIR / "loop_template.docx"
+    out = tmp_path / "loop_rendered.docx"
+
+    renderer = DocxRenderer(fixture)
+    ctx: dict = {
+        "project_name": "Sub-7",
+        "items": [{"name": "alpha"}, {"name": "beta"}, {"name": "gamma"}],
+    }
+    result = renderer.render(context=ctx, output_path=out)
+    assert result == out
+    assert out.is_file()
+    assert out.stat().st_size > 0
+
+    rendered = _Doc(str(out))
+    text = "\n".join(p.text for p in rendered.paragraphs)
+    assert "Sub-7" in text, f"project_name 未渲染;text:\n{text}"
+    for name in ("alpha", "beta", "gamma"):
+        assert name in text, f"item {name!r} 未渲染;text:\n{text}"

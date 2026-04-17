@@ -119,3 +119,27 @@ def test_scrivai_trajectory_store_fixture(scrivai_trajectory_store) -> None:
     )
     rec = scrivai_trajectory_store.get_run("fix-traj")
     assert rec is not None
+
+
+# ─── M1.5b T1.7 edge DoD ───────────────────────────────────
+
+
+def test_search_with_metadata_filter(libraries) -> None:
+    """hybrid_search 的 filters 参数:透传 qmd;只返回匹配 metadata 的 chunk。
+
+    规格参考 docs/design.md §4.7 + TD.md T1.7 DoD「get/list/delete 通过 metadata filters」。
+    """
+    rules, _, _ = libraries
+    rules.add(entry_id="f-a", markdown="围标串标的认定标准", metadata={"src": "law-A"})
+    rules.add(entry_id="f-b", markdown="围标串标的监管责任", metadata={"src": "law-B"})
+    rules.add(entry_id="f-c", markdown="政府采购供应商资格", metadata={"src": "law-A"})
+
+    results_a = rules.search(query="围标", top_k=5, filters={"src": "law-A"})
+    assert len(results_a) >= 1, "filter src=law-A 应至少命中 f-a"
+    for r in results_a:
+        assert r.metadata.get("src") == "law-A", f"filter 未生效;得到 {r.metadata}"
+
+    results_b = rules.search(query="围标", top_k=5, filters={"src": "law-B"})
+    assert len(results_b) >= 1, "filter src=law-B 应至少命中 f-b"
+    for r in results_b:
+        assert r.metadata.get("src") == "law-B"
