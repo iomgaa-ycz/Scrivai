@@ -73,27 +73,23 @@ def test_fake_trajectory_inherits_schema() -> None:
 
 def test_fake_trajectory_is_isolated() -> None:
     """两个 FakeTrajectoryStore 实例的数据互不可见(独立 :memory: conn)。"""
-    import asyncio
-
     from scrivai import FakeTrajectoryStore
 
     s1 = FakeTrajectoryStore()
     s2 = FakeTrajectoryStore()
 
-    asyncio.run(
-        s1.start_run(
-            run_id="iso-1",
-            pes_name="x",
-            model_name="m",
-            provider="p",
-            sdk_version="0",
-            skills_git_hash=None,
-            agents_git_hash=None,
-            skills_is_dirty=False,
-            task_prompt="t",
-            runtime_context=None,
-        )
+    s1.start_run(
+        run_id="iso-1",
+        pes_name="x",
+        model_name="m",
+        provider="p",
+        sdk_version="0",
+        skills_git_hash=None,
+        agents_git_hash=None,
+        skills_is_dirty=False,
+        task_prompt="t",
+        runtime_context=None,
     )
 
-    assert asyncio.run(s1.get_run("iso-1")) is not None
-    assert asyncio.run(s2.get_run("iso-1")) is None
+    assert s1.get_run("iso-1") is not None
+    assert s2.get_run("iso-1") is None

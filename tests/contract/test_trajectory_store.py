@@ -8,7 +8,6 @@ References:
 
 from __future__ import annotations
 
-import asyncio
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -48,33 +47,29 @@ def test_run_lifecycle_runs_table_only() -> None:
     """start_run → finalize_run → get_run → list_runs 路径完整(暂不涉及 phases)。"""
     store = TrajectoryStore(":memory:")
 
-    asyncio.run(
-        store.start_run(
-            run_id="r1",
-            pes_name="extractor",
-            model_name="glm-5.1",
-            provider="glm",
-            sdk_version="0.1.0",
-            skills_git_hash="abc",
-            agents_git_hash="abc",
-            skills_is_dirty=False,
-            task_prompt="hello",
-            runtime_context={"k": "v"},
-        )
+    store.start_run(
+        run_id="r1",
+        pes_name="extractor",
+        model_name="glm-5.1",
+        provider="glm",
+        sdk_version="0.1.0",
+        skills_git_hash="abc",
+        agents_git_hash="abc",
+        skills_is_dirty=False,
+        task_prompt="hello",
+        runtime_context={"k": "v"},
     )
 
-    asyncio.run(
-        store.finalize_run(
-            run_id="r1",
-            status="completed",
-            final_output={"answer": 42},
-            workspace_archive_path="/tmp/r1.tar.gz",
-            error=None,
-            error_type=None,
-        )
+    store.finalize_run(
+        run_id="r1",
+        status="completed",
+        final_output={"answer": 42},
+        workspace_archive_path="/tmp/r1.tar.gz",
+        error=None,
+        error_type=None,
     )
 
-    rec = asyncio.run(store.get_run("r1"))
+    rec = store.get_run("r1")
     assert rec is not None
     assert rec.run_id == "r1"
     assert rec.status == "completed"
@@ -83,7 +78,7 @@ def test_run_lifecycle_runs_table_only() -> None:
     assert rec.runtime_context == {"k": "v"}
     assert rec.ended_at is not None
 
-    runs = asyncio.run(store.list_runs(pes_name="extractor"))
+    runs = store.list_runs(pes_name="extractor")
     assert len(runs) == 1
     assert runs[0].run_id == "r1"
 
@@ -91,101 +86,87 @@ def test_run_lifecycle_runs_table_only() -> None:
 def test_phases_unique_constraint() -> None:
     """同 (run_id, phase_name, attempt_no) 重复 record_phase_start → IntegrityError。"""
     store = TrajectoryStore(":memory:")
-    asyncio.run(
-        store.start_run(
-            run_id="r-uniq",
-            pes_name="x",
-            model_name="m",
-            provider="p",
-            sdk_version="0",
-            skills_git_hash=None,
-            agents_git_hash=None,
-            skills_is_dirty=False,
-            task_prompt="t",
-            runtime_context=None,
-        )
+    store.start_run(
+        run_id="r-uniq",
+        pes_name="x",
+        model_name="m",
+        provider="p",
+        sdk_version="0",
+        skills_git_hash=None,
+        agents_git_hash=None,
+        skills_is_dirty=False,
+        task_prompt="t",
+        runtime_context=None,
     )
 
-    pid = asyncio.run(store.record_phase_start("r-uniq", "plan", phase_order=0, attempt_no=0))
+    pid = store.record_phase_start("r-uniq", "plan", phase_order=0, attempt_no=0)
     assert pid > 0
 
     with pytest.raises(sqlite3.IntegrityError):
-        asyncio.run(store.record_phase_start("r-uniq", "plan", phase_order=0, attempt_no=0))
+        store.record_phase_start("r-uniq", "plan", phase_order=0, attempt_no=0)
 
     # 不同 attempt_no 不冲突
-    pid2 = asyncio.run(store.record_phase_start("r-uniq", "plan", phase_order=0, attempt_no=1))
+    pid2 = store.record_phase_start("r-uniq", "plan", phase_order=0, attempt_no=1)
     assert pid2 != pid
 
 
 def test_full_run_lifecycle_with_attempt_no() -> None:
     """start_run → 3 phase × 2 attempt → 多 turn + tool_call → finalize_run;表行数对齐。"""
     store = TrajectoryStore(":memory:")
-    asyncio.run(
-        store.start_run(
-            run_id="r-life",
-            pes_name="extractor",
-            model_name="glm-5.1",
-            provider="glm",
-            sdk_version="0.1.0",
-            skills_git_hash=None,
-            agents_git_hash=None,
-            skills_is_dirty=False,
-            task_prompt="t",
-            runtime_context=None,
-        )
+    store.start_run(
+        run_id="r-life",
+        pes_name="extractor",
+        model_name="glm-5.1",
+        provider="glm",
+        sdk_version="0.1.0",
+        skills_git_hash=None,
+        agents_git_hash=None,
+        skills_is_dirty=False,
+        task_prompt="t",
+        runtime_context=None,
     )
 
     for phase_order, phase_name in enumerate(("plan", "execute", "summarize")):
         for attempt_no in (0, 1):
-            pid = asyncio.run(
-                store.record_phase_start(
-                    "r-life", phase_name, phase_order=phase_order, attempt_no=attempt_no
-                )
+            pid = store.record_phase_start(
+                "r-life", phase_name, phase_order=phase_order, attempt_no=attempt_no
             )
-            tid = asyncio.run(
-                store.record_turn(
-                    phase_id=pid,
-                    turn_index=0,
-                    role="assistant",
-                    content_type="text",
-                    data={"text": f"{phase_name}-{attempt_no}"},
-                )
+            tid = store.record_turn(
+                phase_id=pid,
+                turn_index=0,
+                role="assistant",
+                content_type="text",
+                data={"text": f"{phase_name}-{attempt_no}"},
             )
-            asyncio.run(
-                store.record_tool_call(
-                    turn_id=tid,
-                    tool_name="Bash",
-                    tool_input={"command": "ls"},
-                    tool_output="file1\n",
-                    status="success",
-                    duration_ms=10,
-                )
+            store.record_tool_call(
+                turn_id=tid,
+                tool_name="Bash",
+                tool_input={"command": "ls"},
+                tool_output="file1\n",
+                status="success",
+                duration_ms=10,
             )
-            asyncio.run(
-                store.record_phase_end(
-                    phase_id=pid,
-                    prompt="p",
-                    response_text="r",
-                    produced_files=["x.json"],
-                    usage={"input_tokens": 1},
-                    error=None,
-                    error_type=None,
-                    is_retryable=None,
-                )
+            store.record_phase_end(
+                phase_id=pid,
+                prompt="p",
+                response_text="r",
+                produced_files=["x.json"],
+                usage={"input_tokens": 1},
+                error=None,
+                error_type=None,
+                is_retryable=None,
             )
 
-    asyncio.run(
-        store.finalize_run(
-            run_id="r-life",
-            status="completed",
-            final_output={"ok": True},
-            workspace_archive_path=None,
-            error=None,
-            error_type=None,
-        )
+    store.finalize_run(
+        run_id="r-life",
+        status="completed",
+        final_output={"ok": True},
+        workspace_archive_path=None,
+        error=None,
+        error_type=None,
     )
 
-    rec = asyncio.run(store.get_run("r-life"))
+    rec = store.get_run("r-life")
     assert rec is not None
     assert rec.status == "completed"
     assert len(rec.phase_records) == 6  # 3 phases × 2 attempts
@@ -199,69 +180,62 @@ def test_full_run_lifecycle_with_attempt_no() -> None:
 def test_feedback_pair_query_filters_confidence() -> None:
     """confidence={0.5, 0.7, 1.0} → get_feedback_pairs(min_confidence=0.7) 返回 2 条。"""
     store = TrajectoryStore(":memory:")
-    asyncio.run(
-        store.start_run(
-            run_id="r-fb",
-            pes_name="extractor",
-            model_name="m",
-            provider="p",
-            sdk_version="0",
-            skills_git_hash=None,
-            agents_git_hash=None,
-            skills_is_dirty=False,
-            task_prompt="t",
-            runtime_context=None,
-        )
+    store.start_run(
+        run_id="r-fb",
+        pes_name="extractor",
+        model_name="m",
+        provider="p",
+        sdk_version="0",
+        skills_git_hash=None,
+        agents_git_hash=None,
+        skills_is_dirty=False,
+        task_prompt="t",
+        runtime_context=None,
     )
 
     for conf in (0.5, 0.7, 1.0):
-        asyncio.run(
-            store.record_feedback(
-                run_id="r-fb",
-                input_summary=f"summary-{conf}",
-                draft_output={"v": conf},
-                final_output={"v": conf + 0.1},
-                corrections=None,
-                review_policy_version="v1",
-                source="human_expert",
-                confidence=conf,
-                submitted_by="alice",
-            )
+        store.record_feedback(
+            run_id="r-fb",
+            input_summary=f"summary-{conf}",
+            draft_output={"v": conf},
+            final_output={"v": conf + 0.1},
+            corrections=None,
+            review_policy_version="v1",
+            source="human_expert",
+            confidence=conf,
+            submitted_by="alice",
         )
 
-    all_pairs = asyncio.run(store.get_feedback_pairs(pes_name="extractor"))
+    all_pairs = store.get_feedback_pairs(pes_name="extractor")
     assert len(all_pairs) == 3
 
-    high_pairs = asyncio.run(store.get_feedback_pairs(pes_name="extractor", min_confidence=0.7))
+    high_pairs = store.get_feedback_pairs(pes_name="extractor", min_confidence=0.7)
     assert len(high_pairs) == 2
     assert {p.confidence for p in high_pairs} == {0.7, 1.0}
 
 
 def test_concurrent_write_safety_two_threads() -> None:
-    """2 协程并发 record_turn 共 100 次 → 100 行落表,无丢失。
+    """2 线程并发 record_turn 共 100 次 → 100 行落表,无丢失。"""
+    import threading
 
-    :memory: 模式下 SQLite C 层对单 conn 自带串行;to_thread 多 worker 按队列排队。
-    """
     store = TrajectoryStore(":memory:")
-    asyncio.run(
-        store.start_run(
-            run_id="r-conc",
-            pes_name="x",
-            model_name="m",
-            provider="p",
-            sdk_version="0",
-            skills_git_hash=None,
-            agents_git_hash=None,
-            skills_is_dirty=False,
-            task_prompt="t",
-            runtime_context=None,
-        )
+    store.start_run(
+        run_id="r-conc",
+        pes_name="x",
+        model_name="m",
+        provider="p",
+        sdk_version="0",
+        skills_git_hash=None,
+        agents_git_hash=None,
+        skills_is_dirty=False,
+        task_prompt="t",
+        runtime_context=None,
     )
-    pid = asyncio.run(store.record_phase_start("r-conc", "plan", phase_order=0, attempt_no=0))
+    pid = store.record_phase_start("r-conc", "plan", phase_order=0, attempt_no=0)
 
-    async def _writer(start: int, count: int) -> None:
+    def writer(start: int, count: int) -> None:
         for i in range(count):
-            await store.record_turn(
+            store.record_turn(
                 phase_id=pid,
                 turn_index=start + i,
                 role="assistant",
@@ -269,10 +243,12 @@ def test_concurrent_write_safety_two_threads() -> None:
                 data={"i": start + i},
             )
 
-    async def _runner() -> None:
-        await asyncio.gather(_writer(0, 50), _writer(50, 50))
-
-    asyncio.run(_runner())
+    t1 = threading.Thread(target=writer, args=(0, 50))
+    t2 = threading.Thread(target=writer, args=(50, 50))
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
 
     conn = store._memory_conn
     assert conn is not None
@@ -326,22 +302,20 @@ def test_busy_retry_on_lock(monkeypatch: pytest.MonkeyPatch) -> None:
     wrapper = _FlakyConnWrapper(real_conn, hook)
     monkeypatch.setattr(store, "_get_connection", lambda: wrapper)
 
-    asyncio.run(
-        store.start_run(
-            run_id="r-busy",
-            pes_name="x",
-            model_name="m",
-            provider="p",
-            sdk_version="0",
-            skills_git_hash=None,
-            agents_git_hash=None,
-            skills_is_dirty=False,
-            task_prompt="t",
-            runtime_context=None,
-        )
+    store.start_run(
+        run_id="r-busy",
+        pes_name="x",
+        model_name="m",
+        provider="p",
+        sdk_version="0",
+        skills_git_hash=None,
+        agents_git_hash=None,
+        skills_is_dirty=False,
+        task_prompt="t",
+        runtime_context=None,
     )
 
-    rec = asyncio.run(store.get_run("r-busy"))
+    rec = store.get_run("r-busy")
     assert rec is not None
     assert call_count["n"] == 1  # 重试用过 1 次
 
@@ -364,17 +338,15 @@ def test_busy_exhausts_raises_trajectory_write_error(
     monkeypatch.setattr(store, "_get_connection", lambda: wrapper)
 
     with pytest.raises(TrajectoryWriteError, match="busy/locked"):
-        asyncio.run(
-            store.start_run(
-                run_id="r-bx",
-                pes_name="x",
-                model_name="m",
-                provider="p",
-                sdk_version="0",
-                skills_git_hash=None,
-                agents_git_hash=None,
-                skills_is_dirty=False,
-                task_prompt="t",
-                runtime_context=None,
-            )
+        store.start_run(
+            run_id="r-bx",
+            pes_name="x",
+            model_name="m",
+            provider="p",
+            sdk_version="0",
+            skills_git_hash=None,
+            agents_git_hash=None,
+            skills_is_dirty=False,
+            task_prompt="t",
+            runtime_context=None,
         )

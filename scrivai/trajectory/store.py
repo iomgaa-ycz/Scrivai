@@ -1,4 +1,4 @@
-"""TrajectoryStore - SQLite 单文件 trajectory 存储(异步接口)。
+"""TrajectoryStore - SQLite 单文件 trajectory 存储(同步接口)。
 
 参考:
 - docs/design.md §4.5(schema、PRAGMAs、并发模型、时间预算)
@@ -6,14 +6,13 @@
 - docs/superpowers/specs/2026-04-16-scrivai-m0.25-design.md §4.3
 
 接口设计要点:
-- 全 async:record_* / get_* / list_* 都是 `async def`,内部 asyncio.to_thread 跑同步 sqlite3。
+- 全同步:record_* / get_* / list_* 都是普通 def。
 - 文件模式:每次操作新 conn(WAL 保证并发);:memory: 模式:单 conn 持久。
 - 框架级 1 次 busy 重试(0.5s 间隔);超 → TrajectoryWriteError。
 """
 
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import sqlite3
@@ -48,7 +47,7 @@ def _json_loads(value: str | None) -> object | None:
 
 
 class TrajectoryStore:
-    """SQLite 单文件 trajectory 存储。所有 record_* / get_* / list_* 都是 async。"""
+    """SQLite 单文件 trajectory 存储。所有 record_* / get_* / list_* 都是同步。"""
 
     def __init__(self, db_path: Path | str | None = None) -> None:
         """初始化:解析 db_path,打开/建库,执行一次 schema 初始化。
@@ -105,47 +104,41 @@ class TrajectoryStore:
             if self._memory_conn is None:
                 conn.close()
 
-    async def _execute_with_retry(self, work: Callable[[sqlite3.Connection], T]) -> T:
+    def _execute_with_retry(self, work: Callable[[sqlite3.Connection], T]) -> T:
         """跑 work(conn) 一次;遇 SQLITE_BUSY 重试 1 次(间隔 0.5s);仍失败抛 TrajectoryWriteError。
 
         work 是接受 conn 的 callable,可以执行任意操作(execute / fetchall / lastrowid);
         :memory: 模式共享单 conn,文件模式每次新 conn。
         """
-
-        def _runner() -> T:
-            # 仅 :memory: 模式锁保护;文件模式靠 WAL,跳锁以保 BasePES 多 run 并发吞吐
-            lock_ctx: AbstractContextManager[Any] = (
-                self._write_lock if self._memory_conn is not None else nullcontext()
-            )
-            with lock_ctx:
-                for attempt in (1, 2):
-                    conn = self._get_connection()
-                    try:
-                        result = work(conn)
-                        conn.commit()
-                        return result
-                    except sqlite3.OperationalError as e:
-                        msg = str(e).lower()
-                        if attempt == 1 and ("busy" in msg or "locked" in msg):
-                            logger.warning(
-                                "TrajectoryStore busy retry [attempt={}]: {}", attempt, e
-                            )
-                            # 关掉非 :memory: 的临时 conn 后重试
-                            if self._memory_conn is None:
-                                conn.close()
-                            time.sleep(0.5)
-                            continue
-                        raise TrajectoryWriteError(f"SQLite busy/locked after retries: {e}") from e
-                    finally:
+        # 仅 :memory: 模式锁保护;文件模式靠 WAL,跳锁以保 BasePES 多 run 并发吞吐
+        lock_ctx: AbstractContextManager[Any] = (
+            self._write_lock if self._memory_conn is not None else nullcontext()
+        )
+        with lock_ctx:
+            for attempt in (1, 2):
+                conn = self._get_connection()
+                try:
+                    result = work(conn)
+                    conn.commit()
+                    return result
+                except sqlite3.OperationalError as e:
+                    msg = str(e).lower()
+                    if attempt == 1 and ("busy" in msg or "locked" in msg):
+                        logger.warning("TrajectoryStore busy retry [attempt={}]: {}", attempt, e)
+                        # 关掉非 :memory: 的临时 conn 后重试
                         if self._memory_conn is None:
                             conn.close()
-                raise TrajectoryWriteError("unreachable")  # for mypy
-
-        return await asyncio.to_thread(_runner)
+                        time.sleep(0.5)
+                        continue
+                    raise TrajectoryWriteError(f"SQLite busy/locked after retries: {e}") from e
+                finally:
+                    if self._memory_conn is None:
+                        conn.close()
+            raise TrajectoryWriteError("unreachable")
 
     # ── runs 表 API ───────────────────────────────────────
 
-    async def start_run(
+    def start_run(
         self,
         run_id: str,
         pes_name: str,
@@ -182,9 +175,9 @@ class TrajectoryStore:
         def _work(conn: sqlite3.Connection) -> None:
             conn.execute(sql, params)
 
-        await self._execute_with_retry(_work)
+        self._execute_with_retry(_work)
 
-    async def finalize_run(
+    def finalize_run(
         self,
         run_id: str,
         status: str,
@@ -213,9 +206,9 @@ class TrajectoryStore:
         def _work(conn: sqlite3.Connection) -> None:
             conn.execute(sql, params)
 
-        await self._execute_with_retry(_work)
+        self._execute_with_retry(_work)
 
-    async def get_run(self, run_id: str) -> TrajectoryRecord | None:
+    def get_run(self, run_id: str) -> TrajectoryRecord | None:
         """读 runs 行 + 联查 phases(按 phase_order, attempt_no 升序)。"""
 
         def _work(
@@ -235,7 +228,7 @@ class TrajectoryStore:
             finally:
                 conn.row_factory = prev_factory
 
-        run_row, phase_rows = await self._execute_with_retry(_work)
+        run_row, phase_rows = self._execute_with_retry(_work)
         if run_row is None:
             return None
         rec = self._row_to_trajectory_record(run_row)
@@ -244,7 +237,7 @@ class TrajectoryStore:
         )
         return rec
 
-    async def list_runs(
+    def list_runs(
         self,
         pes_name: str | None = None,
         status: str | None = None,
@@ -272,12 +265,12 @@ class TrajectoryStore:
             finally:
                 conn.row_factory = prev_factory
 
-        rows = await self._execute_with_retry(_work)
+        rows = self._execute_with_retry(_work)
         return [self._row_to_trajectory_record(r) for r in rows]
 
     # ── phases 表 API ─────────────────────────────────────
 
-    async def record_phase_start(
+    def record_phase_start(
         self,
         run_id: str,
         phase_name: str,
@@ -296,9 +289,9 @@ class TrajectoryStore:
             assert cur.lastrowid is not None, "INSERT 必须设置 lastrowid"
             return cur.lastrowid
 
-        return await self._execute_with_retry(_work)
+        return self._execute_with_retry(_work)
 
-    async def record_phase_end(
+    def record_phase_end(
         self,
         phase_id: int,
         prompt: str | None,
@@ -331,11 +324,11 @@ class TrajectoryStore:
         def _work(conn: sqlite3.Connection) -> None:
             conn.execute(sql, params)
 
-        await self._execute_with_retry(_work)
+        self._execute_with_retry(_work)
 
     # ── turns / tool_calls 表 API ────────────────────────
 
-    async def record_turn(
+    def record_turn(
         self,
         phase_id: int,
         turn_index: int,
@@ -355,9 +348,9 @@ class TrajectoryStore:
             assert cur.lastrowid is not None, "INSERT 必须设置 lastrowid"
             return cur.lastrowid
 
-        return await self._execute_with_retry(_work)
+        return self._execute_with_retry(_work)
 
-    async def record_tool_call(
+    def record_tool_call(
         self,
         turn_id: int,
         tool_name: str,
@@ -385,11 +378,11 @@ class TrajectoryStore:
         def _work(conn: sqlite3.Connection) -> None:
             conn.execute(sql, params)
 
-        await self._execute_with_retry(_work)
+        self._execute_with_retry(_work)
 
     # ── feedback 表 API ──────────────────────────────────
 
-    async def record_feedback(
+    def record_feedback(
         self,
         run_id: str,
         input_summary: str,
@@ -424,9 +417,9 @@ class TrajectoryStore:
         def _work(conn: sqlite3.Connection) -> None:
             conn.execute(sql, params)
 
-        await self._execute_with_retry(_work)
+        self._execute_with_retry(_work)
 
-    async def get_feedback_pairs(
+    def get_feedback_pairs(
         self,
         pes_name: str | None = None,
         min_confidence: float | None = None,
@@ -458,7 +451,7 @@ class TrajectoryStore:
             finally:
                 conn.row_factory = prev_factory
 
-        rows = await self._execute_with_retry(_work)
+        rows = self._execute_with_retry(_work)
         return [self._row_to_feedback_record(r) for r in rows]
 
     def _row_to_feedback_record(self, row: dict[str, Any]) -> FeedbackRecord:

@@ -22,6 +22,7 @@ class ModelConfig(BaseModel):
     model: str = Field(..., description="模型 id,如 'claude-sonnet-4-6'")
     base_url: Optional[str] = Field(default=None, description="API base URL,None 走 SDK 默认")
     api_key: Optional[str] = Field(default=None, description="API key;通常从 env 读")
+    provider: Optional[str] = Field(default=None, description="anthropic / glm / minimax 等")
     fallback_model: Optional[str] = Field(default=None, description="降级模型 id")
 
 
@@ -137,12 +138,21 @@ class PESRun(BaseModel):
     agents_git_hash: Optional[str] = None
     skills_is_dirty: bool = Field(default=False, description="快照时源 git 有未提交修改则 True")
     model_name: str = Field(..., description="使用的模型 id")
-    provider: str = Field(..., description="anthropic / glm / minimax 等")
-    sdk_version: str = Field(..., description="claude-agent-sdk 版本号")
+    provider: str = Field(default="", description="anthropic / glm / minimax 等")
+    sdk_version: str = Field(default="", description="claude-agent-sdk 版本号")
     started_at: datetime
     ended_at: Optional[datetime] = None
     error: Optional[str] = None
     error_type: Optional[PhaseErrorType] = Field(default=None, description="失败时的错误分类")
+
+    def to_prompt_payload(self) -> dict[str, Any]:
+        """返回供 prompt context 注入的精简 dict。"""
+        return {
+            "run_id": self.run_id,
+            "pes_name": self.pes_name,
+            "status": self.status,
+            "phase_results": list(self.phase_results.keys()),
+        }
 
 
 # ────────────────────── 9 个 HookContext ──────────────────────
@@ -178,6 +188,7 @@ class PromptHookContext(HookContext):
     phase: Literal["plan", "execute", "summarize"]
     attempt_no: int
     prompt: str = Field(..., description="渲染后的完整 prompt(允许 hook 修改)")
+    context: dict[str, Any] = Field(default_factory=dict, description="合并后的完整 context")
 
 
 class PromptTurnHookContext(HookContext):

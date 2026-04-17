@@ -16,7 +16,7 @@ class FakeTrajectoryStore(TrajectoryStore):
 
     用法:
         store = FakeTrajectoryStore()
-        await store.start_run(...)
+        store.start_run(...)
     """
 
     def __init__(self) -> None:

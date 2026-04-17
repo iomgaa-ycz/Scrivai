@@ -1,5 +1,12 @@
 """Scrivai 异常层级——M0 前置声明,后续里程碑只补行为。"""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from scrivai.models.pes import PhaseResult
+
 
 class ScrivaiError(Exception):
     """所有 Scrivai 异常的根基类。"""
@@ -19,6 +26,17 @@ class TrajectoryWriteError(ScrivaiError):
 
 class PhaseError(ScrivaiError):
     """BasePES phase 级失败统一出口。携带 result / error_type / is_retryable。M0.5 T0.6 实现。"""
+
+    def __init__(
+        self,
+        phase: str,
+        message: str,
+        *,
+        result: PhaseResult | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.phase = phase
+        self.result = result
 
 
 class RateLimitError(ScrivaiError):
