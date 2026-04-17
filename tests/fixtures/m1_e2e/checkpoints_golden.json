@@ -1,0 +1,12 @@
+[
+  {"id": "insulation_resistance", "description": "核查一次设备绝缘电阻测试记录,R60/R15 ≥ 1.3,横向下降 ≤ 30%。"},
+  {"id": "grounding_continuity", "description": "核查主接地网与二次设备外壳接地连续性,主网电阻 ≤ 0.2 Ω,末端 ≤ 0.5 Ω。"},
+  {"id": "transformer_oil_level", "description": "核查主变压器储油柜油位是否在温度-油位曲线正常带。"},
+  {"id": "circuit_breaker_operation", "description": "核查断路器分合闸时间(分 ≤30ms / 合 ≤80ms / 同期 ≤2ms)与年度试验记录。"},
+  {"id": "ct_pt_calibration", "description": "核查 CT/PT 六年期校验的变比、角差、比差是否达到精度等级。"},
+  {"id": "surge_arrester_inspection", "description": "核查避雷器年度带电测试的阻性电流分量(≤全电流 25%)与放电计数器。"},
+  {"id": "secondary_circuit_wiring", "description": "核查二次回路接线标识、端子紧固与 GOOSE/SV 通讯每月抽检记录。"},
+  {"id": "protection_settings", "description": "核查保护定值单一致性、双人复核签字与 CPU 时钟偏差(≤5 ms)。"},
+  {"id": "scada_monitoring", "description": "核查站控层双机热备切换时长(≤3 s)与四遥信息覆盖率(100%)。"},
+  {"id": "om_records", "description": "核查五类运维台账(巡视/操作票/工作票/缺陷/试验)完整性与缺陷上报时效。"}
+]
