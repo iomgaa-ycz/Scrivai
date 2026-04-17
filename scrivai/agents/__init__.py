@@ -1,41 +1,13 @@
-"""Scrivai 预置 PES — Extractor / Auditor / Generator(M0.75 占位,M1 实现)。
+"""Scrivai 预置 PES — Extractor / Auditor / Generator(M1.5a T1.4-T1.6)。
 
-M0.75 仅为 from scrivai import * 提供符号占位;实例化抛 NotImplementedError。
-真实实现在 M1 T1.4 / T1.5 / T1.6。
+三个类都继承 BasePES,零新构造参数;业务参数走 runtime_context。
+参考 docs/design.md §4.4 和 docs/superpowers/specs/2026-04-17-scrivai-m1.5-design.md。
 """
 
 from __future__ import annotations
 
-from typing import Any
-
-
-class _PresetPESPlaceholder:
-    """所有预置 PES 在 M0.75 的共通占位。"""
-
-    _name: str = "preset"
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} 在 M1 T1.4-T1.6 实现;M0.75 仅提供顶层符号占位。"
-        )
-
-
-class ExtractorPES(_PresetPESPlaceholder):
-    """从文档抽取结构化条目 — M1 T1.4 实现。"""
-
-    _name = "extractor"
-
-
-class AuditorPES(_PresetPESPlaceholder):
-    """对照检查点清单审核 — M1 T1.5 实现。"""
-
-    _name = "auditor"
-
-
-class GeneratorPES(_PresetPESPlaceholder):
-    """按 docxtpl 模板生成 — M1 T1.6 实现。"""
-
-    _name = "generator"
-
+from scrivai.agents.auditor import AuditorPES
+from scrivai.agents.extractor import ExtractorPES
+from scrivai.agents.generator import GeneratorPES
 
 __all__ = ["ExtractorPES", "AuditorPES", "GeneratorPES"]

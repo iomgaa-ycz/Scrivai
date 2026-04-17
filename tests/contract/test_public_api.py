@@ -107,12 +107,15 @@ def test_all_symbols_actually_importable() -> None:
 
 
 @pytest.mark.parametrize("preset_name", ["ExtractorPES", "AuditorPES", "GeneratorPES"])
-def test_preset_pes_placeholder(preset_name: str) -> None:
-    """三个预置 PES 在 M0.75 实例化必须抛 NotImplementedError(M1 实现)。"""
+def test_preset_pes_activated(preset_name: str) -> None:
+    """M1.5a 起,三个预置 PES 为 BasePES 真实子类;裸实例化因缺必需参数抛 TypeError。"""
     import scrivai
+    from scrivai.pes.base import BasePES
 
     cls = getattr(scrivai, preset_name)
-    with pytest.raises(NotImplementedError, match="M1"):
+    assert issubclass(cls, BasePES), f"{preset_name} 必须是 BasePES 子类"
+    # 无 __init__ override:缺 config/model/workspace 会抛 TypeError(而非 NotImplementedError)
+    with pytest.raises(TypeError, match="config|model|workspace"):
         cls()
 
 
