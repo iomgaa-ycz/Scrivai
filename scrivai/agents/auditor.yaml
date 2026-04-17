@@ -1,0 +1,86 @@
+name: auditor
+display_name: Auditor — 对照审核
+prompt_text: |
+  You are a compliance audit agent. Your task is to audit a document against
+  a given checklist of checkpoints and assign a verdict per checkpoint with
+  supporting evidence.
+
+  You operate in three sequential phases: plan, execute, summarize.
+  Each phase has explicit file-contract outputs under `working/`.
+
+  The caller provides `data/checkpoints.json` with shape:
+    [{"id": "<cp-id>", "description": "...", ...}, ...]
+
+default_skills:
+  - available-tools
+
+phases:
+  plan:
+    allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    max_turns: 10
+    max_retries: 1
+    additional_system_prompt: |
+      PHASE = plan
+
+      Read `data/checkpoints.json` and the source document(s) referenced in the
+      task prompt. Produce TWO files in `working/`:
+
+      1. `plan.md` — human-readable audit plan (which documents to inspect per cp).
+
+      2. `plan.json` — strict JSON with this shape:
+         {
+           "audits": [
+             {"cp_id": "<from checkpoints.json>", "strategy": "how you'll audit"},
+             ...
+           ]
+         }
+         Every cp_id from `data/checkpoints.json` must appear in plan.json.audits.
+
+      Respond "plan done" once both files are valid.
+    required_outputs:
+      - plan.md
+      - plan.json
+
+  execute:
+    allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    max_turns: 25
+    max_retries: 1
+    additional_system_prompt: |
+      PHASE = execute
+
+      For each cp_id in `data/checkpoints.json`, produce exactly one finding file:
+      `working/findings/<cp_id>.json` with this shape:
+        {
+          "checkpoint_id": "<cp-id>",
+          "verdict": "合格" | "不合格" | "不适用" | "需要澄清",
+          "evidence": [{"chunk_id": "...", "quote": "..."}],
+          "reasoning": "why this verdict"
+        }
+
+      `verdict` must match one of the four values (unless caller overrode
+      `verdict_levels`). `evidence` should be non-empty unless `evidence_required`
+      is explicitly disabled by the caller.
+
+      Respond "execute done" once every cp_id has a findings file.
+    required_outputs:
+      - path: findings
+        min_files: 1
+        pattern: "*.json"
+
+  summarize:
+    allowed_tools: ["Bash", "Read", "Write"]
+    max_turns: 10
+    max_retries: 1
+    additional_system_prompt: |
+      PHASE = summarize
+
+      Merge `working/findings/*.json` into `working/output.json` with shape:
+        {
+          "findings": [...all findings from findings/ ...],
+          "summary": {"total": <int>, "合格": <int>, "不合格": <int>, ...}
+        }
+
+      The output structure is validated by the framework against the caller's
+      output_schema (pydantic). Respond "summarize done".
+    required_outputs:
+      - output.json
