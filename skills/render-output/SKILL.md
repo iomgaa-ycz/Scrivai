@@ -62,3 +62,63 @@ if you want to test interactively).
   looks intentional
 - Avoid putting complex markdown (headings, tables) inside placeholder
   values; build the structure in the template, not the data
+
+## Examples
+
+### Example 1 — 最简占位符填充(plan.json 阶段)
+
+假设 template 含 `{{ project_name }}` 和 `{{ report_date }}`:
+
+```json
+{
+  "fills": [
+    {"placeholder": "project_name", "source": "data/guide.md '# Project' 一节"},
+    {"placeholder": "report_date",  "source": "任务生成日期"}
+  ]
+}
+```
+
+### Example 2 — 循环块的 context 形状(execute.findings/*.json)
+
+若 template 含 `{% for item in items %}{{ item.name }}{% endfor %}`:
+
+```json
+{
+  "placeholder": "items",
+  "content": [
+    {"name": "alpha", "verdict": "合格"},
+    {"name": "beta",  "verdict": "不合格"}
+  ],
+  "source_refs": [{"chunk_id": "case-2025-014::chunk-0", "quote": "…"}]
+}
+```
+
+`content` 是 list,docxtpl 会迭代渲染每一项。
+
+### Example 3 — 多段式 output.json(summarize 阶段)
+
+```json
+{
+  "context": {
+    "project_name": "XX 220kV 变电站大修",
+    "report_date": "2026-04-17",
+    "audit_summary": "共 10 项,合格 7、不合格 2、需要澄清 1。…"
+  },
+  "sections": [
+    {"placeholder": "project_name",  "content": "XX 220kV 变电站大修",
+     "source_refs": [{"chunk_id": "doc-guide::chunk-0", "quote": "项目名称:XX 220kV 变电站大修"}]}
+  ]
+}
+```
+
+## Errors
+
+docxtpl **不会**为缺失 key 报错 — 渲染为空字符串。因此框架在 `summarize` 后会:
+
+| 校验失败 | 现象 | 处置 |
+|---|---|---|
+| `context_schema.model_validate` 失败 | summarize 抛 `response_parse_error` | 补齐 pydantic schema 要求的字段,再写 output.json |
+| 占位符覆盖率 < 100% | execute 抛 `output_validation_error` | 漏 placeholder 的 findings 文件必须补上 |
+| 循环占位符 content 类型错 | docxtpl 渲染结果空 | 循环占位符的 `content` 必须是 list,不是 str |
+
+**绝不**用 Python 的 `None` 做占位符值 — 会被 docxtpl 渲染成字符串 `"None"`,肉眼不易察觉。用 `""` 或具体 sentinel 字符串。
