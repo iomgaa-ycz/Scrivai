@@ -98,3 +98,46 @@ metadata — useful when you need to see the source context behind a search hit.
 - Every command writes JSON to stdout on success and JSON to stderr on
   failure. Always check the exit code; a non-zero exit means stderr has
   the structured error.
+
+## Examples
+
+### Example 1 — 审核场景:查围标规则 + 取全文
+
+```bash
+scrivai-cli library search --type rules --query "围标串标的认定标准" --top-k 3
+# → {"hits": [{"chunk_id": "rule-42::chunk-0", "score": 0.81, "text": "围标的认定…", "metadata": {"title": "招投标法 §32"}}, …]}
+
+qmd document get --collection rules --id rule-42::chunk-0
+# → {"id": "rule-42::chunk-0", "markdown": "## 围标的认定\n围标是指…", "metadata": {"title": "招投标法 §32"}, "chunk_count": 1}
+```
+
+### Example 2 — 生成场景:带 metadata filter 的搜索
+
+```bash
+scrivai-cli library search --type templates --query "验收报告" --filters '{"category": "高压试验"}'
+```
+
+Filter 透传到 qmd,只返回 metadata.category == "高压试验" 的 chunk。若不知 metadata key 取值,先跑 `scrivai-cli library list` 抽样。
+
+### Example 3 — 抽取场景:列全部 entry id 预览可用材料
+
+```bash
+scrivai-cli library list --type cases
+# → {"entry_ids": ["case-2024-001", "case-2024-002", …]}
+
+scrivai-cli library get --type cases --entry-id case-2024-001
+# → {"entry_id": "case-2024-001", "markdown": "## 2024 年 XX 变电站审计整改案…", "metadata": {…}}
+```
+
+## Errors
+
+所有命令失败时写 JSON 到 stderr + exit 非 0。常见错误与处置:
+
+| 场景 | stderr JSON 片段 | 处置 |
+|---|---|---|
+| 集合不存在 | `{"error": "collection 'rules' not found"}` | 改 `--type`;不要自行创建 |
+| entry id 不存在 | `{"error": "entry 'xxx' not found"}` | 先 `library list` 拿现有 id;或用 search |
+| filter JSON 语法错 | `{"error": "invalid --filters: …"}` | 引号用单引号包外层双引号包内层 |
+| qmd 未初始化 | `{"error": "qmd not initialized: <db path>"}` | 报错退出;业务层应先建 db |
+
+**重要**:遇到非零 exit,立即读 stderr 的 JSON,不要忽略继续;你的下一步很可能依赖这个失败的命令结果。
