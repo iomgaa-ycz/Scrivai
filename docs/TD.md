@@ -402,6 +402,7 @@ M0 按依赖拓扑拆为 **4 个独立可验证的子里程碑**(M0 / M0.25 / M0
 - **依赖**:T0.1
 - **契约测试**:`tests/contract/test_io_smoke.py`(smoke 级别,真实内容验证留 M1 T1.5)
 - **估时**:1.5d
+- **实施偏离**(M0.75,M1.5b 同步注解,2026-04-17):`pdf_to_markdown` **不走 docling** 而走 **MonkeyOCR HTTP 服务**(默认 `base_url="http://100.81.95.44:7861"`),签名为 `pdf_to_markdown(path, *, base_url=..., timeout=...) -> str`,无 `ocr=True` 参数。design.md §4.8 已同步。详见 T1.8 偏离注解。
 
 ### T0.13 `scrivai/cli/__main__.py` scrivai-cli
 
@@ -595,6 +596,7 @@ M0 按依赖拓扑拆为 **4 个独立可验证的子里程碑**(M0 / M0.25 / M0
 - **优先级**:P0
 - **依赖**:T0.11
 - **估时**:1d
+- **实施偏离**(M0.75+M1.5b,2026-04-17):主体在 M0.75 已落地 — `build_libraries(qmd_client)` 真接 `qmd.connect` 的 `SqliteQmdClient`;`add/get/list/delete` 透传 qmd document-level API;`search` 透传 `hybrid_search`(含 filters);契约测试 `test_libraries.py` 用真 SQLite DB(tmp_path 级)。M1.5b 追加 `test_search_with_metadata_filter` 覆盖 metadata filter 行为。详见 `docs/superpowers/plans/2026-04-17-scrivai-m1.5b.md`。
 
 ### T1.8 IO 工具完善
 
@@ -606,6 +608,7 @@ M0 按依赖拓扑拆为 **4 个独立可验证的子里程碑**(M0 / M0.25 / M0
 - **优先级**:P0
 - **依赖**:T0.12
 - **估时**:2d
+- **实施偏离**(M0.75+M1.5b,2026-04-17):主体在 M0.75 已落地 — `docx_to_markdown` 走 pandoc 子进程、`doc_to_markdown` 走 LibreOffice headless → docx → pandoc、`pdf_to_markdown` 走 **MonkeyOCR HTTP**(design.md §4.8 已同步,非原计划的 docling)、`DocxRenderer` 真调 docxtpl。M1.5b 补齐 T1.8 边缘 DoD 的三项测试:表格 docx 结构保留(`test_docx_to_markdown_preserves_table`)、docxtpl `{% for %}` 循环模板(`test_docx_renderer_render_loop` + `list_placeholders_in_loop`);fixture 通过 `scripts/make_{table_sample,loop_template}.py` 生成入 git。**未覆盖**:公式、图片 alt、PDF 表格扫描件 OCR(留待按需补)。详见 `docs/superpowers/plans/2026-04-17-scrivai-m1.5b.md`。
 
 ### T1.9 通用 Skill 内容打磨
 
@@ -788,7 +791,7 @@ M0 按依赖拓扑拆为 **4 个独立可验证的子里程碑**(M0 / M0.25 / M0
 - **DoD**:
   - 版本 0.1.0
   - 依赖:`claude-agent-sdk>=X`、`qmd>=0.1.0`、`pydantic>=2`、`pyyaml`、`docxtpl`、`loguru`
-  - 系统依赖说明:pandoc、libreoffice(doc→docx)、docling(pdf ocr)
+  - 系统依赖说明:pandoc、libreoffice(doc→docx);PDF OCR 走外部 MonkeyOCR HTTP 服务(默认 `http://100.81.95.44:7861`,业务方可指向自建 OCR)
   - CHANGELOG 记录初始版本
 - **优先级**:P0
 - **依赖**:T3.1

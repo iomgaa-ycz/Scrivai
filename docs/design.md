@@ -1074,12 +1074,14 @@ from scrivai import docx_to_markdown, doc_to_markdown, pdf_to_markdown, DocxRend
 
 md: str = docx_to_markdown("tender.docx")           # pandoc
 md: str = doc_to_markdown("legacy.doc")             # LibreOffice → docx → pandoc
-md: str = pdf_to_markdown("scan.pdf", ocr=True)     # docling
+md: str = pdf_to_markdown("scan.pdf")               # MonkeyOCR HTTP(base_url 可覆盖)
 
 renderer = DocxRenderer(template_path="workpaper_template.docx")
 placeholders: list[str] = renderer.list_placeholders()
 renderer.render(context={"project_name": "X变电站", ...}, output_path="out.docx")
 ```
+
+**`pdf_to_markdown` 的 OCR 路径**（M0.75 实施偏离，M1.5b 同步）：不走 docling 而走 **MonkeyOCR HTTP 服务**（默认 `base_url="http://100.81.95.44:7861"`，由调用方按需覆盖）。流程：POST `/parse` 上传 PDF → 取 `download_url` → GET ZIP → 从 ZIP 抽 `.md` 文件内容。服务不可达时抛 `IOError`，不静默回退。与设计文档最初设想的 docling 本地依赖不同，采用 HTTP 服务的原因：(1) 复用现网已部署的 MonkeyOCR，避免本地 docling 模型加载体积；(2) 业务方可指向自建 OCR。接口签名保持 `pdf_to_markdown(path, *, base_url=..., timeout=...) -> str`，**不含 `ocr=True` 参数**（始终走 OCR）。
 
 **DocxRenderer 模板制作约束**（docxtpl 限制）：
 
