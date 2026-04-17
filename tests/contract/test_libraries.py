@@ -77,3 +77,45 @@ def test_search_returns_results(libraries) -> None:
     results = rules.search(query="围标", top_k=5)
     assert isinstance(results, list)
     assert len(results) >= 1
+
+
+def test_scrivai_libraries_fixture(scrivai_libraries) -> None:
+    """contract plugin 提供的 scrivai_libraries fixture 应即用即测。"""
+    rules, cases, templates = scrivai_libraries
+    rules.add(entry_id="from-fixture", markdown="x", metadata={})
+    assert rules.get("from-fixture") is not None
+
+
+def test_scrivai_workspace_manager_fixture(scrivai_workspace_manager, tmp_path: Path) -> None:
+    """contract plugin 提供的 workspace manager fixture 应即用即测。"""
+    project = tmp_path / "p"
+    (project / "skills" / "x").mkdir(parents=True)
+    (project / "skills" / "x" / "SKILL.md").write_text(
+        "---\nname: x\ndescription: x\n---\n.\n", encoding="utf-8"
+    )
+    (project / "agents").mkdir(parents=True)
+
+    from scrivai import WorkspaceSpec
+
+    handle = scrivai_workspace_manager.create(
+        WorkspaceSpec(run_id="fix-test", project_root=project)
+    )
+    assert handle.root_dir.is_dir()
+
+
+def test_scrivai_trajectory_store_fixture(scrivai_trajectory_store) -> None:
+    """contract plugin 提供的 trajectory store fixture 应即用即测。"""
+    scrivai_trajectory_store.start_run(
+        run_id="fix-traj",
+        pes_name="x",
+        model_name="m",
+        provider="p",
+        sdk_version="0",
+        skills_git_hash=None,
+        agents_git_hash=None,
+        skills_is_dirty=False,
+        task_prompt="t",
+        runtime_context=None,
+    )
+    rec = scrivai_trajectory_store.get_run("fix-traj")
+    assert rec is not None

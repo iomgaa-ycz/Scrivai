@@ -47,6 +47,9 @@ Issues = "https://github.com/iomgaa/scrivai/issues"
 [project.scripts]
 scrivai-cli = "scrivai.cli.__main__:main"
 
+[project.entry-points."pytest11"]
+scrivai_contract = "scrivai.testing.contract"
+
 [tool.setuptools.packages.find]
 include = ["scrivai*"]
 
