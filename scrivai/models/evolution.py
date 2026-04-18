@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal, Optional
@@ -15,6 +16,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 SkillVersionStatus = Literal["draft", "evaluated", "promoted", "rejected"]
 EvolutionRunStatus = Literal["running", "completed", "failed", "budget_exceeded"]
+
+EvaluatorFn = Callable[[str, str, str], float]
+"""业务层提供的评分函数签名:(question, predicted, ground_truth) -> float。"""
 
 
 class FailureSample(BaseModel):
@@ -28,8 +32,8 @@ class FailureSample(BaseModel):
     question: str
     draft_output_str: str
     ground_truth_str: str
-    baseline_score: float
-    confidence: float
+    baseline_score: float = Field(ge=0.0, le=1.0)
+    confidence: float = Field(ge=0.0, le=1.0)
     trajectory_summary: dict[str, str] = Field(default_factory=dict)
     data_inputs: dict[str, Path] = Field(default_factory=dict)
 
@@ -68,7 +72,7 @@ class EvolutionScore(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version_id: str
-    score: float
+    score: float = Field(ge=0.0, le=1.0)
     per_sample_scores: list[float]
     hold_out_size: int
     llm_calls_consumed: int
@@ -110,7 +114,7 @@ class EvolutionRunConfig(BaseModel):
     no_improvement_limit: int = 2
     max_llm_calls: int = 500
     hold_out_ratio: float = Field(default=0.3, ge=0.1, le=0.5)
-    min_confidence: float = 0.7
-    failure_threshold: float = 0.5
+    min_confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+    failure_threshold: float = Field(default=0.5, ge=0.0, le=1.0)
     proposer_model: str = "glm-5.1"
     random_seed: int = 42

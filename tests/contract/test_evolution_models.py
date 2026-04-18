@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -117,6 +116,12 @@ def test_evolution_run_config_validation():
     assert c.max_llm_calls == 500
     with pytest.raises(ValidationError):
         EvolutionRunConfig(pes_name="e", skill_name="s", hold_out_ratio=0.05)  # < 0.1
+    with pytest.raises(ValidationError):
+        EvolutionRunConfig(
+            pes_name="e",
+            skill_name="s",
+            hold_out_ratio=0.7,
+        )  # > 0.5
 
 
 def test_old_symbols_removed():
