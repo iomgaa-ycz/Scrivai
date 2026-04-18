@@ -16,6 +16,7 @@ Reference/
 # 用户数据目录
 data/
 !examples/data/
+examples/data/demo-skill-project/
 custom/
 
 # 测试输出（生成的报告）
