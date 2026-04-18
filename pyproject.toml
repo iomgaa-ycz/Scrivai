@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scrivai"
-version = "0.1.3"
+version = "0.2.0"
 description = "Claude Agent 编排框架 — 文档审核 / 生成场景"
 readme = "README.md"
 license = {text = "MIT"}
