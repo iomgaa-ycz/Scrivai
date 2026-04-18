@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from scrivai.evolution.budget import LLMCallBudget
+from scrivai.evolution.budget import BudgetExceededError, LLMCallBudget
 from scrivai.models.evolution import EvolutionScore, FailureSample, SkillVersion
 from scrivai.models.workspace import WorkspaceHandle, WorkspaceSpec
 
@@ -23,7 +23,10 @@ def _utcnow() -> datetime:
 
 
 def _prepare_temp_project_root(
-    source: Path, skill_name: str, candidate_snapshot: dict[str, str]
+    source: Path,
+    skill_name: str,
+    candidate_snapshot: dict[str, str],
+    prefix: str = "scrivai-eval-",
 ) -> Path:
     """复制 source 到临时目录,在 skills/<skill_name>/ 内放候选内容。
 
@@ -31,11 +34,12 @@ def _prepare_temp_project_root(
         source: 源项目根目录。
         skill_name: 目标 skill 目录名。
         candidate_snapshot: 候选文件映射 {相对路径: 内容}。
+        prefix: tempfile.mkdtemp 前缀,默认含 version_id 以便追踪孤立临时目录。
 
     返回:
         临时 project_root 路径(调用方负责清理)。
     """
-    tmp = Path(tempfile.mkdtemp(prefix="scrivai-eval-"))
+    tmp = Path(tempfile.mkdtemp(prefix=prefix))
     shutil.copytree(source, tmp, dirs_exist_ok=True)
     target = tmp / "skills" / skill_name
     if target.exists():
@@ -94,15 +98,18 @@ class CandidateEvaluator:
         返回:
             EvolutionScore:含总分、每样本分、预算消耗等信息。
         """
+        # 将 version_id 中的冒号替换为连字符,避免路径非法;提前提取供 prefix 和 run_id 共用
+        safe_vid = version.version_id.replace(":", "-")
         temp_root = _prepare_temp_project_root(
-            self.source_project_root, version.skill_name, version.content_snapshot
+            self.source_project_root,
+            version.skill_name,
+            version.content_snapshot,
+            prefix=f"scrivai-eval-{safe_vid}-",
         )
         per_scores: list[float] = []
         calls = 0
         try:
             for idx, sample in enumerate(hold_out):
-                # 将 version_id 中的冒号替换为连字符,避免 run_id 路径非法
-                safe_vid = version.version_id.replace(":", "-")
                 run_id = f"eval-{safe_vid}-{idx}"
                 score = 0.0
                 try:
@@ -127,6 +134,9 @@ class CandidateEvaluator:
                         self.workspace_mgr.archive(ws, success=True)
                     except Exception:
                         pass
+                except BudgetExceededError:
+                    # 预算耗尽 — 让 runner 捕获并提前终止,不吞掉
+                    raise
                 except Exception:
                     score = 0.0
                 per_scores.append(score)

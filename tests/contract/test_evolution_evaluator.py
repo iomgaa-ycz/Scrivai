@@ -169,3 +169,29 @@ async def test_evaluate_isolated_sample_failure(source_project, tmp_path):
     score = await ev.evaluate(_mk_version(), [_mk_sample(0), _mk_sample(1), _mk_sample(2)])
     assert score.per_sample_scores == [0.9, 0.0, 0.9]
     assert abs(score.score - (0.9 + 0 + 0.9) / 3) < 1e-9
+
+
+@pytest.mark.asyncio
+async def test_evaluate_propagates_budget_exceeded(source_project, tmp_path):
+    """BudgetExceededError 必须向上传播而非被 per-sample except 吞掉。"""
+    from scrivai.evolution.budget import BudgetExceededError, LLMCallBudget
+    from scrivai.evolution.evaluator import CandidateEvaluator
+
+    fake_pes = MagicMock()
+    fake_pes.run = AsyncMock(return_value=MagicMock(final_output={"x": 1}))
+
+    wm = MagicMock()
+    wm.create = _fake_workspace_create(tmp_path)
+    wm.archive = MagicMock()
+
+    # 给预算只够 1 个样本(3 calls),第二个样本时应抛 BudgetExceededError
+    b = LLMCallBudget(limit=3)
+    ev = CandidateEvaluator(
+        workspace_mgr=wm,
+        pes_factory=lambda pn, ws: fake_pes,
+        evaluator_fn=lambda q, p, g: 0.5,
+        source_project_root=source_project,
+        budget=b,
+    )
+    with pytest.raises(BudgetExceededError):
+        await ev.evaluate(_mk_version(), [_mk_sample(0), _mk_sample(1)])
