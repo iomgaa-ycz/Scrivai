@@ -75,6 +75,21 @@ EXPECTED_PUBLIC_API = {
     "hookimpl",
     # MockPES 配套
     "PhaseOutcome",
+    # Evolution(M2)
+    "run_evolution",
+    "promote",
+    "CandidateEvaluator",
+    "EvolutionTrigger",
+    "LLMCallBudget",
+    "Proposer",
+    "SkillVersionStore",
+    # Evolution 数据模型
+    "EvolutionProposal",
+    "EvolutionRunConfig",
+    "EvolutionRunRecord",
+    "EvolutionScore",
+    "FailureSample",
+    "SkillVersion",
 }
 
 
