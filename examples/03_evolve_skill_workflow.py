@@ -55,7 +55,6 @@ from scrivai import (  # noqa: E402
     promote,
     run_evolution,
 )
-from scrivai.models.workspace import WorkspaceSpec  # noqa: E402
 from scrivai.pes.llm_client import LLMClient  # noqa: E402
 from scrivai.trajectory.store import TrajectoryStore  # noqa: E402
 
