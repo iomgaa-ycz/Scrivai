@@ -288,3 +288,31 @@ class LLMClient:
         if result_response is None:
             raise RuntimeError("未收到 ResultMessage")
         return result_response
+
+    async def simple_query(
+        self,
+        prompt: str,
+        *,
+        model: str | None = None,
+        system_prompt: str = "You are a helpful assistant.",
+        max_turns: int = 1,
+    ) -> str:
+        """薄包装:无工具 / 单轮 / 纯文本问答。
+
+        用于 Proposer 等只需"发 prompt 拿文本"的场景。
+        model 参数当前被忽略(ModelConfig 在构造时已决定),仅保留签名以便调用者显式写明。
+        """
+        import tempfile
+        from pathlib import Path as _Path
+
+        _ = model  # 接口对齐,实际由 self.model 决定
+        with tempfile.TemporaryDirectory(prefix="scrivai-simple-query-") as tmp:
+            resp = await self.execute_task(
+                prompt=prompt,
+                system_prompt=system_prompt,
+                allowed_tools=[],
+                max_turns=max_turns,
+                permission_mode="default",
+                cwd=_Path(tmp),
+            )
+        return resp.result
