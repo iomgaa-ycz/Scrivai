@@ -35,6 +35,16 @@
 - 无自动触发:business 层须显式调 `run_evolution()`,专家须显式调 `promote()`
 - `DERIVED / CAPTURED` 进化类型未实现(M2 仅实现 `FIX` 类型)
 
+### Verification
+
+- `scripts/verify_m3a_release.sh` 全通过(deprecation 扫描 + core imports 干净,symbols=63)
+- `python -m build` 成功生成 wheel(`dist/scrivai-0.2.0-py3-none-any.whl`,82.8KB,仅 SPDX/license classifier deprecation warning 无 ERROR)
+- 干净 venv(Python 3.11.15)从 wheel 装 `[dev]` extras 全部依赖 OK,`scrivai==0.2.0, symbols=63` import 冒烟通过
+- 3 examples 全部跑通(scrivai conda env):
+    - `01_audit_single_doc.py` → `status=completed`,3 findings(2 合格 / 1 需要澄清),verdict 合法
+    - `02_generate_with_revision.py` → `status=completed`,3 placeholder 全部填充
+    - `03_evolve_skill_workflow.py` → `status=completed`,evo_run 无增益跳过 promote(符合 demo 预期)
+
 ## [0.1.3] — 2026-04-17 之前
 
 M0-M1.5c 各阶段交付,详见 `docs/TD.md` 里程碑记录。
