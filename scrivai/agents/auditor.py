@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+from loguru import logger
 from pydantic import BaseModel, ValidationError
 
 from scrivai.pes.base import BasePES
@@ -108,6 +109,23 @@ class AuditorPES(BasePES):
                     raise ValueError(
                         f"findings[{idx}] 缺少 evidence(evidence_required=True)"
                     )
+
+        # 修复 findings 目录中 LLM 写出的坏 JSON（中文引号等）
+        findings_dir = self.workspace.working_dir / "findings"
+        if findings_dir.exists():
+            for fp in findings_dir.glob("*.json"):
+                raw = fp.read_text(encoding="utf-8")
+                try:
+                    json.loads(raw)
+                except (json.JSONDecodeError, ValueError):
+                    try:
+                        fixed = relaxed_json_loads(raw, strict=self.config.strict_json)
+                        fp.write_text(
+                            json.dumps(fixed, ensure_ascii=False, indent=2),
+                            encoding="utf-8",
+                        )
+                    except Exception:
+                        logger.warning("findings JSON 修复失败: {}", fp.name)
 
         run.final_output = validated.model_dump()
         run.final_output_path = output_path
