@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+from loguru import logger
 from pydantic import BaseModel, ValidationError
 
 from scrivai.pes.base import BasePES
@@ -89,14 +90,42 @@ class AuditorPES(BasePES):
             if not isinstance(finding, dict):
                 raise ValueError(f"findings[{idx}] 必须是对象")
             verdict = finding.get("verdict")
-            if verdict not in verdict_levels:
+            # LLM 可能输出 verdict 为 dict: {"verdict": "合格", "evidence_quotes": [...]}
+            verdict_str = verdict.get("verdict") if isinstance(verdict, dict) else verdict
+            if verdict_str not in verdict_levels:
                 raise ValueError(
-                    f"findings[{idx}].verdict={verdict!r} 不在 verdict_levels={verdict_levels}"
+                    f"findings[{idx}].verdict={verdict_str!r} 不在 verdict_levels={verdict_levels}"
                 )
             if evidence_required:
                 evidence = finding.get("evidence") or []
-                if not isinstance(evidence, list) or len(evidence) == 0:
-                    raise ValueError(f"findings[{idx}] 缺少 evidence(evidence_required=True)")
+                has_evidence = isinstance(evidence, list) and len(evidence) > 0
+                evidence_quotes = (
+                    verdict.get("evidence_quotes") if isinstance(verdict, dict) else []
+                ) or []
+                has_quotes = isinstance(evidence_quotes, list) and len(evidence_quotes) > 0
+                evidence_refs = finding.get("evidence_refs") or []
+                has_refs = isinstance(evidence_refs, list) and len(evidence_refs) > 0
+                if not has_evidence and not has_quotes and not has_refs:
+                    raise ValueError(
+                        f"findings[{idx}] 缺少 evidence(evidence_required=True)"
+                    )
+
+        # 修复 findings 目录中 LLM 写出的坏 JSON（中文引号等）
+        findings_dir = self.workspace.working_dir / "findings"
+        if findings_dir.exists():
+            for fp in findings_dir.glob("*.json"):
+                raw = fp.read_text(encoding="utf-8")
+                try:
+                    json.loads(raw)
+                except (json.JSONDecodeError, ValueError):
+                    try:
+                        fixed = relaxed_json_loads(raw, strict=self.config.strict_json)
+                        fp.write_text(
+                            json.dumps(fixed, ensure_ascii=False, indent=2),
+                            encoding="utf-8",
+                        )
+                    except Exception:
+                        logger.warning("findings JSON 修复失败: {}", fp.name)
 
         run.final_output = validated.model_dump()
         run.final_output_path = output_path
