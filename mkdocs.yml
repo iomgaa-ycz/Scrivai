@@ -1,0 +1,45 @@
+site_name: Scrivai
+site_description: Configurable document generation & audit framework built on Claude Agent SDK
+site_url: https://iomgaa-ycz.github.io/Scrivai/
+repo_url: https://github.com/iomgaa-ycz/Scrivai
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - search.suggest
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: false
+            members_order: source
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+  - Concepts:
+    - PES Engine: concepts/pes.md
+    - Workspace: concepts/workspace.md
+    - Trajectory: concepts/trajectory.md
+    - Evolution: concepts/evolution.md
+    - Knowledge: concepts/knowledge.md
+  - API Reference:
+    - PES: api/pes.md
+    - Models: api/models.md
+    - Workspace: api/workspace.md
+    - Evolution: api/evolution.md
+    - Knowledge: api/knowledge.md
+    - IO: api/io.md
+    - Testing: api/testing.md
+  - Examples: examples/index.md
+  - Changelog: changelog.md
