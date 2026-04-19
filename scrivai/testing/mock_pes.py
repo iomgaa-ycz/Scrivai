@@ -1,6 +1,6 @@
-"""MockPES — 按预录 PhaseOutcome 回放的测试替身。
+"""MockPES — test double that replays pre-recorded PhaseOutcome objects.
 
-参考 docs/superpowers/specs/2026-04-16-scrivai-m0.5-design.md §3.2。
+Reference: docs/superpowers/specs/2026-04-16-scrivai-m0.5-design.md §3.2.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ def _utcnow() -> datetime:
 
 @dataclass
 class PhaseOutcome:
-    """一次 phase 尝试的预录结果。"""
+    """Pre-recorded result for a single phase attempt."""
 
     response_text: str = ""
     turns: list[PhaseTurn] = field(default_factory=list)
@@ -43,7 +43,7 @@ class PhaseOutcome:
 
 
 class MockPES(BasePES):
-    """按预录 PhaseOutcome 回放,不依赖 claude_agent_sdk。"""
+    """Replays pre-recorded PhaseOutcome objects without depending on claude_agent_sdk."""
 
     def __init__(
         self,
@@ -73,7 +73,7 @@ class MockPES(BasePES):
         attempt_no: int,
         on_turn: Callable[[PhaseTurn], None],
     ) -> tuple[str, dict[str, Any], list[PhaseTurn]]:
-        """回放 PhaseOutcome;有 error 则抛 PhaseError。"""
+        """Replay a PhaseOutcome; raise PhaseError if the outcome contains an error."""
         outcomes = self._outcomes.get(phase_cfg.name, [])
         if attempt_no >= len(outcomes):
             return "", {}, []

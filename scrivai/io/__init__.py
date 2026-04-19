@@ -1,6 +1,6 @@
-"""Scrivai IO 工具 — 文档格式转换 + docxtpl 渲染。
+"""Scrivai IO utilities — document format conversion and docxtpl rendering.
 
-参考 docs/design.md §4.8 / docs/superpowers/specs/2026-04-16-scrivai-m0.75-design.md §4。
+See docs/design.md §4.8 and docs/superpowers/specs/2026-04-16-scrivai-m0.75-design.md §4.
 """
 
 from scrivai.io.convert import doc_to_markdown, docx_to_markdown, pdf_to_markdown

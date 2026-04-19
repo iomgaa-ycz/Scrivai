@@ -1,7 +1,7 @@
-"""_BaseLibrary — 三个 Library 的共通基类。
+"""_BaseLibrary — shared base class for the three Library types.
 
-直接代理 qmd Collection 的 add_document / get_document / list_documents /
-delete_document / hybrid_search;无内存状态。
+Directly proxies a qmd Collection's add_document / get_document / list_documents /
+delete_document / hybrid_search; holds no in-memory state.
 """
 
 from __future__ import annotations
@@ -15,9 +15,9 @@ if TYPE_CHECKING:
 
 
 class _BaseLibrary:
-    """RuleLibrary / CaseLibrary / TemplateLibrary 的共通实现。
+    """Shared implementation for RuleLibrary / CaseLibrary / TemplateLibrary.
 
-    子类只需在 __init__ 中传入 collection_name。
+    Subclasses only need to pass collection_name in __init__.
     """
 
     def __init__(self, qmd_client: "QmdClient", collection_name: str) -> None:
@@ -29,9 +29,10 @@ class _BaseLibrary:
         return self._collection_name
 
     def add(self, entry_id: str, markdown: str, metadata: dict[str, Any]) -> LibraryEntry:
-        """写入 qmd chunk;entry_id 在 collection 内必须唯一。
+        """Write a qmd chunk; entry_id must be unique within the collection.
 
-        重复抛 ValueError;qmd 的 add_document 自身没有唯一性校验,所以这里 get 一次。
+        Raises ValueError on duplicate; qmd's add_document has no uniqueness check so we
+        do a get first.
         """
         if self._coll.get_document(entry_id) is not None:
             raise ValueError(
@@ -41,7 +42,7 @@ class _BaseLibrary:
         return LibraryEntry(entry_id=entry_id, markdown=markdown, metadata=dict(metadata))
 
     def get(self, entry_id: str) -> Optional[LibraryEntry]:
-        """按 document_id 取;不存在返回 None。"""
+        """Fetch by document_id; returns None if not found."""
         doc = self._coll.get_document(entry_id)
         if doc is None:
             return None
@@ -52,11 +53,11 @@ class _BaseLibrary:
         )
 
     def list(self) -> list[str]:
-        """返回 collection 内所有 entry_id。"""
+        """Return all entry_ids in the collection."""
         return self._coll.list_documents()
 
     def delete(self, entry_id: str) -> None:
-        """删除 collection 内的 entry;不存在不报错(qmd 行为)。"""
+        """Delete an entry from the collection; no error if not found (qmd behaviour)."""
         self._coll.delete_document(entry_id)
 
     def search(
@@ -65,5 +66,5 @@ class _BaseLibrary:
         top_k: int = 5,
         filters: Optional[dict[str, Any]] = None,
     ) -> list["SearchResult"]:
-        """透传 qmd hybrid_search。"""
+        """Proxy to qmd hybrid_search."""
         return self._coll.hybrid_search(query, top_k=top_k, filters=filters)

@@ -1,6 +1,6 @@
-"""LocalWorkspaceManager - WorkspaceManager Protocol POSIX 实现。
+"""LocalWorkspaceManager — POSIX implementation of the WorkspaceManager Protocol.
 
-参考:
+References:
 - docs/design.md §4.9 / §5.2
 - docs/TD.md T0.4
 - docs/superpowers/specs/2026-04-16-scrivai-m0.25-design.md §4.1
@@ -12,8 +12,8 @@ import sys
 
 if sys.platform == "win32":
     raise ImportError(
-        "scrivai.workspace 仅支持 POSIX(fcntl 不可用);"
-        "如需 Windows 支持请实现 WorkspaceManager Protocol 的替代版本。"
+        "scrivai.workspace requires POSIX (fcntl is unavailable); "
+        "for Windows support, implement an alternative WorkspaceManager Protocol."
     )
 
 import fcntl
@@ -36,9 +36,9 @@ from scrivai.models.workspace import (
 
 
 class LocalWorkspaceManager:
-    """符合 WorkspaceManager Protocol 的本地文件系统实现。
+    """Local-filesystem implementation of the WorkspaceManager Protocol.
 
-    通过 build_workspace_manager 工厂构造,不直接对外暴露。
+    Constructed via the build_workspace_manager factory; not exposed directly.
     """
 
     def __init__(self, workspaces_root: Path, archives_root: Path) -> None:
@@ -47,7 +47,7 @@ class LocalWorkspaceManager:
         self.workspaces_root.mkdir(parents=True, exist_ok=True)
         self.archives_root.mkdir(parents=True, exist_ok=True)
 
-    # ── 公共 API ─────────────────────────────────────────────
+    # ── Public API ───────────────────────────────────────────
 
     def create(self, spec: WorkspaceSpec) -> WorkspaceHandle:
         if not spec.project_root.exists():
@@ -132,15 +132,15 @@ class LocalWorkspaceManager:
             return failed_marker
 
     def cleanup_old(self, days: int = 30) -> None:
-        """同时清 archives/<run>.tar.gz 与 workspaces/<run>/(若有 .failed),按 mtime 阈值。"""
+        """Remove old archives and failed workspace directories older than the given threshold."""
         threshold = time.time() - days * 86400
 
-        # 清 archives
+        # clean up archives
         for arch in self.archives_root.glob("*.tar.gz"):
             if arch.stat().st_mtime < threshold:
                 arch.unlink()
 
-        # 清 .failed workspace
+        # clean up .failed workspace directories
         for ws in self.workspaces_root.iterdir():
             if not ws.is_dir():
                 continue
@@ -148,10 +148,10 @@ class LocalWorkspaceManager:
             if failed_marker.exists() and failed_marker.stat().st_mtime < threshold:
                 shutil.rmtree(ws)
 
-    # ── 内部辅助 ─────────────────────────────────────────────
+    # ── Internal helpers ─────────────────────────────────────
 
     def _git_hash(self, path: Path) -> str | None:
-        """返回 path 所在 git 仓库的 HEAD short hash;非 git 或失败返回 None。"""
+        """Return the HEAD short hash of the git repo at path; None if not a git repo or on failure."""
         try:
             result = subprocess.run(
                 ["git", "-C", str(path), "rev-parse", "--short", "HEAD"],
@@ -167,7 +167,7 @@ class LocalWorkspaceManager:
             return None
 
     def _git_is_dirty(self, path: Path) -> bool:
-        """返回 path 所在 git 仓库是否有未提交修改;非 git 或失败返回 False。"""
+        """Return True if the git repo at path has uncommitted changes; False if not a git repo or on failure."""
         try:
             result = subprocess.run(
                 ["git", "-C", str(path), "status", "--porcelain"],
@@ -183,7 +183,7 @@ class LocalWorkspaceManager:
             return False
 
     def _acquire_lock(self, run_id: str) -> IO[str]:
-        """对 run_id 取独占锁。冲突抛 WorkspaceError;返回 file object(其 close() 比 fd 更安全)。"""
+        """Acquire an exclusive lock for run_id. Raises WorkspaceError on conflict; returns a file object (close() is safer than raw fd)."""
         lock_path = self.workspaces_root / f".{run_id}.lock"
         lock_fd = open(lock_path, "w")
         try:
@@ -194,7 +194,7 @@ class LocalWorkspaceManager:
         return lock_fd
 
     def _release_lock(self, lock_fd: IO[str], run_id: str) -> None:
-        """释放 run_id 对应的锁文件。"""
+        """Release the lock file for run_id."""
         try:
             fcntl.flock(lock_fd, fcntl.LOCK_UN)
         finally:
@@ -206,5 +206,5 @@ def build_workspace_manager(
     workspaces_root: Path | str = "~/.scrivai/workspaces",
     archives_root: Path | str = "~/.scrivai/archives",
 ) -> WorkspaceManager:
-    """构造默认 LocalWorkspaceManager(返回类型用 Protocol,留替换实现的空间)。"""
+    """Build the default LocalWorkspaceManager (return type is the Protocol, leaving room for alternative implementations)."""
     return LocalWorkspaceManager(Path(workspaces_root), Path(archives_root))

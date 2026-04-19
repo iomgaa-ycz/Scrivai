@@ -1,6 +1,6 @@
-"""Knowledge Libraries — qmd 的三个 collection 包装(rules / cases / templates)。
+"""Knowledge libraries — three qmd collection wrappers (rules / cases / templates).
 
-参考 docs/design.md §4.7 / docs/superpowers/specs/2026-04-16-scrivai-m0.75-design.md §3。
+See docs/design.md §4.7 and docs/superpowers/specs/2026-04-16-scrivai-m0.75-design.md §3.
 """
 
 from scrivai.knowledge.cases import CaseLibrary

@@ -179,7 +179,7 @@ async def run_evolution(
     )
     vstore.create_run(record)
 
-    # Phase 1: 评估 baseline
+    # Phase 1: evaluate baseline
     try:
         bl_score = await evaluator.evaluate(baseline, hold_out)
         record.baseline_score = bl_score.score
@@ -198,7 +198,7 @@ async def run_evolution(
         vstore.finalize_run(record)
         return record
 
-    # Phase 2: 迭代进化
+    # Phase 2: iterative evolution
     frontier = Frontier(size=config.frontier_size)
     frontier.consider(baseline.version_id, bl_score.score)
     record.best_version_id = baseline.version_id
@@ -304,11 +304,11 @@ async def run_evolution(
         if no_improvement >= config.no_improvement_limit:
             break
 
-    # Phase 3: 收尾
+    # Phase 3: finalise
     if record.status == "running":
         record.status = "completed"
     record.completed_at = _utcnow()
-    # best == baseline 表示本次无增益,清空
+    # best == baseline means no improvement this run; clear it
     if record.best_version_id == baseline.version_id:
         record.best_version_id = None
         record.best_score = None

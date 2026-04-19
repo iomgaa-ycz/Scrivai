@@ -1,6 +1,6 @@
-"""Scrivai Evolution — 自研 Skill 进化(M2)。
+"""Scrivai Evolution — self-improving skill evolution (M2).
 
-参考 docs/superpowers/specs/2026-04-17-scrivai-m2-design.md
+See docs/superpowers/specs/2026-04-17-scrivai-m2-design.md
 """
 
 from scrivai.evolution.budget import BudgetExceededError, LLMCallBudget

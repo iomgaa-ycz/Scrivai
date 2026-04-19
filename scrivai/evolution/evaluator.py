@@ -1,6 +1,6 @@
-"""CandidateEvaluator — 用候选 SKILL.md 重跑真实 PES,打分。
+"""CandidateEvaluator — re-runs the real PES with a candidate SKILL.md and scores it.
 
-参考 docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.3 / §6.1
+See docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.3 / §6.1
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from scrivai.models.workspace import WorkspaceHandle, WorkspaceSpec
 
 
 def _utcnow() -> datetime:
-    """返回当前 UTC 时间。"""
+    """Return the current UTC datetime."""
     return datetime.now(timezone.utc)
 
 
@@ -28,16 +28,16 @@ def _prepare_temp_project_root(
     candidate_snapshot: dict[str, str],
     prefix: str = "scrivai-eval-",
 ) -> Path:
-    """复制 source 到临时目录,在 skills/<skill_name>/ 内放候选内容。
+    """Copy source to a temp directory and place candidate content under skills/<skill_name>/.
 
-    参数:
-        source: 源项目根目录。
-        skill_name: 目标 skill 目录名。
-        candidate_snapshot: 候选文件映射 {相对路径: 内容}。
-        prefix: tempfile.mkdtemp 前缀,默认含 version_id 以便追踪孤立临时目录。
+    Args:
+        source: Source project root directory.
+        skill_name: Target skill directory name.
+        candidate_snapshot: Candidate file mapping {relative_path: content}.
+        prefix: tempfile.mkdtemp prefix; include the version_id to help trace orphaned temp dirs.
 
-    返回:
-        临时 project_root 路径(调用方负责清理)。
+    Returns:
+        Temporary project_root path (caller is responsible for cleanup).
     """
     tmp = Path(tempfile.mkdtemp(prefix=prefix))
     shutil.copytree(source, tmp, dirs_exist_ok=True)
@@ -53,14 +53,14 @@ def _prepare_temp_project_root(
 
 
 class CandidateEvaluator:
-    """对候选 SkillVersion 在 hold-out 样本上 replay 真实 PES 并打分。
+    """Replays the real PES with a candidate SkillVersion on hold-out samples and scores it.
 
-    工作流:
-    1. 将源 project_root copytree 到临时目录,替换目标 skill 内容。
-    2. 对每个 hold-out 样本:创建 workspace → 实例化 PES → run → 打分。
-    3. 每个样本消耗 3 个 LLM budget 单位。
-    4. 单样本失败时 score=0.0,不影响其他样本。
-    5. finally 块清理临时目录。
+    Workflow:
+    1. Copytree the source project_root to a temp directory, replacing the target skill content.
+    2. For each hold-out sample: create workspace -> instantiate PES -> run -> score.
+    3. Each sample consumes 3 LLM budget units.
+    4. A single-sample failure yields score=0.0 without affecting other samples.
+    5. The finally block cleans up the temp directory.
     """
 
     def __init__(
@@ -71,14 +71,14 @@ class CandidateEvaluator:
         source_project_root: Path,
         budget: LLMCallBudget,
     ) -> None:
-        """初始化 CandidateEvaluator。
+        """Initialise CandidateEvaluator.
 
-        参数:
-            workspace_mgr: WorkspaceManager 实例。
-            pes_factory: (pes_name, workspace) -> PES 实例工厂函数。
-            evaluator_fn: (question, predicted, ground_truth) -> float 评分函数。
-            source_project_root: 源项目根目录路径。
-            budget: LLM 调用预算守卫。
+        Args:
+            workspace_mgr: WorkspaceManager instance.
+            pes_factory: Factory ``(pes_name, workspace) -> PES`` instance.
+            evaluator_fn: Scoring function ``(question, predicted, ground_truth) -> float``.
+            source_project_root: Source project root directory path.
+            budget: LLM call budget guard.
         """
         self.workspace_mgr = workspace_mgr
         self.pes_factory = pes_factory
@@ -89,16 +89,16 @@ class CandidateEvaluator:
     async def evaluate(
         self, version: SkillVersion, hold_out: list[FailureSample]
     ) -> EvolutionScore:
-        """在 hold-out 样本上评估候选 SkillVersion。
+        """Evaluate a candidate SkillVersion on hold-out samples.
 
-        参数:
-            version: 待评估的候选版本。
-            hold_out: hold-out 样本列表。
+        Args:
+            version: Candidate version to evaluate.
+            hold_out: List of hold-out samples.
 
-        返回:
-            EvolutionScore:含总分、每样本分、预算消耗等信息。
+        Returns:
+            EvolutionScore with total score, per-sample scores, and budget consumed.
         """
-        # 将 version_id 中的冒号替换为连字符,避免路径非法;提前提取供 prefix 和 run_id 共用
+        # Replace colons in version_id with hyphens to avoid invalid paths; shared by prefix and run_id
         safe_vid = version.version_id.replace(":", "-")
         temp_root = _prepare_temp_project_root(
             self.source_project_root,
@@ -135,7 +135,7 @@ class CandidateEvaluator:
                     except Exception:
                         pass
                 except BudgetExceededError:
-                    # 预算耗尽 — 让 runner 捕获并提前终止,不吞掉
+                    # Budget exhausted — let the runner catch and terminate early; do not swallow
                     raise
                 except Exception:
                     score = 0.0

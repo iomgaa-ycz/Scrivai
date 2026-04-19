@@ -1,4 +1,4 @@
-"""Scrivai testing helpers — 给业务层 / 框架内部测试用的 fakes。"""
+"""Scrivai testing helpers — fakes for business-layer and framework-internal tests."""
 
 from scrivai.testing.fake_trajectory import FakeTrajectoryStore
 from scrivai.testing.mock_pes import MockPES, PhaseOutcome

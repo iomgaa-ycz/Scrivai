@@ -12,7 +12,7 @@ from typing import Any
 def _resolve_db(args) -> Path:
     db = getattr(args, "db_path", None) or os.environ.get("SCRIVAI_TRAJECTORY_DB")
     if not db:
-        raise ValueError("missing env var: SCRIVAI_TRAJECTORY_DB (或传 --db-path)")
+        raise ValueError("missing env var: SCRIVAI_TRAJECTORY_DB (or pass --db-path)")
     return Path(db).expanduser()
 
 
@@ -57,7 +57,7 @@ def cmd_get_run(args) -> dict[str, Any]:
 
 
 def cmd_build_eval_dataset(args) -> dict[str, Any]:
-    raise NotImplementedError("build-eval-dataset 在 M2 实现 (T2.2)")
+    raise NotImplementedError("build-eval-dataset is implemented in M2 (T2.2)")
 
 
 def register(parser: argparse.ArgumentParser) -> None:
@@ -68,8 +68,8 @@ def register(parser: argparse.ArgumentParser) -> None:
 
     f = sub.add_parser("record-feedback", parents=[common])
     f.add_argument("--run-id", required=True)
-    f.add_argument("--draft", required=True, help="draft_output JSON 文件路径")
-    f.add_argument("--final", required=True, help="final_output JSON 文件路径")
+    f.add_argument("--draft", required=True, help="path to draft_output JSON file")
+    f.add_argument("--final", required=True, help="path to final_output JSON file")
     f.add_argument("--corrections", default=None)
     f.add_argument("--input-summary", default=None)
     f.add_argument("--review-policy-version", default=None)

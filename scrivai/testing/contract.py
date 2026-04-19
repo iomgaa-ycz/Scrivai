@@ -1,8 +1,9 @@
-"""scrivai.testing.contract — pytest plugin 提供下游可复用的 fixtures。
+"""scrivai.testing.contract — pytest plugin providing reusable fixtures for downstream projects.
 
-下游通过 `pytest --pyargs scrivai.testing.contract` 即可跑全套契约测试。
+Downstream consumers run the full contract test suite via
+``pytest --pyargs scrivai.testing.contract``.
 
-参考 docs/superpowers/specs/2026-04-16-scrivai-m0.75-design.md §7.1。
+Reference: docs/superpowers/specs/2026-04-16-scrivai-m0.75-design.md §7.1.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def scrivai_workspace_manager(tmp_path: Path) -> "LocalWorkspaceManager":
-    """tmp_path 锚定的 LocalWorkspaceManager。"""
+    """LocalWorkspaceManager rooted at tmp_path."""
     from scrivai import build_workspace_manager
 
     return build_workspace_manager(
@@ -30,7 +31,7 @@ def scrivai_workspace_manager(tmp_path: Path) -> "LocalWorkspaceManager":
 
 @pytest.fixture
 def scrivai_qmd_client(tmp_path: Path):
-    """tmp_path 锚定的 qmd client。"""
+    """qmd client rooted at tmp_path."""
     from scrivai.knowledge import build_qmd_client_from_config
 
     return build_qmd_client_from_config(tmp_path / "qmd.db")
@@ -40,7 +41,7 @@ def scrivai_qmd_client(tmp_path: Path):
 def scrivai_libraries(
     scrivai_qmd_client,
 ) -> "tuple[RuleLibrary, CaseLibrary, TemplateLibrary]":
-    """三兄弟 Library。"""
+    """The three sibling Library instances (Rule, Case, Template)."""
     from scrivai.knowledge import build_libraries
 
     return build_libraries(scrivai_qmd_client)
@@ -48,7 +49,7 @@ def scrivai_libraries(
 
 @pytest.fixture
 def scrivai_trajectory_store(tmp_path: Path):
-    """tmp_path 锚定的 TrajectoryStore。"""
+    """TrajectoryStore rooted at tmp_path."""
     from scrivai import TrajectoryStore
 
     return TrajectoryStore(tmp_path / "traj.db")

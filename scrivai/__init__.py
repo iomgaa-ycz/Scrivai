@@ -1,23 +1,23 @@
-"""Scrivai v3 — Claude Agent 编排框架。
+"""Scrivai public API — all importable symbols for the framework.
 
-完整 Public API(M0.75 冻结):参考 docs/design.md §4.1。
-M2 Evolution API:参考 docs/superpowers/specs/2026-04-17-scrivai-m2-design.md。
+Full public API (frozen at M0.75): see docs/design.md §4.1.
+Evolution API (M2): see docs/superpowers/specs/2026-04-17-scrivai-m2-design.md.
 """
 
 from importlib import metadata as _metadata
 
 try:
     __version__: str = _metadata.version("scrivai")
-except _metadata.PackageNotFoundError:  # 未安装时(开发 checkout 首次)
+except _metadata.PackageNotFoundError:  # not installed (editable checkout)
     __version__ = "0.1.5"
 
-# qmd re-export(身份相等,非副本)
+# qmd re-export (identity re-export, not a copy)
 from qmd import ChunkRef, CollectionInfo, SearchResult
 
-# 预置 PES(M0.75 占位,M1 实现)
+# Built-in PES agents (M0.75 placeholder, M1 implementation)
 from scrivai.agents import AuditorPES, ExtractorPES, GeneratorPES
 
-# Evolution(M2 自研 Skill 进化)
+# Evolution (M2 self-improving skill evolution)
 from scrivai.evolution import (
     CandidateEvaluator,
     EvolutionTrigger,
@@ -83,7 +83,7 @@ from scrivai.models.workspace import (
     WorkspaceSpec,
 )
 
-# PES 核心
+# PES core
 from scrivai.pes.base import BasePES
 from scrivai.pes.config import load_pes_config
 from scrivai.pes.hooks import HookManager, hookimpl
@@ -104,18 +104,18 @@ from scrivai.trajectory.store import TrajectoryStore
 # Utils
 from scrivai.utils import relaxed_json_loads
 
-# Workspace 工厂
+# Workspace factory
 from scrivai.workspace.manager import build_workspace_manager
 
 __all__ = [
-    # PES 数据模型
+    # PES data models
     "PESRun",
     "PESConfig",
     "PhaseConfig",
     "PhaseResult",
     "PhaseTurn",
     "ModelConfig",
-    # 9 个 HookContext
+    # 9 HookContext types
     "HookContext",
     "RunHookContext",
     "PhaseHookContext",
@@ -136,23 +136,23 @@ __all__ = [
     "TrajectoryRecord",
     "PhaseRecord",
     "FeedbackRecord",
-    # 抽象类
+    # Abstract base
     "BasePES",
     "HookManager",
-    # 预置 PES
+    # Built-in PES agents
     "ExtractorPES",
     "AuditorPES",
     "GeneratorPES",
-    # 工厂
+    # Factories
     "build_workspace_manager",
     "build_qmd_client_from_config",
     "build_libraries",
     "load_pes_config",
-    # 知识库
+    # Knowledge libraries
     "RuleLibrary",
     "CaseLibrary",
     "TemplateLibrary",
-    # 轨迹
+    # Trajectory
     "TrajectoryStore",
     "TrajectoryRecorderHook",
     "PhaseLogHook",
@@ -172,7 +172,7 @@ __all__ = [
     "PhaseOutcome",
     # Utils
     "relaxed_json_loads",
-    # Hook 装饰器
+    # Hook decorator
     "hookimpl",
     # Evolution(M2)
     "run_evolution",
@@ -182,7 +182,7 @@ __all__ = [
     "LLMCallBudget",
     "Proposer",
     "SkillVersionStore",
-    # Evolution 数据模型
+    # Evolution data models
     "EvolutionProposal",
     "EvolutionRunConfig",
     "EvolutionRunRecord",

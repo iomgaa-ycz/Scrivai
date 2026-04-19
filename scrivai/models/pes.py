@@ -8,7 +8,7 @@ from typing import Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-# ────────────────────── 基础配置类 ──────────────────────
+# ────────────────────── Base configuration classes ─────
 
 
 class ModelConfig(BaseModel):
@@ -62,7 +62,7 @@ class PESConfig(BaseModel):
     )
 
 
-# ────────────────────── 运行态 ──────────────────────
+# ────────────────────── Runtime state ──────────────────
 
 
 class PhaseTurn(BaseModel):
@@ -156,7 +156,7 @@ class PESRun(BaseModel):
         }
 
 
-# ────────────────────── 9 个 HookContext ──────────────────────
+# ────────────────────── 9 HookContext types ─────────────
 
 
 class HookContext(BaseModel):

@@ -1,6 +1,6 @@
-"""SkillVersionStore — evolution.db CRUD。
+"""SkillVersionStore — CRUD operations for evolution.db.
 
-参考 docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §4.2 / §5.7
+See docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §4.2 / §5.7
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ def _str_to_dt(s: Optional[str]) -> Optional[datetime]:
 
 
 class SkillVersionStore:
-    """封装 evolution.db 的 skill_versions / evolution_runs / evolution_scores 三表。"""
+    """Encapsulates the skill_versions / evolution_runs / evolution_scores tables in evolution.db."""
 
     def __init__(self, db_path: Path | None = None) -> None:
         if db_path is None:

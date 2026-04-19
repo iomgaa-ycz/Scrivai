@@ -1,4 +1,4 @@
-"""scrivai-cli main entry — argparse 路由到 4 个 group。"""
+"""scrivai-cli main entry — argparse router for 4 command groups."""
 
 from __future__ import annotations
 
@@ -11,14 +11,14 @@ from scrivai.cli import io_cmd, library, trajectory_cmd, workspace_cmd
 
 
 def _emit_ok(payload: Any) -> int:
-    """成功输出 JSON 到 stdout。"""
+    """Write a successful JSON payload to stdout."""
     json.dump(payload, sys.stdout, ensure_ascii=False, indent=2, default=str)
     sys.stdout.write("\n")
     return 0
 
 
 def _emit_err(message: str) -> int:
-    """失败输出 JSON 到 stderr;exit code 1。"""
+    """Write an error JSON message to stderr; returns exit code 1."""
     json.dump({"error": message}, sys.stderr, ensure_ascii=False)
     sys.stderr.write("\n")
     return 1
@@ -28,10 +28,10 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="scrivai-cli", description="Scrivai CLI")
     sub = p.add_subparsers(dest="group", required=True)
 
-    library.register(sub.add_parser("library", help="知识库 CRUD + search"))
-    io_cmd.register(sub.add_parser("io", help="文档格式转换 + docx 渲染"))
-    workspace_cmd.register(sub.add_parser("workspace", help="WorkspaceManager 生命周期"))
-    trajectory_cmd.register(sub.add_parser("trajectory", help="TrajectoryStore 反馈 + 进化触发"))
+    library.register(sub.add_parser("library", help="Knowledge library CRUD + search"))
+    io_cmd.register(sub.add_parser("io", help="Document format conversion + docx rendering"))
+    workspace_cmd.register(sub.add_parser("workspace", help="WorkspaceManager lifecycle"))
+    trajectory_cmd.register(sub.add_parser("trajectory", help="TrajectoryStore feedback + evolution trigger"))
     return p
 
 

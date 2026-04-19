@@ -1,4 +1,4 @@
-"""Scrivai 工具函数。"""
+"""Scrivai utility functions."""
 
 from scrivai.utils.json_repair import RepairReport, relaxed_json_loads
 

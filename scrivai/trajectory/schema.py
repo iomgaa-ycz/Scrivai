@@ -1,15 +1,16 @@
-"""TrajectoryStore SQLite schema(对应 design.md §4.5)。
+"""TrajectoryStore SQLite schema (see design.md §4.5).
 
-每条 DDL 都写成 `CREATE TABLE IF NOT EXISTS`,首次打开自动建,M0-M2 不引入 migration。
+All DDL statements use ``CREATE TABLE IF NOT EXISTS``; the schema is created
+automatically on first open and no migrations are introduced in M0-M2.
 """
 
 from __future__ import annotations
 
-# PRAGMAs:每次 connect 都设(放 init_schema 里执行)
+# PRAGMAs: applied on every connection (executed inside init_schema)
 PRAGMAS: tuple[str, ...] = (
     "PRAGMA journal_mode=WAL",
     "PRAGMA synchronous=NORMAL",
-    "PRAGMA busy_timeout=3000",  # 3s,与"框架重试 1 次 0.5s,总预算 ≤ 6.5s"自洽
+    "PRAGMA busy_timeout=3000",  # 3 s — consistent with "framework retries once after 0.5 s, total budget ≤ 6.5 s"
 )
 
 DDL_RUNS = """

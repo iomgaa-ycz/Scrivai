@@ -1,6 +1,6 @@
-"""Scrivai pydantic + Protocol 数据模型(M0 单一真相)。
+"""Scrivai pydantic + Protocol data models (M0 single source of truth).
 
-完整列表参考 docs/design.md §4.1。
+See docs/design.md §4.1 for the full list.
 """
 
 from scrivai.models.knowledge import (

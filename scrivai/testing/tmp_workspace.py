@@ -1,6 +1,6 @@
-"""TempWorkspaceManager — 测试用的 tmp-rooted LocalWorkspaceManager。
+"""TempWorkspaceManager — tmp-rooted LocalWorkspaceManager for tests.
 
-参考 docs/superpowers/specs/2026-04-16-scrivai-m0.25-design.md §4.4。
+Reference: docs/superpowers/specs/2026-04-16-scrivai-m0.25-design.md §4.4.
 """
 
 from __future__ import annotations
@@ -11,12 +11,14 @@ from scrivai.workspace.manager import LocalWorkspaceManager
 
 
 class TempWorkspaceManager(LocalWorkspaceManager):
-    """把真实 LocalWorkspaceManager 的 root 锚到 tmp 目录。
+    """Anchor a real LocalWorkspaceManager's root under a tmp directory.
 
-    所有真行为(fcntl 锁 / shutil.copytree / tar.gz 归档)继承自父类,
-    只是 workspaces_root / archives_root 都在 tmp 内,测试隔离。
+    All real behaviour (fcntl locking, shutil.copytree, tar.gz archiving) is
+    inherited from the parent class; only workspaces_root and archives_root are
+    redirected inside tmp for test isolation.
 
-    用法(pytest):
+    Usage (pytest)::
+
         @pytest.fixture
         def ws_mgr(tmp_path):
             return TempWorkspaceManager(tmp_path)

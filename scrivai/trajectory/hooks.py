@@ -1,6 +1,6 @@
-"""TrajectoryRecorderHook — 订阅 9 个 hook 触点,sync 调 TrajectoryStore 落盘。
+"""TrajectoryRecorderHook — subscribes to all 9 hook points and synchronously persists data via TrajectoryStore.
 
-参考:
+References:
 - docs/design.md §4.3
 - docs/superpowers/specs/2026-04-16-scrivai-m0.5-design.md §3.3
 """
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 class TrajectoryRecorderHook:
-    """订阅全部 9 个 hook,sync 调 TrajectoryStore 落盘。"""
+    """Subscribes to all 9 hooks and synchronously persists data to TrajectoryStore."""
 
     def __init__(self, store: TrajectoryStore) -> None:
         self._store = store
@@ -32,7 +32,7 @@ class TrajectoryRecorderHook:
 
     @hookimpl
     def before_run(self, context: RunHookContext) -> None:
-        """写 runs 表新行。"""
+        """Insert a new row into the runs table."""
         run = context.run
         self._store.start_run(
             run_id=run.run_id,
@@ -49,7 +49,7 @@ class TrajectoryRecorderHook:
 
     @hookimpl
     def before_phase(self, context: PhaseHookContext) -> None:
-        """插入 phases 行,记录 phase_id。"""
+        """Insert a phases row and record the resulting phase_id."""
         key = f"{context.run.run_id}:{context.phase}:{context.attempt_no}"
         phase_id = self._store.record_phase_start(
             run_id=context.run.run_id,
@@ -61,11 +61,11 @@ class TrajectoryRecorderHook:
 
     @hookimpl
     def before_prompt(self, context: object) -> None:
-        """占位;prompt 信息在 phase_end 一起写。"""
+        """No-op; prompt information is written together with phase_end."""
 
     @hookimpl
     def after_prompt_turn(self, context: PromptTurnHookContext) -> None:
-        """逐 turn 写 turns 表 + tool_calls 表。"""
+        """Write each turn to the turns table and tool_calls table."""
         key = f"{context.run.run_id}:{context.phase}:{context.attempt_no}"
         phase_id = self._phase_ids.get(key)
         if phase_id is None:
@@ -99,32 +99,32 @@ class TrajectoryRecorderHook:
 
     @hookimpl
     def after_phase(self, context: PhaseHookContext) -> None:
-        """phase 成功时写 phase_end。"""
+        """Write phase_end when the phase succeeds."""
         self._record_phase_end(
             context.run.run_id, context.phase, context.attempt_no, context.phase_result
         )
 
     @hookimpl
     def on_phase_failed(self, context: FailureHookContext) -> None:
-        """phase 失败时也写 phase_end。"""
+        """Write phase_end even when the phase fails."""
         self._record_phase_end(
             context.run.run_id, context.phase, context.attempt_no, context.phase_result
         )
 
     @hookimpl
     def on_output_written(self, context: OutputHookContext) -> None:
-        """占位。"""
+        """No-op."""
 
     @hookimpl
     def on_run_cancelled(self, context: CancelHookContext) -> None:
-        """占位;_persist_final_state 由 BasePES 直接调。"""
+        """No-op; _persist_final_state is called directly by BasePES."""
 
     @hookimpl
     def after_run(self, context: RunHookContext) -> None:
-        """占位;_persist_final_state 由 BasePES 直接调。"""
+        """No-op; _persist_final_state is called directly by BasePES."""
 
     def _record_phase_end(self, run_id: str, phase: str, attempt_no: int, result: object) -> None:
-        """共享的 record_phase_end 逻辑。"""
+        """Shared logic for recording phase end data."""
         key = f"{run_id}:{phase}:{attempt_no}"
         phase_id = self._phase_ids.get(key)
         if phase_id is None or result is None:

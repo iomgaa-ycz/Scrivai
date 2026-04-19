@@ -1,4 +1,4 @@
-"""Scrivai 异常层级——M0 前置声明,后续里程碑只补行为。"""
+"""Scrivai exception hierarchy — declared in M0; behaviour added in later milestones."""
 
 from __future__ import annotations
 
@@ -10,23 +10,23 @@ if TYPE_CHECKING:
 
 
 class ScrivaiError(Exception):
-    """所有 Scrivai 异常的根基类。"""
+    """Base class for all Scrivai exceptions."""
 
 
 class PESConfigError(ScrivaiError):
-    """PESConfig YAML 加载 / schema 校验失败。M0 T0.3 实现。"""
+    """PESConfig YAML load or schema validation failure (M0 T0.3)."""
 
 
 class WorkspaceError(ScrivaiError):
-    """WorkspaceManager 错误(run_id 冲突 / fcntl 失败等)。M0.25 T0.4 实现。"""
+    """WorkspaceManager error (run_id conflict, fcntl failure, etc.) (M0.25 T0.4)."""
 
 
 class TrajectoryWriteError(ScrivaiError):
-    """TrajectoryStore 写入失败(SQLite busy 超过重试预算)。M0.25 T0.7 实现。"""
+    """TrajectoryStore write failure (SQLite busy beyond retry budget) (M0.25 T0.7)."""
 
 
 class PhaseError(ScrivaiError):
-    """BasePES phase 级失败统一出口。携带 result / error_type / is_retryable。M0.5 T0.6 实现。"""
+    """Unified exit point for BasePES phase-level failures; carries result / error_type / is_retryable (M0.5 T0.6)."""
 
     def __init__(
         self,
@@ -41,17 +41,19 @@ class PhaseError(ScrivaiError):
 
 
 class RateLimitError(ScrivaiError):
-    """Claude SDK 速率限制;用于 L1 传输级重试。M0.5 T0.6 实现。"""
+    """Claude SDK rate limit; used for L1 transport-level retries (M0.5 T0.6)."""
 
 
 class _SDKError(ScrivaiError):
-    """LLMClient 边界翻译后的内部异常,只在 BasePES._call_sdk_query → _run_phase 之间存活。
+    """Internal exception translated at the LLMClient boundary; lives only between
+    BasePES._call_sdk_query and _run_phase.
 
-    BasePES._run_phase 的 step 5 except 子句据 error_type 字段构造 PhaseResult,
-    再包成 PhaseError 冒泡。业务层永远看不到 _SDKError。
+    BasePES._run_phase step 5 catches this, builds a PhaseResult from ``error_type``,
+    then re-raises as PhaseError. Business code never sees _SDKError.
 
     Attributes:
-        error_type: "max_turns_exceeded" / "sdk_other" — 决定 PhaseResult.is_retryable
+        error_type: ``"max_turns_exceeded"`` or ``"sdk_other"`` — determines
+            ``PhaseResult.is_retryable``.
     """
 
     def __init__(self, error_type: str, message: str) -> None:
@@ -60,14 +62,15 @@ class _SDKError(ScrivaiError):
 
 
 class ScrivaiJSONRepairError(ScrivaiError, json.JSONDecodeError):
-    """JSON 容错解析全部阶段失败。
+    """All JSON fault-tolerant repair stages failed.
 
-    多重继承:可被 except ScrivaiError 和 except json.JSONDecodeError 同时捕获。
+    Multiple inheritance: can be caught by both ``except ScrivaiError`` and
+    ``except json.JSONDecodeError``.
 
     Attributes:
-        original_text: 原始输入文本。
-        repaired_text: 最后一次修复后的文本。
-        stages_applied: 已尝试的修复阶段名称列表。
+        original_text: The original input text.
+        repaired_text: The text after the last repair attempt.
+        stages_applied: Names of repair stages that were tried.
     """
 
     def __init__(

@@ -1,6 +1,6 @@
-"""Proposer — LLM 基于失败样本生成 N 个候选 SKILL.md 内容。
+"""Proposer — uses an LLM to generate N candidate SKILL.md revisions from failure samples.
 
-参考 docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.2 / §6.2
+See docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.2 / §6.2
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from scrivai.utils import relaxed_json_loads
 
 
 class ProposerError(RuntimeError):
-    """Proposer 无法解析 LLM 输出或 LLM 返回格式错误。"""
+    """Raised when Proposer cannot parse the LLM output or the output format is invalid."""
 
 
 _SAMPLE_TRUNCATE = 800
@@ -102,7 +102,7 @@ _RE_FENCE_SEARCH = re.compile(r"```(?:json)?\s*(.+?)\s*```", re.DOTALL)
 
 
 def _find_json_object(text: str) -> str | None:
-    """平衡括号扫描提取第一个完整 JSON 对象。"""
+    """Extract the first complete JSON object using balanced-bracket scanning."""
     in_string = False
     escape = False
     depth = 0
@@ -131,23 +131,24 @@ def _find_json_object(text: str) -> str | None:
 
 
 def _extract_json(text: str) -> dict[str, Any]:
-    """从 LLM 输出中提取 JSON 对象。
+    """Extract a JSON object from LLM output.
 
-    Evolution prompt 的 LLM 输出可能包含前缀文字或 Markdown 围栏。
-    先尝试提取纯 JSON 部分,再委托 relaxed_json_loads 做语法容错。
+    The evolution prompt LLM output may contain leading prose or a Markdown fence.
+    First attempt to isolate the JSON portion, then delegate to relaxed_json_loads
+    for syntax fault-tolerance.
 
-    参数:
-        text: LLM 原始输出。
+    Args:
+        text: Raw LLM output.
 
-    返回:
-        解析后 dict。
+    Returns:
+        Parsed dict.
 
-    异常:
-        ProposerError: 解析失败或结果不是 dict。
+    Raises:
+        ProposerError: If parsing fails or the result is not a dict.
     """
     stripped = text.strip()
 
-    # 候选文本:围栏内容 → 括号扫描 → 原文
+    # Candidate texts: fence content -> bracket scan -> raw text
     candidates: list[str] = []
     fence = _RE_FENCE_SEARCH.search(stripped)
     if fence:
@@ -169,7 +170,7 @@ def _extract_json(text: str) -> dict[str, Any]:
 
 
 class Proposer:
-    """LLM-based 候选 SKILL.md 生成器。"""
+    """LLM-based candidate SKILL.md generator."""
 
     def __init__(self, llm_client: LLMClient, model: str = "glm-5.1") -> None:
         self.llm_client = llm_client
@@ -183,28 +184,28 @@ class Proposer:
         n: int = 3,
         budget: Optional[LLMCallBudget] = None,
     ) -> list[EvolutionProposal]:
-        """基于失败样本生成 N 个候选 SKILL.md 版本。
+        """Generate N candidate SKILL.md revisions from failure samples.
 
-        参数:
-            current_skill_snapshot: 当前 SKILL.md 内容快照 {"SKILL.md": ...}
-            failures: 失败样本列表。
-            rejected_proposals: 已被拒绝的候选(避免重复方向)。
-            n: 期望生成候选数量。
-            budget: LLM 调用预算守卫(可选)。
+        Args:
+            current_skill_snapshot: Current SKILL.md content snapshot {"SKILL.md": ...}.
+            failures: List of failure samples.
+            rejected_proposals: Previously rejected candidates (to avoid repeating directions).
+            n: Expected number of candidate proposals.
+            budget: LLM call budget guard (optional).
 
-        返回:
-            EvolutionProposal 列表,长度 >= 1。
+        Returns:
+            List of EvolutionProposal with length >= 1.
 
-        异常:
-            ProposerError: 重试后仍无法解析或无有效候选。
-            BudgetExceededError: 预算超限。
+        Raises:
+            ProposerError: If parsing still fails after retries or no valid candidates remain.
+            BudgetExceededError: If the budget is exceeded.
         """
         base_prompt = _build_prompt(current_skill_snapshot, failures, rejected_proposals, n)
         last_error: Optional[Exception] = None
 
-        for attempt in (0, 1):  # 最多 2 次(首发 + 1 次重试)
+        for attempt in (0, 1):  # at most 2 attempts (initial + 1 retry)
             if budget is not None:
-                budget.consume(1)  # Budget 不因重试豁免
+                budget.consume(1)  # Budget is not waived for retries
             prompt = (
                 base_prompt
                 if attempt == 0

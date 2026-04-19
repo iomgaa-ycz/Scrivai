@@ -1,6 +1,6 @@
-"""Knowledge Library 相关 pydantic + Library Protocol + qmd re-export。
+"""Knowledge library pydantic models, Library Protocol, and qmd re-exports.
 
-参考 docs/design.md §4.1 / §4.7。
+See docs/design.md §4.1 and §4.7.
 """
 
 from __future__ import annotations
@@ -10,8 +10,8 @@ from typing import Any, List, Optional, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
-# qmd re-export(身份相等,非副本):scrivai 业务侧通过 scrivai 导入,
-# 不需要直接依赖 qmd 名字
+# qmd re-export (identity re-export, not a copy): business code imports via scrivai
+# and does not need to depend on qmd directly
 from qmd import ChunkRef, CollectionInfo, SearchResult
 
 __all__ = [
@@ -25,14 +25,14 @@ __all__ = [
 
 
 class LibraryEntry(BaseModel):
-    """Library 中一条记录(对应 qmd 一个 chunk)。"""
+    """A single entry in a Library (corresponds to one qmd chunk)."""
 
     model_config = ConfigDict(extra="forbid")
 
-    entry_id: str = Field(..., description="collection 内唯一")
-    markdown: str = Field(..., description="文本内容")
+    entry_id: str = Field(..., description="Unique within the collection.")
+    markdown: str = Field(..., description="Text content.")
     metadata: dict[str, Any] = Field(
-        default_factory=dict, description="透传 qmd chunk metadata,无语义解释"
+        default_factory=dict, description="Passed through from qmd chunk metadata; no semantic interpretation."
     )
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -40,7 +40,7 @@ class LibraryEntry(BaseModel):
 
 @runtime_checkable
 class Library(Protocol):
-    """统一的 Library Protocol。RuleLibrary / CaseLibrary / TemplateLibrary 都实现它。"""
+    """Unified Library Protocol implemented by RuleLibrary, CaseLibrary, and TemplateLibrary."""
 
     def add(self, entry_id: str, markdown: str, metadata: dict[str, Any]) -> LibraryEntry: ...
     def get(self, entry_id: str) -> Optional[LibraryEntry]: ...

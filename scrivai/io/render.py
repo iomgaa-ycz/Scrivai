@@ -1,9 +1,9 @@
-"""DocxRenderer — docxtpl 模板渲染。
+"""DocxRenderer — docxtpl template rendering.
 
-约束(docxtpl 限制):
-1. 模板必须由 Word/LibreOffice 手工制作(jinja 标签必须在单一 <w:r>)
-2. 单 cell 内不支持嵌套 {% for %};用 jinja 过滤器扁平化
-3. 避免表中表
+Constraints (docxtpl limitations):
+1. Templates must be hand-crafted in Word/LibreOffice (jinja tags must be in a single <w:r>).
+2. Nested {% for %} inside a single cell is not supported; use jinja filters to flatten.
+3. Avoid tables-within-tables.
 """
 
 from __future__ import annotations
@@ -14,18 +14,18 @@ from typing import Any
 
 from docxtpl import DocxTemplate
 
-# 正则匹配 docxtpl 占位符 {{ var }} 中的 var 名
+# Regex matching the var name inside a docxtpl placeholder {{ var }}
 _PLACEHOLDER_RE = re.compile(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}")
 
 
 class DocxRenderer:
-    """基于 docxtpl 的 docx 模板渲染器。"""
+    """docx template renderer based on docxtpl."""
 
     def __init__(self, template_path: str | Path) -> None:
         self._template_path = Path(template_path)
         if not self._template_path.is_file():
-            raise FileNotFoundError(f"docx 模板不存在:{self._template_path}")
-        # 加载一次校验文件能被 docxtpl 解析
+            raise FileNotFoundError(f"docx template not found: {self._template_path}")
+        # Load once to validate that the file can be parsed by docxtpl
         self._template = DocxTemplate(str(self._template_path))
 
     @property
@@ -33,10 +33,10 @@ class DocxRenderer:
         return self._template_path
 
     def list_placeholders(self) -> list[str]:
-        """正则扫描模板内全部 {{ var }} 占位符;返回去重排序的 var 名列表。"""
-        # docxtpl 内部 docx XML 的纯文本提取
+        """Scan the template for all {{ var }} placeholders and return a sorted, deduplicated list."""
+        # Plain-text extraction from the internal docx XML
         names: set[str] = set()
-        # 重新 open 拿 raw text(不依赖 docxtpl 的 jinja env)
+        # Re-open to get raw text (does not depend on docxtpl's jinja env)
         from docx import Document
 
         doc = Document(str(self._template_path))
@@ -50,22 +50,22 @@ class DocxRenderer:
         return sorted(names)
 
     def render(self, context: dict[str, Any], output_path: str | Path) -> Path:
-        """渲染模板并写到 output_path;失败不留半成品。
+        """Render the template to output_path; deletes any partial output on failure.
 
-        每次 render 重新加载模板(DocxTemplate.render 是一次性消费的)。
+        The template is reloaded on each render call (DocxTemplate.render is stateful).
         """
         out = Path(output_path)
-        # 确保父目录存在;若父目录都不存在则报错(测试期望)
+        # Ensure the parent directory exists; raise if it does not (test expectation)
         if not out.parent.is_dir():
-            raise IOError(f"输出目录不存在:{out.parent}")
+            raise IOError(f"output directory does not exist: {out.parent}")
 
-        # 重新 open 模板(DocxTemplate 渲染是 stateful 的)
+        # Re-open the template (DocxTemplate rendering is stateful)
         tpl = DocxTemplate(str(self._template_path))
         try:
             tpl.render(context)
             tpl.save(str(out))
         except Exception:
-            # 任何异常:删半成品再 re-raise
+            # Any exception: remove the partial output then re-raise
             if out.exists():
                 try:
                     out.unlink()

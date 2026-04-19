@@ -1,8 +1,8 @@
-"""Evolution 数据模型(M2 自研,替代 M0 EvoSkill 兼容层)。
+"""Evolution data models (M2, replacing the M0 EvoSkill compatibility layer).
 
-参考:
+References:
 - docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §4.1
-- docs/design.md §4.6(M2 合入时同步重写)
+- docs/design.md §4.6 (rewritten when M2 was merged)
 """
 
 from __future__ import annotations
@@ -18,11 +18,11 @@ SkillVersionStatus = Literal["draft", "evaluated", "promoted", "rejected"]
 EvolutionRunStatus = Literal["running", "completed", "failed", "budget_exceeded"]
 
 EvaluatorFn = Callable[[str, str, str], float]
-"""业务层提供的评分函数签名:(question, predicted, ground_truth) -> float。"""
+"""Evaluator function signature provided by the business layer: (question, predicted, ground_truth) -> float."""
 
 
 class FailureSample(BaseModel):
-    """单条失败样本(来自 trajectory.feedback)。"""
+    """A single failure sample derived from trajectory.feedback."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -39,7 +39,7 @@ class FailureSample(BaseModel):
 
 
 class SkillVersion(BaseModel):
-    """版本 DAG 节点。"""
+    """A node in the skill version DAG."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -57,7 +57,7 @@ class SkillVersion(BaseModel):
 
 
 class EvolutionProposal(BaseModel):
-    """Proposer 单次产出的候选(未入库,未打分)。"""
+    """A candidate produced by a single Proposer call (not yet stored or scored)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -67,7 +67,7 @@ class EvolutionProposal(BaseModel):
 
 
 class EvolutionScore(BaseModel):
-    """候选在 hold-out 上的评分。"""
+    """Score of a candidate on the hold-out set."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -80,7 +80,7 @@ class EvolutionScore(BaseModel):
 
 
 class EvolutionRunRecord(BaseModel):
-    """一次 run_evolution 调用的完整记录。"""
+    """Complete record for a single run_evolution call."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -102,7 +102,7 @@ class EvolutionRunRecord(BaseModel):
 
 
 class EvolutionRunConfig(BaseModel):
-    """run_evolution 输入配置。"""
+    """Input configuration for run_evolution."""
 
     model_config = ConfigDict(extra="forbid")
 

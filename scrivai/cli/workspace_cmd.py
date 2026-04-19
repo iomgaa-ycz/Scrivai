@@ -12,10 +12,10 @@ from typing import Any
 def _resolve_workspace_roots(args) -> tuple[Path, Path]:
     ws = getattr(args, "workspaces_root", None) or os.environ.get("SCRIVAI_WORKSPACE_ROOT")
     if not ws:
-        raise ValueError("missing env var: SCRIVAI_WORKSPACE_ROOT (或传 --workspaces-root)")
+        raise ValueError("missing env var: SCRIVAI_WORKSPACE_ROOT (or pass --workspaces-root)")
     arc = getattr(args, "archives_root", None) or os.environ.get("SCRIVAI_ARCHIVES_ROOT")
     if not arc:
-        raise ValueError("missing env var: SCRIVAI_ARCHIVES_ROOT (或传 --archives-root)")
+        raise ValueError("missing env var: SCRIVAI_ARCHIVES_ROOT (or pass --archives-root)")
     return Path(ws).expanduser(), Path(arc).expanduser()
 
 
@@ -23,7 +23,7 @@ def _parse_kv_list(items: list[str] | None) -> dict[str, str]:
     out: dict[str, str] = {}
     for it in items or []:
         if "=" not in it:
-            raise ValueError(f"格式错误(应为 KEY=VAL):{it}")
+            raise ValueError(f"invalid format (expected KEY=VAL): {it}")
         k, v = it.split("=", 1)
         out[k] = v
     return out
@@ -37,7 +37,7 @@ def cmd_create(args) -> dict[str, Any]:
     mgr = build_workspace_manager(workspaces_root=ws, archives_root=arc)
 
     data_inputs = {k: Path(v).expanduser() for k, v in _parse_kv_list(args.data).items()}
-    extra_env = _parse_kv_list(args.env)  # 默认空 dict;WorkspaceSpec 不接受 None
+    extra_env = _parse_kv_list(args.env)  # defaults to empty dict; WorkspaceSpec does not accept None
 
     spec = WorkspaceSpec(
         run_id=args.run_id,
@@ -57,7 +57,7 @@ def cmd_archive(args) -> dict[str, Any]:
     ws, arc = _resolve_workspace_roots(args)
     mgr = build_workspace_manager(workspaces_root=ws, archives_root=arc)
 
-    # 从 meta.json 重建 WorkspaceHandle(create 时已写入完整快照)
+    # Reconstruct WorkspaceHandle from meta.json (full snapshot written by create)
     root = ws / args.run_id
     meta_path = root / "meta.json"
     if not meta_path.is_file():
@@ -98,8 +98,8 @@ def register(parser: argparse.ArgumentParser) -> None:
     c = sub.add_parser("create", parents=[common])
     c.add_argument("--run-id", required=True)
     c.add_argument("--project-root", required=True)
-    c.add_argument("--data", action="append", default=[], help="name=path 多次传")
-    c.add_argument("--env", action="append", default=[], help="KEY=VAL 多次传")
+    c.add_argument("--data", action="append", default=[], help="name=path, may be repeated")
+    c.add_argument("--env", action="append", default=[], help="KEY=VAL, may be repeated")
     c.add_argument("--force", action="store_true")
     c.set_defaults(func=cmd_create)
 

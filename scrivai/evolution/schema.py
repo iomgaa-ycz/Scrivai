@@ -1,6 +1,6 @@
-"""evolution.db SQL schema(3 表)。
+"""evolution.db SQL schema (3 tables).
 
-参考 docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §4.2
+See docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §4.2
 """
 
 from __future__ import annotations

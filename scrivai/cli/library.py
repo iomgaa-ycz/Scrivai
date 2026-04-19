@@ -14,7 +14,7 @@ from scrivai.knowledge import build_libraries, build_qmd_client_from_config
 def _resolve_qmd_db(args: argparse.Namespace) -> Path:
     db = getattr(args, "db_path", None) or os.environ.get("QMD_DB_PATH")
     if not db:
-        raise ValueError("missing env var: QMD_DB_PATH (或传 --db-path)")
+        raise ValueError("missing env var: QMD_DB_PATH (or pass --db-path)")
     return Path(db).expanduser()
 
 
@@ -32,7 +32,7 @@ def _entry_to_json(entry) -> dict[str, Any]:
 
 
 def _search_result_to_json(r) -> dict[str, Any]:
-    """SearchResult 透传所有公开属性(qmd 提供 model_dump 或 dict)。"""
+    """Pass-through all public attributes from SearchResult (qmd provides model_dump or dict)."""
     if hasattr(r, "model_dump"):
         return r.model_dump(mode="json")
     if hasattr(r, "__dict__"):
@@ -77,19 +77,19 @@ def register(parser: argparse.ArgumentParser) -> None:
         "--type",
         required=True,
         choices=["rules", "cases", "templates"],
-        help="library 类型",
+        help="library type",
     )
-    common.add_argument("--db-path", help="qmd db path(覆盖 env QMD_DB_PATH)")
+    common.add_argument("--db-path", help="qmd db path (overrides env QMD_DB_PATH)")
 
     s = sub.add_parser("search", parents=[common], help="hybrid search")
     s.add_argument("--query", required=True)
     s.add_argument("--top-k", type=int, default=5)
-    s.add_argument("--filters", default=None, help="JSON 字符串")
+    s.add_argument("--filters", default=None, help="JSON string")
     s.set_defaults(func=cmd_search)
 
-    g = sub.add_parser("get", parents=[common], help="按 entry_id 取一条")
+    g = sub.add_parser("get", parents=[common], help="fetch a single entry by entry_id")
     g.add_argument("--entry-id", required=True)
     g.set_defaults(func=cmd_get)
 
-    ls = sub.add_parser("list", parents=[common], help="列 collection 内全部 entry_id")
+    ls = sub.add_parser("list", parents=[common], help="list all entry_ids in the collection")
     ls.set_defaults(func=cmd_list)

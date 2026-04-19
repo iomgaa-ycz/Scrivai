@@ -1,14 +1,14 @@
-"""LLMCallBudget — 进化期间 LLM 调用预算守卫。"""
+"""LLMCallBudget — LLM call budget guard during an evolution run."""
 
 from __future__ import annotations
 
 
 class BudgetExceededError(RuntimeError):
-    """LLM 调用超预算。"""
+    """Raised when the LLM call budget is exhausted."""
 
 
 class LLMCallBudget:
-    """追踪并限制单次 run_evolution 的 LLM 调用总数。"""
+    """Tracks and enforces the maximum LLM call count for a single run_evolution call."""
 
     def __init__(self, limit: int = 500) -> None:
         if limit <= 0:
@@ -17,7 +17,7 @@ class LLMCallBudget:
         self._used = 0
 
     def consume(self, n: int = 1) -> None:
-        """尝试消耗 n 次调用;若消耗后超预算抛 BudgetExceededError。"""
+        """Consume n LLM calls; raises BudgetExceededError if the budget would be exceeded."""
         if self._used + n > self._limit:
             raise BudgetExceededError(
                 f"LLM budget exhausted: used={self._used}, want +{n}, limit={self._limit}"

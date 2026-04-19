@@ -1,11 +1,11 @@
-"""LLM 输出 JSON 容错解析 — 5 阶段渐进修复管线。
+"""Fault-tolerant JSON parser for LLM output — 5-stage progressive repair pipeline.
 
-阶段顺序(任意一步成功即返回;全部失败才抛):
-  Stage-0: json.loads 快路径
-  Stage-1: 剥壳(空白 / Markdown 围栏 / 注释)
-  Stage-2: 标点归一(中文引号 / 全角逗号)
-  Stage-3: 尾逗号删除
-  Stage-4: 字符串内裸引号转义
+Stages (first success returns immediately; all must fail before raising):
+  Stage-0: json.loads fast path
+  Stage-1: strip envelope (whitespace / Markdown fences / comments)
+  Stage-2: normalise punctuation (Chinese/fullwidth quotes, fullwidth commas)
+  Stage-3: remove trailing commas
+  Stage-4: escape bare inner quotes inside strings
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ _MAX_MSG_PREVIEW = 200
 
 @dataclass(frozen=True)
 class RepairReport:
-    """JSON 修复报告。"""
+    """Report produced by the repair pipeline."""
 
     stages_applied: list[str]
     original: str
@@ -53,19 +53,19 @@ def relaxed_json_loads(
     strict: bool = False,
     return_repair_report: bool = False,
 ) -> Any | tuple[Any, RepairReport]:
-    """LLM 输出 JSON 容错解析。
+    """Fault-tolerant JSON parser for LLM output.
 
-    参数:
-        text: LLM 原始输出文本（可能含 Markdown 围栏）。
-        strict: True 时跳过所有修复，行为与 json.loads 完全一致。
-        return_repair_report: True 时返回 (parsed_data, RepairReport) 元组。
+    Args:
+        text: Raw LLM output text (may contain Markdown fences).
+        strict: When True, skip all repair stages and behave exactly like json.loads.
+        return_repair_report: When True, return a (parsed_data, RepairReport) tuple.
 
-    返回:
-        解析后的 Python 对象；或 (对象, RepairReport) 元组。
+    Returns:
+        Parsed Python object, or a (object, RepairReport) tuple when return_repair_report is True.
 
-    异常:
-        ScrivaiJSONRepairError: 所有修复阶段均失败。
-        json.JSONDecodeError: strict=True 时，与 json.loads 行为一致。
+    Raises:
+        ScrivaiJSONRepairError: All repair stages failed.
+        json.JSONDecodeError: When strict=True, matches json.loads behaviour.
     """
     if strict:
         result = json.loads(text)
@@ -73,7 +73,7 @@ def relaxed_json_loads(
             return result, RepairReport(stages_applied=[], original=text, final=text)
         return result
 
-    # Stage-0: 快路径
+    # Stage-0: fast path
     try:
         result = json.loads(text)
         if return_repair_report:
@@ -112,10 +112,10 @@ def relaxed_json_loads(
     preview_orig = original[:_MAX_MSG_PREVIEW]
     preview_final = text[:_MAX_MSG_PREVIEW]
     msg = (
-        f"JSON 修复失败(已尝试: {', '.join(stages_applied)}):\n"
-        f"  json.loads 错误: {last_error}\n"
-        f"  原始文本(前{_MAX_MSG_PREVIEW}字符): {preview_orig}\n"
-        f"  修复后文本(前{_MAX_MSG_PREVIEW}字符): {preview_final}"
+        f"JSON repair failed (stages tried: {', '.join(stages_applied)}):\n"
+        f"  json.loads error: {last_error}\n"
+        f"  original text (first {_MAX_MSG_PREVIEW} chars): {preview_orig}\n"
+        f"  repaired text (first {_MAX_MSG_PREVIEW} chars): {preview_final}"
     )
     raise ScrivaiJSONRepairError(
         msg=msg,
@@ -127,13 +127,13 @@ def relaxed_json_loads(
     )
 
 
-# ── Stage 实现 ──
+# ── Stage implementations ──────────────────────────────────────────────
 
 _RE_FENCE = re.compile(r"^```(?:json|JSON)?\s*\n(.*?)\n\s*```\s*$", re.DOTALL)
 
 
 def _strip_envelope(text: str) -> str:
-    """Stage-1: 去除前后空白、Markdown 围栏、行/块注释。"""
+    """Stage-1: Strip leading/trailing whitespace, Markdown fences, and line/block comments."""
     text = text.strip()
 
     fence = _RE_FENCE.match(text)
@@ -145,7 +145,7 @@ def _strip_envelope(text: str) -> str:
 
 
 def _remove_comments_outside_strings(text: str) -> str:
-    """去除 JSON 语法位置的 // 行注释和 /* */ 块注释,保留字符串内容不变。"""
+    """Remove // line comments and /* */ block comments from syntactic positions, leaving string contents unchanged."""
     result: list[str] = []
     i = 0
     in_string = False
@@ -194,7 +194,7 @@ _CLOSE_QUOTES = {"\u201d", "\u2019"}  # " '
 _ALL_FANCY_QUOTES = _OPEN_QUOTES | _CLOSE_QUOTES
 _FULLWIDTH_COMMA = "\uff0c"  # ，
 
-# 对应关系：开引号 → 关引号
+# Mapping: opening quote → closing quote
 _FANCY_QUOTE_PAIR: dict[str, str] = {
     "\u201c": "\u201d",  # " → "
     "\u2018": "\u2019",  # ' → '
@@ -202,17 +202,17 @@ _FANCY_QUOTE_PAIR: dict[str, str] = {
 
 
 def _normalize_quotes(text: str) -> str:
-    """Stage-2: 语法位置的中文/全角引号 → 半角,全角逗号 → 半角。
+    """Stage-2: Replace syntactic Chinese/fullwidth quotes with ASCII quotes; fullwidth commas with half-width.
 
-    状态机追踪字符串内/外,区分两种开启方式:
-    - 普通 `"` 开启: 只有 `"` 关闭,内部中文引号保留不动。
-    - 中文引号开启: 对应的配对关闭引号关闭,输出全部替换为 `"`。
+    A state machine tracks inside/outside-string position and distinguishes two opening styles:
+    - Plain ``"`` open: only ``"`` closes; internal Chinese quotes are preserved.
+    - Chinese-quote open: the paired closing quote closes the string; all output is replaced with ``"``.
 
-    全角逗号在字符串外替换为半角逗号。
+    Fullwidth commas outside strings are replaced with half-width commas.
     """
     result: list[str] = []
     in_string = False
-    fancy_close: str | None = None  # 当前期望的中文关闭引号(None=由"开启)
+    fancy_close: str | None = None  # expected Chinese closing quote (None = opened by plain ")
     i = 0
 
     while i < len(text):
@@ -220,7 +220,7 @@ def _normalize_quotes(text: str) -> str:
 
         if in_string:
             if fancy_close is None:
-                # 由普通 `"` 开启的字符串
+                # string opened by a plain "
                 if ch == "\\" and i + 1 < len(text):
                     result.append(ch)
                     result.append(text[i + 1])
@@ -231,12 +231,12 @@ def _normalize_quotes(text: str) -> str:
                     result.append(ch)
                     i += 1
                     continue
-                # 中文引号在此保留原样
+                # Chinese quotes inside a plain-" string are kept as-is
                 result.append(ch)
                 i += 1
                 continue
             else:
-                # 由中文引号开启的字符串,等待对应关闭引号
+                # string opened by a Chinese quote; wait for the paired close quote
                 if ch == fancy_close:
                     in_string = False
                     fancy_close = None
@@ -247,7 +247,7 @@ def _normalize_quotes(text: str) -> str:
                 i += 1
                 continue
 
-        # 字符串外
+        # outside a string
         if ch == '"':
             in_string = True
             fancy_close = None
@@ -274,9 +274,9 @@ def _normalize_quotes(text: str) -> str:
 
 
 def _remove_trailing_commas(text: str) -> str:
-    """Stage-3: 删除对象/数组最后一个元素后的多余逗号。
+    """Stage-3: Remove trailing commas after the last element of objects/arrays.
 
-    状态机跳过字符串内容,仅对语法位置的 ,\\s*[}\\]] 模式执行删除。
+    A state machine skips string contents; only syntactic ,\s*[}\]] patterns are removed.
     """
     string_ranges: list[tuple[int, int]] = []
     in_string = False
@@ -315,12 +315,12 @@ _JSON_STRUCTURAL = set(":,}] \t\n\r")
 
 
 def _escape_inner_quotes(text: str) -> str:
-    """Stage-4: 字符串值内未转义的双引号 → 转义。
+    """Stage-4: Escape unescaped double-quotes inside string values.
 
-    前置条件:Stage-2 已将所有结构性引号归一为半角。
-    启发式:遇到字符串内的 " 时,检查紧随其后的字符是否为 JSON 结构字符。
-    若不是 → 此 " 是字符串内容,需转义为 \\"。
-    若是 → 此 " 是字符串闭合符。
+    Precondition: Stage-2 has already normalised all structural quotes to half-width.
+    Heuristic: when a " is encountered inside a string, inspect the next character.
+    If the next character is not a JSON structural character → the " is content; escape it as \\".
+    If the next character is structural → the " closes the string.
     """
     result: list[str] = []
     i = 0
@@ -333,7 +333,7 @@ def _escape_inner_quotes(text: str) -> str:
             i += 1
             continue
 
-        # 遇到 " — 开始扫描字符串
+        # hit an opening " — scan the string
         result.append('"')
         i += 1
         while i < len(text):

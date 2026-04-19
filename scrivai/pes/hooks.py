@@ -28,7 +28,7 @@ from scrivai.models.pes import (
     RunHookContext,
 )
 
-# 模块级标记 — 与 Herald2 完全对称(只是 namespace 改 scrivai_pes)
+# Module-level markers — fully symmetric with Herald2 (namespace changed to scrivai_pes)
 hookspec = pluggy.HookspecMarker("scrivai_pes")
 hookimpl = pluggy.HookimplMarker("scrivai_pes")
 

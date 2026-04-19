@@ -1,4 +1,4 @@
-"""TrajectoryStore - 跨 run trajectory 持久化(SQLite WAL)。"""
+"""TrajectoryStore — cross-run trajectory persistence (SQLite WAL)."""
 
 from scrivai.trajectory.store import TrajectoryStore
 

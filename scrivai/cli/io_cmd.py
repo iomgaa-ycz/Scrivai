@@ -72,7 +72,7 @@ def register(parser: argparse.ArgumentParser) -> None:
     pdf.add_argument("--timeout", type=int, default=120)
     pdf.set_defaults(func=cmd_pdf2md)
 
-    r = sub.add_parser("render", help="docxtpl 模板渲染")
+    r = sub.add_parser("render", help="docxtpl template rendering")
     r.add_argument("--template", required=True)
     r.add_argument("--context-json", required=True)
     r.add_argument("--output", required=True)

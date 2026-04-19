@@ -1,4 +1,4 @@
-"""Knowledge factory — 构建 QmdClient 与三个 Library。"""
+"""Knowledge factory — build a QmdClient and the three Library instances."""
 
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ if TYPE_CHECKING:
 
 
 def build_qmd_client_from_config(db_path: str | Path) -> "QmdClient":
-    """封装 qmd.connect;统一 ~ 展开。"""
+    """Wrap qmd.connect with a consistent ~ expansion."""
     return qmd.connect(str(Path(db_path).expanduser()))
 
 
 def build_libraries(
     qmd_client: "QmdClient",
 ) -> tuple[RuleLibrary, CaseLibrary, TemplateLibrary]:
-    """一次性构建三兄弟。"""
+    """Build all three libraries in one call."""
     return (
         RuleLibrary(qmd_client),
         CaseLibrary(qmd_client),
