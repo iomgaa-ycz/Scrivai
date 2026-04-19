@@ -248,6 +248,7 @@ class LLMClient:
         turns: list[PhaseTurn] = []
         pending_tool_calls: dict[str, dict[str, Any]] = {}
         result_response: LLMResponse | None = None
+        assistant_turn_count = 0
 
         async for message in query(prompt=prompt, options=options):
             if isinstance(message, AssistantMessage):
@@ -256,6 +257,11 @@ class LLMClient:
                     turns.append(turn)
                     if on_turn:
                         on_turn(turn)
+                # SDK 在 permission_mode=default 下不把被拒工具计入 max_turns，
+                # 这里自己计数所有 assistant turn，超出即中断。
+                assistant_turn_count += 1
+                if assistant_turn_count > max_turns:
+                    raise _MaxTurnsError(assistant_turn_count)
 
             elif isinstance(message, UserMessage):
                 turn = self._parse_user_turn(message, len(turns), pending_tool_calls)
