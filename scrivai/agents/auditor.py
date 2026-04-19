@@ -89,14 +89,25 @@ class AuditorPES(BasePES):
             if not isinstance(finding, dict):
                 raise ValueError(f"findings[{idx}] 必须是对象")
             verdict = finding.get("verdict")
-            if verdict not in verdict_levels:
+            # LLM 可能输出 verdict 为 dict: {"verdict": "合格", "evidence_quotes": [...]}
+            verdict_str = verdict.get("verdict") if isinstance(verdict, dict) else verdict
+            if verdict_str not in verdict_levels:
                 raise ValueError(
-                    f"findings[{idx}].verdict={verdict!r} 不在 verdict_levels={verdict_levels}"
+                    f"findings[{idx}].verdict={verdict_str!r} 不在 verdict_levels={verdict_levels}"
                 )
             if evidence_required:
                 evidence = finding.get("evidence") or []
-                if not isinstance(evidence, list) or len(evidence) == 0:
-                    raise ValueError(f"findings[{idx}] 缺少 evidence(evidence_required=True)")
+                has_evidence = isinstance(evidence, list) and len(evidence) > 0
+                evidence_quotes = (
+                    verdict.get("evidence_quotes") if isinstance(verdict, dict) else []
+                ) or []
+                has_quotes = isinstance(evidence_quotes, list) and len(evidence_quotes) > 0
+                evidence_refs = finding.get("evidence_refs") or []
+                has_refs = isinstance(evidence_refs, list) and len(evidence_refs) > 0
+                if not has_evidence and not has_quotes and not has_refs:
+                    raise ValueError(
+                        f"findings[{idx}] 缺少 evidence(evidence_required=True)"
+                    )
 
         run.final_output = validated.model_dump()
         run.final_output_path = output_path
