@@ -1316,16 +1316,42 @@
 <a id="scrivai.docx_to_markdown"></a>
     <div class="doc doc-contents first">
 
-        <p>pandoc docx → markdown(UTF-8)。</p>
+        <p>Convert a .docx file to Markdown (UTF-8) using pandoc.</p>
 
 
-<details class="参数" open>
-  <summary>参数</summary>
-  <p>path: .docx 文件路径</p>
-</details>        <p>返回:
-    markdown 文本
-异常:
-    IOError — pandoc 不可用 / 文件不存在 / 转换失败</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> | <span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Path to the .docx file.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <p>Returns:
+    Markdown text.
+Raises:
+    IOError: pandoc unavailable / file not found / conversion failed.</p>
 
 
     </div>
@@ -1339,8 +1365,8 @@
 <a id="scrivai.doc_to_markdown"></a>
     <div class="doc doc-contents first">
 
-        <p>LibreOffice headless 把 .doc 转成 .docx,再调 docx_to_markdown。</p>
-<p>LibreOffice 也能识别 .docx 输入,所以 .docx 也能走此路径(冗余但安全)。</p>
+        <p>Convert a .doc file to Markdown via LibreOffice headless (doc → docx) then docx_to_markdown.</p>
+<p>LibreOffice also accepts .docx input, so .docx files can also use this path (redundant but safe).</p>
 
 
     </div>
@@ -1354,23 +1380,79 @@
 <a id="scrivai.pdf_to_markdown"></a>
     <div class="doc doc-contents first">
 
-        <p>MonkeyOCR HTTP 服务把 PDF 转 markdown。</p>
-<p>流程(参考 Reference/smart-construction-ai/crawler.py):
-  1. POST {base_url}/parse 上传 PDF
-  2. 响应取 download_url
-  3. GET {download_url} 拿 ZIP
-  4. 从 ZIP 中提取 .md 文件内容</p>
+        <p>Convert a PDF to Markdown using the MonkeyOCR HTTP service.</p>
+<p>Flow (see Reference/smart-construction-ai/crawler.py):
+  1. POST {base_url}/parse to upload the PDF
+  2. Read download_url from the response
+  3. GET {download_url} to retrieve the ZIP
+  4. Extract the .md file contents from the ZIP</p>
 
 
-<details class="参数" open>
-  <summary>参数</summary>
-  <p>path: .pdf 文件路径
-base_url: MonkeyOCR 服务地址(默认硬编码,由调用方按需覆盖)
-timeout: 单次 HTTP 请求超时(秒)</p>
-</details>        <p>返回:
-    markdown 文本
-异常:
-    IOError — 服务不可达 / 响应非 200 / 没有 .md 文件</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> | <span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Path to the .pdf file.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>base_url</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>MonkeyOCR service URL (hardcoded default; override as needed).</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;http://100.81.95.44:7861&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>timeout</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-request HTTP timeout in seconds.</p>
+              </div>
+            </td>
+            <td>
+                  <code>300</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <p>Returns:
+    Markdown text.
+Raises:
+    IOError: Service unreachable / non-200 response / no .md file in ZIP.</p>
 
 
     </div>

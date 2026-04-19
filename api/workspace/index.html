@@ -1440,7 +1440,7 @@ spec = WorkspaceSpec(
 
 
 
-        <p>对一个已创建 workspace 的引用,业务层与 PES 都通过此对象操作。</p>
+        <p>Reference to an existing workspace; used by both the business layer and PES.</p>
 
 
 
@@ -1482,7 +1482,7 @@ spec = WorkspaceSpec(
 
 
 
-        <p>WorkspaceManager Protocol(M0.25 实现)。</p>
+        <p>WorkspaceManager Protocol (M0.25 implementation).</p>
 
 
 
@@ -1516,7 +1516,7 @@ spec = WorkspaceSpec(
 
     <div class="doc doc-contents ">
 
-        <p>按 spec 创建新 workspace;run_id 冲突时按 spec.force 决定行为。</p>
+        <p>Create a new workspace from spec; behaviour on run_id conflict is determined by spec.force.</p>
 
 
     </div>
@@ -1534,7 +1534,7 @@ spec = WorkspaceSpec(
 
     <div class="doc doc-contents ">
 
-        <p>归档 workspace。success=True 打 tar.gz 删原目录;False 写 .failed 标记。</p>
+        <p>Archive a workspace. success=True creates a tar.gz and removes the directory; False writes a .failed marker.</p>
 
 
     </div>
@@ -1552,7 +1552,7 @@ spec = WorkspaceSpec(
 
     <div class="doc doc-contents ">
 
-        <p>清理 archives 与 .failed workspace,按 mtime 超过 days 的全删。</p>
+        <p>Delete archives and .failed workspaces whose mtime exceeds the given number of days.</p>
 
 
     </div>
@@ -1578,7 +1578,7 @@ spec = WorkspaceSpec(
 
 
 
-        <p>workspace 快照元信息(写入 meta.json)。</p>
+        <p>Workspace snapshot metadata (written to meta.json).</p>
 
 
 
