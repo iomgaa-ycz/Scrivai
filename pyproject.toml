@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "scrivai"
 version = "0.1.5"
-description = "Claude Agent 编排框架 — 文档审核 / 生成场景"
+description = "Configurable document generation & audit framework built on Claude Agent SDK"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.11"
@@ -40,11 +40,17 @@ dev = [
     "mypy>=1.10",
     "types-PyYAML>=6.0",
 ]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.24",
+]
 
 [project.urls]
 Homepage = "https://github.com/iomgaa-ycz/Scrivai"
+Documentation = "https://iomgaa-ycz.github.io/Scrivai/"
 Repository = "https://github.com/iomgaa-ycz/Scrivai"
 Issues = "https://github.com/iomgaa-ycz/Scrivai/issues"
+Changelog = "https://github.com/iomgaa-ycz/Scrivai/blob/main/CHANGELOG.md"
 
 [project.scripts]
 scrivai-cli = "scrivai.cli.__main__:main"
