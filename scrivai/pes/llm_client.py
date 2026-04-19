@@ -1,9 +1,9 @@
-"""LLMClient — claude-agent-sdk 0.1.61 适配层(M1.0)。
+"""LLMClient — claude-agent-sdk 0.1.61 adapter layer (M1.0).
 
-参考:
+References:
 - docs/design.md §5.3.7
 - docs/superpowers/specs/2026-04-17-scrivai-m1.0-design.md §4
-- Herald2 core/llm.py(借鉴 pending_tool_calls 配对模式 + _text_from_content helper)
+- Herald2 core/llm.py (inspiration for pending_tool_calls pairing pattern + _text_from_content helper)
 """
 
 from __future__ import annotations
@@ -27,13 +27,13 @@ from claude_agent_sdk import (
 
 from scrivai.models.pes import ModelConfig, PhaseTurn
 
-# ── 模块内部异常(不暴露给业务层) ─────────────────────────
+# ── Module-internal exceptions (not exposed to business layer) ──
 
 
 class _MaxTurnsError(Exception):
-    """ResultMessage.stop_reason == 'max_turns' 触发。
+    """Raised when ResultMessage.stop_reason == 'max_turns'.
 
-    BasePES._call_sdk_query 翻译为 sdk_other → max_turns_exceeded。
+    BasePES._call_sdk_query translates this to sdk_other → max_turns_exceeded.
     """
 
     def __init__(self, num_turns: int) -> None:
@@ -42,7 +42,7 @@ class _MaxTurnsError(Exception):
 
 
 class _SDKExecutionError(Exception):
-    """ResultMessage.is_error 且非 max_turns。BasePES._call_sdk_query 翻译为 sdk_other。"""
+    """Raised when ResultMessage.is_error is set and stop_reason is not max_turns. Translated to sdk_other by BasePES._call_sdk_query."""
 
     def __init__(self, stop_reason: str | None, errors: list[str]) -> None:
         self.stop_reason = stop_reason
@@ -50,12 +50,12 @@ class _SDKExecutionError(Exception):
         super().__init__(f"stop_reason={stop_reason} errors={errors}")
 
 
-# ── 数据结构 ─────────────────────────────────────────────
+# ── Data structures ───────────────────────────────────────
 
 
 @dataclass
 class LLMResponse:
-    """SDK 调用的统一返回。BasePES._call_sdk_query 解包成 (result, usage, turns)。"""
+    """Unified return type for an SDK call. BasePES._call_sdk_query unpacks it into (result, usage, turns)."""
 
     result: str
     turns: list[PhaseTurn]
@@ -64,13 +64,13 @@ class LLMResponse:
     session_id: str | None = None
 
 
-# ── 工具函数 ─────────────────────────────────────────────
+# ── Helper functions ──────────────────────────────────────
 
 
 def _text_from_content(content: str | list[dict[str, Any]] | None) -> str:
-    """从 ToolResultBlock.content 提取纯文本(借 Herald2 helper)。
+    """Extract plain text from ToolResultBlock.content (borrowed from Herald2 helper).
 
-    SDK 0.1.61 的 ToolResultBlock.content 可能是 str、list[dict]、或 None。
+    In SDK 0.1.61, ToolResultBlock.content may be a str, list[dict], or None.
     """
     if content is None:
         return ""
@@ -89,17 +89,17 @@ def _text_from_content(content: str | list[dict[str, Any]] | None) -> str:
 
 
 class LLMClient:
-    """对 claude_agent_sdk.query() 的薄封装。
+    """Thin wrapper around claude_agent_sdk.query().
 
-    职责:
-    - 构造 ClaudeAgentOptions(env 注入 ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN)
-    - 消费消息流,翻译为 PhaseTurn 列表
-    - tool_use ↔ tool_result 跨 message 配对(pending_tool_calls dict)
-    - ResultMessage.is_error → _MaxTurnsError / _SDKExecutionError
+    Responsibilities:
+    - Build ClaudeAgentOptions (inject ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN via env)
+    - Consume the message stream and translate to a list of PhaseTurns
+    - Match tool_use ↔ tool_result across messages (pending_tool_calls dict)
+    - Translate ResultMessage.is_error → _MaxTurnsError / _SDKExecutionError
 
-    不职责:
-    - 内部重试(L2 由 BasePES._run_phase_with_retry 负责)
-    - 错误细分(error_type 由 BasePES._call_sdk_query 翻译)
+    Not responsible for:
+    - Internal retries (L2 retries are handled by BasePES._run_phase_with_retry)
+    - Error classification (error_type is translated by BasePES._call_sdk_query)
     """
 
     def __init__(self, model: ModelConfig) -> None:
@@ -115,7 +115,7 @@ class LLMClient:
         cwd: Path,
         extra_env: dict[str, str] | None,
     ) -> ClaudeAgentOptions:
-        """构造 ClaudeAgentOptions;ModelConfig.base_url/api_key 通过 env 注入。"""
+        """Build ClaudeAgentOptions; ModelConfig.base_url/api_key are injected via env."""
         env: dict[str, str] = dict(extra_env or {})
         if self.model.base_url:
             env["ANTHROPIC_BASE_URL"] = self.model.base_url
@@ -139,12 +139,12 @@ class LLMClient:
         turn_index: int,
         pending: dict[str, dict[str, Any]],
     ) -> PhaseTurn | None:
-        """AssistantMessage → 1 个 PhaseTurn。
+        """Convert an AssistantMessage to a single PhaseTurn (or None if empty).
 
-        - 多 TextBlock 拼接为 data["text"]
-        - 多 ToolUseBlock 收集到 data["tool_uses"];同时填 pending dict
-        - ThinkingBlock MVP 忽略
-        - 空消息(无 text 无 tool)→ 返回 None
+        - Multiple TextBlocks are concatenated into data["text"].
+        - Multiple ToolUseBlocks are collected into data["tool_uses"] and added to the pending dict.
+        - ThinkingBlock is ignored (MVP).
+        - Empty message (no text, no tool) → returns None.
         """
         text_parts: list[str] = []
         tool_uses: list[dict[str, Any]] = []
@@ -160,7 +160,7 @@ class LLMClient:
                     "is_error": None,
                 }
             elif isinstance(block, ThinkingBlock):
-                pass  # MVP 忽略
+                pass  # ignored in MVP
         if not text_parts and not tool_uses:
             return None
         return PhaseTurn(
@@ -183,11 +183,11 @@ class LLMClient:
         turn_index: int,
         pending: dict[str, dict[str, Any]],
     ) -> PhaseTurn | None:
-        """UserMessage(tool result)→ 1 个 PhaseTurn。
+        """Convert a UserMessage (tool result) to a single PhaseTurn (or None if no tool results).
 
-        - 仅处理 list 形式 content(str content MVP 不构造)
-        - 通过 tool_use_id 配对 pending dict,合成 stdout/stderr/exit_code(Herald2 模式)
-        - 同时回填 pending[id]["result"] / ["is_error"](内部状态,不写 turn)
+        - Only processes list-form content (str content is not handled in MVP).
+        - Matches via tool_use_id from the pending dict; synthesises stdout/stderr/exit_code (Herald2 style).
+        - Back-fills pending[id]["result"] / ["is_error"] (internal state; not written to the turn).
         """
         if not isinstance(msg.content, list):
             return None
@@ -235,7 +235,7 @@ class LLMClient:
         extra_env: dict[str, str] | None = None,
         on_turn: Callable[[PhaseTurn], None] | None = None,
     ) -> LLMResponse:
-        """单次 SDK query。无内部重试,SDK 异常自然冒泡。"""
+        """Execute a single SDK query. No internal retries; SDK exceptions propagate naturally."""
         options = self._build_options(
             system_prompt=system_prompt,
             allowed_tools=allowed_tools,
@@ -257,8 +257,8 @@ class LLMClient:
                     turns.append(turn)
                     if on_turn:
                         on_turn(turn)
-                    # SDK 在某些 permission_mode 下不把被拒工具调用计入 max_turns,
-                    # 手动计数实际 assistant turn 防止无限循环。
+                    # Under some permission_modes the SDK does not count rejected tool calls
+                    # towards max_turns; manually counting actual assistant turns prevents infinite loops.
                     assistant_turn_count += 1
                     if assistant_turn_count > max_turns:
                         raise _MaxTurnsError(assistant_turn_count)
@@ -271,7 +271,7 @@ class LLMClient:
                         on_turn(turn)
 
             elif isinstance(message, ResultMessage):
-                # stop_sequence / end_turn 是正常终止原因(私有网关可能将 is_error 置 True)
+                # stop_sequence / end_turn are normal termination reasons (private gateways may set is_error=True)
                 _NORMAL_STOP_REASONS = {"end_turn", "stop_sequence"}
                 is_normal = (not message.is_error) or (message.stop_reason in _NORMAL_STOP_REASONS)
                 if not is_normal:
@@ -289,10 +289,10 @@ class LLMClient:
                     session_id=message.session_id,
                 )
 
-            # SystemMessage / StreamEvent / RateLimitEvent: 忽略(MVP)
+            # SystemMessage / StreamEvent / RateLimitEvent: ignored (MVP)
 
         if result_response is None:
-            raise RuntimeError("未收到 ResultMessage")
+            raise RuntimeError("No ResultMessage received")
         return result_response
 
     async def simple_query(
@@ -303,15 +303,16 @@ class LLMClient:
         system_prompt: str = "You are a helpful assistant.",
         max_turns: int = 1,
     ) -> str:
-        """薄包装:无工具 / 单轮 / 纯文本问答。
+        """Thin wrapper for tool-free / single-turn / plain-text queries.
 
-        用于 Proposer 等只需"发 prompt 拿文本"的场景。
-        model 参数当前被忽略(ModelConfig 在构造时已决定),仅保留签名以便调用者显式写明。
+        Used for scenarios like Proposer that only need "send a prompt, get text back".
+        The model parameter is currently ignored (ModelConfig is fixed at construction time);
+        it is kept in the signature so callers can document the intended model explicitly.
         """
         import tempfile
         from pathlib import Path as _Path
 
-        _ = model  # 接口对齐,实际由 self.model 决定
+        _ = model  # interface alignment; actual model is determined by self.model
         with tempfile.TemporaryDirectory(prefix="scrivai-simple-query-") as tmp:
             resp = await self.execute_task(
                 prompt=prompt,

@@ -35,41 +35,41 @@ class WorkspaceSpec(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    run_id: str = Field(..., description="全局唯一;workspace 目录与本 id 同名")
-    project_root: Path = Field(..., description="业务项目根(含 skills/ 与 agents/)")
+    run_id: str = Field(..., description="Globally unique; the workspace directory is named after this ID.")
+    project_root: Path = Field(..., description="Business project root (must contain skills/ and agents/).")
     data_inputs: dict[str, Path] = Field(
         default_factory=dict,
-        description="输入文件 logical_name → 源路径 映射;create 时复制到 workspace/data/",
+        description="Input file mapping logical_name → source path; copied to workspace/data/ at creation time.",
     )
     extra_env: dict[str, str] = Field(
-        default_factory=dict, description="附加环境变量,传给 Agent SDK"
+        default_factory=dict, description="Additional environment variables passed to the Agent SDK."
     )
     force: bool = Field(
-        default=False, description="run_id 冲突时:True 覆盖,False 抛 WorkspaceError"
+        default=False, description="On run_id conflict: True overwrites, False raises WorkspaceError."
     )
 
 
 class WorkspaceSnapshot(BaseModel):
-    """workspace 快照元信息(写入 meta.json)。"""
+    """Workspace snapshot metadata (written to meta.json)."""
 
     model_config = ConfigDict(extra="forbid")
 
     run_id: str
     project_root: Path
-    skills_git_hash: Optional[str] = Field(default=None, description="快照时 skills 的 git hash")
+    skills_git_hash: Optional[str] = Field(default=None, description="Git hash of skills at snapshot time.")
     agents_git_hash: Optional[str] = None
     snapshot_at: datetime
     extra: dict[str, Any] = Field(default_factory=dict)
 
 
 class WorkspaceHandle(BaseModel):
-    """对一个已创建 workspace 的引用,业务层与 PES 都通过此对象操作。"""
+    """Reference to an existing workspace; used by both the business layer and PES."""
 
     model_config = ConfigDict(extra="forbid")
 
     run_id: str
-    root_dir: Path = Field(..., description="workspace 根目录(含 working / data / output / logs)")
-    working_dir: Path = Field(..., description="Agent 的 cwd(含 .claude/skills+agents)")
+    root_dir: Path = Field(..., description="Workspace root directory (contains working / data / output / logs).")
+    working_dir: Path = Field(..., description="Agent cwd (contains .claude/skills and .claude/agents).")
     data_dir: Path
     output_dir: Path
     logs_dir: Path
@@ -78,16 +78,16 @@ class WorkspaceHandle(BaseModel):
 
 @runtime_checkable
 class WorkspaceManager(Protocol):
-    """WorkspaceManager Protocol(M0.25 实现)。"""
+    """WorkspaceManager Protocol (M0.25 implementation)."""
 
     def create(self, spec: WorkspaceSpec) -> WorkspaceHandle:
-        """按 spec 创建新 workspace;run_id 冲突时按 spec.force 决定行为。"""
+        """Create a new workspace from spec; behaviour on run_id conflict is determined by spec.force."""
         ...
 
     def archive(self, handle: WorkspaceHandle, success: bool) -> Path:
-        """归档 workspace。success=True 打 tar.gz 删原目录;False 写 .failed 标记。"""
+        """Archive a workspace. success=True creates a tar.gz and removes the directory; False writes a .failed marker."""
         ...
 
     def cleanup_old(self, days: int = 30) -> None:
-        """清理 archives 与 .failed workspace,按 mtime 超过 days 的全删。"""
+        """Delete archives and .failed workspaces whose mtime exceeds the given number of days."""
         ...

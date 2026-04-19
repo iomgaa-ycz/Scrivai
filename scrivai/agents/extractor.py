@@ -52,25 +52,25 @@ class ExtractorPES(BasePES):
         result: "PhaseResult",
         run: "PESRun",
     ) -> None:
-        """summarize 阶段读 output.json 并用 output_schema 校验。其他阶段 no-op。"""
+        """Summarize phase: read output.json and validate against output_schema. No-op for other phases."""
         if phase != "summarize":
             return
 
         schema = self.runtime_context.get("output_schema")
         if schema is None:
             raise ValueError(
-                "ExtractorPES 需要 runtime_context['output_schema'](pydantic BaseModel 子类)"
+                "ExtractorPES requires runtime_context['output_schema'] (a pydantic BaseModel subclass)."
             )
         if not (isinstance(schema, type) and issubclass(schema, BaseModel)):
             raise ValueError(
-                "runtime_context['output_schema'] 必须是 BaseModel 子类,"
-                f"得到 {type(schema).__name__}"
+                "runtime_context['output_schema'] must be a BaseModel subclass, "
+                f"got {type(schema).__name__}."
             )
 
         output_path = self.workspace.working_dir / "output.json"
         if not output_path.exists():
             raise FileNotFoundError(
-                f"ExtractorPES summarize 阶段 output.json 未生成: {output_path}"
+                f"ExtractorPES summarize phase: output.json was not produced: {output_path}"
             )
 
         try:
@@ -78,12 +78,12 @@ class ExtractorPES(BasePES):
                 output_path.read_text(encoding="utf-8"), strict=self.config.strict_json
             )
         except json.JSONDecodeError as e:
-            raise ValueError(f"output.json 不是合法 JSON: {e}") from e
+            raise ValueError(f"output.json is not valid JSON: {e}") from e
 
         try:
             validated = schema.model_validate(data)
         except ValidationError as e:
-            raise ValueError(f"output.json 不符 output_schema 定义: {e}") from e
+            raise ValueError(f"output.json does not match output_schema: {e}") from e
 
         run.final_output = validated.model_dump()
         run.final_output_path = output_path
@@ -95,7 +95,7 @@ class ExtractorPES(BasePES):
         result: "PhaseResult",
         run: "PESRun",
     ) -> None:
-        """execute 阶段在 required_outputs 基础上追加 plan→findings 覆盖率校验。"""
+        """Execute phase: extend required_outputs validation with plan→findings coverage check."""
         await super().validate_phase_outputs(phase, phase_cfg, result, run)
 
         if phase != "execute":
@@ -103,14 +103,14 @@ class ExtractorPES(BasePES):
 
         plan_path = self.workspace.working_dir / "plan.json"
         if not plan_path.exists():
-            raise ValueError(f"execute 覆盖率校验需要 plan.json,但未找到: {plan_path}")
+            raise ValueError(f"execute coverage check requires plan.json, but it was not found: {plan_path}")
 
         try:
             plan = relaxed_json_loads(
                 plan_path.read_text(encoding="utf-8"), strict=self.config.strict_json
             )
         except json.JSONDecodeError as e:
-            raise ValueError(f"plan.json 不是合法 JSON: {e}") from e
+            raise ValueError(f"plan.json is not valid JSON: {e}") from e
 
         expected_ids = {
             item["id"]
@@ -125,4 +125,4 @@ class ExtractorPES(BasePES):
 
         missing = expected_ids - actual_ids
         if missing:
-            raise ValueError(f"未覆盖的 plan item id: {sorted(missing)}")
+            raise ValueError(f"Uncovered plan item ids: {sorted(missing)}")

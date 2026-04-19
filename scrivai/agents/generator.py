@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 def _parse_placeholders(template_path: Path) -> list[str]:
-    """用 docxtpl 自带能力提取模板的 undeclared variables 列表。"""
+    """Extract the list of undeclared template variables using docxtpl's built-in capability."""
     tpl = DocxTemplate(str(template_path))
     return sorted(tpl.get_undeclared_template_variables())
 
@@ -60,16 +60,16 @@ class GeneratorPES(BasePES):
         phase: str,
         run: "PESRun",
     ) -> dict[str, Any]:
-        """plan 阶段:解析 template_path 占位符,注入 context['placeholders']。"""
+        """Plan phase: parse template_path placeholders and inject context['placeholders']."""
         if phase != "plan":
             return {}
 
         template_path = self.runtime_context.get("template_path")
         if template_path is None:
-            raise ValueError("GeneratorPES 需要 runtime_context['template_path'](docxtpl 模板路径)")
+            raise ValueError("GeneratorPES requires runtime_context['template_path'] (docxtpl template path).")
         template_path = Path(template_path)
         if not template_path.exists():
-            raise FileNotFoundError(f"template_path 不存在: {template_path}")
+            raise FileNotFoundError(f"template_path does not exist: {template_path}")
 
         return {"placeholders": _parse_placeholders(template_path)}
 
@@ -79,44 +79,44 @@ class GeneratorPES(BasePES):
         result: "PhaseResult",
         run: "PESRun",
     ) -> None:
-        """summarize:校验 context_schema;auto_render=True 时渲染 docx。"""
+        """Summarize phase: validate context_schema; render docx if auto_render=True."""
         if phase != "summarize":
             return
 
         context_schema = self.runtime_context.get("context_schema")
         if context_schema is None:
             raise ValueError(
-                "GeneratorPES 需要 runtime_context['context_schema'](pydantic BaseModel 子类)"
+                "GeneratorPES requires runtime_context['context_schema'] (a pydantic BaseModel subclass)."
             )
         if not (isinstance(context_schema, type) and issubclass(context_schema, BaseModel)):
             raise ValueError(
-                "runtime_context['context_schema'] 必须是 BaseModel 子类,"
-                f"得到 {type(context_schema).__name__}"
+                "runtime_context['context_schema'] must be a BaseModel subclass, "
+                f"got {type(context_schema).__name__}."
             )
 
         template_path = self.runtime_context.get("template_path")
         if template_path is None:
             raise ValueError(
-                "GeneratorPES 需要 runtime_context['template_path']"
-                "(即使 auto_render=False,postprocess 仍依赖它)"
+                "GeneratorPES requires runtime_context['template_path'] "
+                "(even if auto_render=False, postprocess still needs it)."
             )
         template_path = Path(template_path)
 
         output_path = self.workspace.working_dir / "output.json"
         if not output_path.exists():
-            raise FileNotFoundError(f"GeneratorPES output.json 未生成: {output_path}")
+            raise FileNotFoundError(f"GeneratorPES output.json was not produced: {output_path}")
 
         try:
             data = relaxed_json_loads(
                 output_path.read_text(encoding="utf-8"), strict=self.config.strict_json
             )
         except json.JSONDecodeError as e:
-            raise ValueError(f"output.json 不是合法 JSON: {e}") from e
+            raise ValueError(f"output.json is not valid JSON: {e}") from e
 
         try:
             validated = context_schema.model_validate(data)
         except ValidationError as e:
-            raise ValueError(f"output.json 不符 context_schema: {e}") from e
+            raise ValueError(f"output.json does not match context_schema: {e}") from e
 
         run.final_output = validated.model_dump()
         run.final_output_path = output_path
@@ -125,7 +125,7 @@ class GeneratorPES(BasePES):
         if auto_render:
             if "context" not in data or not isinstance(data["context"], dict):
                 raise ValueError(
-                    "auto_render=True 需要 output.json 含 context 字典(docxtpl 渲染上下文)"
+                    "auto_render=True requires output.json to contain a 'context' dict (docxtpl render context)."
                 )
             final_docx = self.workspace.output_dir / "final.docx"
             try:
@@ -133,7 +133,7 @@ class GeneratorPES(BasePES):
                 tpl.render(data["context"])
                 tpl.save(str(final_docx))
             except Exception as e:
-                raise ValueError(f"docxtpl 渲染失败: {e}") from e
+                raise ValueError(f"docxtpl render failed: {e}") from e
 
     async def validate_phase_outputs(
         self,
@@ -142,7 +142,7 @@ class GeneratorPES(BasePES):
         result: "PhaseResult",
         run: "PESRun",
     ) -> None:
-        """plan:检查 plan.json 覆盖所有 placeholders;execute:检查 findings/ 覆盖。"""
+        """Plan phase: verify plan.json covers all placeholders; execute phase: verify findings/ coverage."""
         await super().validate_phase_outputs(phase, phase_cfg, result, run)
 
         if phase not in ("plan", "execute"):
@@ -150,7 +150,7 @@ class GeneratorPES(BasePES):
 
         template_path = self.runtime_context.get("template_path")
         if template_path is None:
-            raise ValueError("runtime_context['template_path'] 缺失(validate 需要它)")
+            raise ValueError("runtime_context['template_path'] is missing (required by validate).")
         placeholders = set(_parse_placeholders(Path(template_path)))
 
         if phase == "plan":
@@ -160,7 +160,7 @@ class GeneratorPES(BasePES):
                     plan_path.read_text(encoding="utf-8"), strict=self.config.strict_json
                 )
             except json.JSONDecodeError as e:
-                raise ValueError(f"plan.json 不是合法 JSON: {e}") from e
+                raise ValueError(f"plan.json is not valid JSON: {e}") from e
             declared = {
                 f["placeholder"]
                 for f in plan.get("fills", [])
@@ -168,7 +168,7 @@ class GeneratorPES(BasePES):
             }
             missing = placeholders - declared
             if missing:
-                raise ValueError(f"plan.json 未覆盖占位符: {sorted(missing)}")
+                raise ValueError(f"plan.json does not cover placeholders: {sorted(missing)}")
         elif phase == "execute":
             findings_dir = self.workspace.working_dir / "findings"
             actual = (
@@ -176,4 +176,4 @@ class GeneratorPES(BasePES):
             )
             missing = placeholders - actual
             if missing:
-                raise ValueError(f"findings 未覆盖占位符: {sorted(missing)}")
+                raise ValueError(f"findings do not cover placeholders: {sorted(missing)}")

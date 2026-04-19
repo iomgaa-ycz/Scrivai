@@ -25,16 +25,16 @@ from importlib import metadata as _metadata
 
 try:
     __version__: str = _metadata.version("scrivai")
-except _metadata.PackageNotFoundError:  # 未安装时(开发 checkout 首次)
+except _metadata.PackageNotFoundError:  # not installed yet (first development checkout)
     __version__ = "0.1.6"
 
-# qmd re-export(身份相等,非副本)
+# qmd re-export (identity, not a copy)
 from qmd import ChunkRef, CollectionInfo, SearchResult
 
-# 预置 PES(M0.75 占位,M1 实现)
+# Built-in PES (M0.75 placeholder, M1 implementation)
 from scrivai.agents import AuditorPES, ExtractorPES, GeneratorPES
 
-# Evolution(M2 自研 Skill 进化)
+# Evolution (M2 self-improvement Skill evolution)
 from scrivai.evolution import (
     CandidateEvaluator,
     EvolutionTrigger,
@@ -100,7 +100,7 @@ from scrivai.models.workspace import (
     WorkspaceSpec,
 )
 
-# PES 核心
+# PES core
 from scrivai.pes.base import BasePES
 from scrivai.pes.config import load_pes_config
 from scrivai.pes.hooks import HookManager, hookimpl
@@ -121,18 +121,18 @@ from scrivai.trajectory.store import TrajectoryStore
 # Utils
 from scrivai.utils import relaxed_json_loads
 
-# Workspace 工厂
+# Workspace factory
 from scrivai.workspace.manager import build_workspace_manager
 
 __all__ = [
-    # PES 数据模型
+    # PES data models
     "PESRun",
     "PESConfig",
     "PhaseConfig",
     "PhaseResult",
     "PhaseTurn",
     "ModelConfig",
-    # 9 个 HookContext
+    # 9 HookContext types
     "HookContext",
     "RunHookContext",
     "PhaseHookContext",
@@ -153,23 +153,23 @@ __all__ = [
     "TrajectoryRecord",
     "PhaseRecord",
     "FeedbackRecord",
-    # 抽象类
+    # Abstract base classes
     "BasePES",
     "HookManager",
-    # 预置 PES
+    # Built-in PES
     "ExtractorPES",
     "AuditorPES",
     "GeneratorPES",
-    # 工厂
+    # Factory functions
     "build_workspace_manager",
     "build_qmd_client_from_config",
     "build_libraries",
     "load_pes_config",
-    # 知识库
+    # Knowledge libraries
     "RuleLibrary",
     "CaseLibrary",
     "TemplateLibrary",
-    # 轨迹
+    # Trajectory
     "TrajectoryStore",
     "TrajectoryRecorderHook",
     "PhaseLogHook",
@@ -189,9 +189,9 @@ __all__ = [
     "PhaseOutcome",
     # Utils
     "relaxed_json_loads",
-    # Hook 装饰器
+    # Hook decorator
     "hookimpl",
-    # Evolution(M2)
+    # Evolution (M2)
     "run_evolution",
     "promote",
     "CandidateEvaluator",
@@ -199,7 +199,7 @@ __all__ = [
     "LLMCallBudget",
     "Proposer",
     "SkillVersionStore",
-    # Evolution 数据模型
+    # Evolution data models
     "EvolutionProposal",
     "EvolutionRunConfig",
     "EvolutionRunRecord",
