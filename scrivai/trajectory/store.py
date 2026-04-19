@@ -237,6 +237,45 @@ class TrajectoryStore:
         )
         return rec
 
+    def delete_run(self, run_id: str) -> None:
+        """删除 run 及其关联的 phases / turns / tool_calls / feedback。
+
+        参数:
+            run_id: 要删除的 run ID。不存在时静默返回。
+        """
+
+        def _work(conn: sqlite3.Connection) -> None:
+            phase_ids = [
+                row[0]
+                for row in conn.execute(
+                    "SELECT phase_id FROM phases WHERE run_id=?", (run_id,)
+                ).fetchall()
+            ]
+            if phase_ids:
+                placeholders = ",".join("?" * len(phase_ids))
+                turn_ids = [
+                    row[0]
+                    for row in conn.execute(
+                        f"SELECT turn_id FROM turns WHERE phase_id IN ({placeholders})",
+                        phase_ids,
+                    ).fetchall()
+                ]
+                if turn_ids:
+                    tc_ph = ",".join("?" * len(turn_ids))
+                    conn.execute(
+                        f"DELETE FROM tool_calls WHERE turn_id IN ({tc_ph})", turn_ids
+                    )
+                    conn.execute(
+                        f"DELETE FROM turns WHERE turn_id IN ({tc_ph})", turn_ids
+                    )
+                conn.execute(
+                    f"DELETE FROM phases WHERE phase_id IN ({placeholders})", phase_ids
+                )
+            conn.execute("DELETE FROM feedback WHERE run_id=?", (run_id,))
+            conn.execute("DELETE FROM runs WHERE run_id=?", (run_id,))
+
+        self._execute_with_retry(_work)
+
     def list_runs(
         self,
         pes_name: str | None = None,

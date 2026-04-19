@@ -350,3 +350,58 @@ def test_busy_exhausts_raises_trajectory_write_error(
             task_prompt="t",
             runtime_context=None,
         )
+
+
+def test_delete_run_cascades_all_children() -> None:
+    """delete_run 级联删除 phases / turns / tool_calls / feedback。"""
+    store = TrajectoryStore(":memory:")
+    store.start_run(
+        run_id="r-del",
+        pes_name="x",
+        model_name="m",
+        provider="p",
+        sdk_version="0",
+        skills_git_hash=None,
+        agents_git_hash=None,
+        skills_is_dirty=False,
+        task_prompt="t",
+        runtime_context=None,
+    )
+    pid = store.record_phase_start("r-del", "plan", phase_order=0, attempt_no=0)
+    tid = store.record_turn(
+        phase_id=pid, turn_index=0, role="assistant", content_type="text", data={"t": 1}
+    )
+    store.record_tool_call(
+        turn_id=tid,
+        tool_name="Bash",
+        tool_input={"cmd": "ls"},
+        tool_output="ok",
+        status="success",
+        duration_ms=5,
+    )
+    store.record_feedback(
+        run_id="r-del",
+        input_summary="s",
+        draft_output={"d": 1},
+        final_output={"f": 1},
+        corrections=None,
+        review_policy_version=None,
+    )
+
+    assert store.get_run("r-del") is not None
+
+    store.delete_run("r-del")
+
+    assert store.get_run("r-del") is None
+    conn = store._memory_conn
+    assert conn is not None
+    assert conn.execute("SELECT COUNT(*) FROM phases WHERE run_id='r-del'").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM turns").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM tool_calls").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM feedback WHERE run_id='r-del'").fetchone()[0] == 0
+
+
+def test_delete_run_nonexistent_is_noop() -> None:
+    """删除不存在的 run_id 不报错。"""
+    store = TrajectoryStore(":memory:")
+    store.delete_run("nonexistent")
