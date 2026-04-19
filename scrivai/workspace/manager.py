@@ -1,10 +1,4 @@
-"""LocalWorkspaceManager — POSIX implementation of the WorkspaceManager Protocol.
-
-References:
-- docs/design.md §4.9 / §5.2
-- docs/TD.md T0.4
-- docs/superpowers/specs/2026-04-16-scrivai-m0.25-design.md §4.1
-"""
+"""LocalWorkspaceManager — POSIX filesystem implementation of the WorkspaceManager Protocol."""
 
 from __future__ import annotations
 
@@ -12,8 +6,8 @@ import sys
 
 if sys.platform == "win32":
     raise ImportError(
-        "scrivai.workspace requires POSIX (fcntl is unavailable); "
-        "for Windows support, implement an alternative WorkspaceManager Protocol."
+        "scrivai.workspace 仅支持 POSIX(fcntl 不可用);"
+        "如需 Windows 支持请实现 WorkspaceManager Protocol 的替代版本。"
     )
 
 import fcntl
@@ -36,9 +30,9 @@ from scrivai.models.workspace import (
 
 
 class LocalWorkspaceManager:
-    """Local-filesystem implementation of the WorkspaceManager Protocol.
+    """符合 WorkspaceManager Protocol 的本地文件系统实现。
 
-    Constructed via the build_workspace_manager factory; not exposed directly.
+    通过 build_workspace_manager 工厂构造,不直接对外暴露。
     """
 
     def __init__(self, workspaces_root: Path, archives_root: Path) -> None:
@@ -47,7 +41,7 @@ class LocalWorkspaceManager:
         self.workspaces_root.mkdir(parents=True, exist_ok=True)
         self.archives_root.mkdir(parents=True, exist_ok=True)
 
-    # ── Public API ───────────────────────────────────────────
+    # ── 公共 API ─────────────────────────────────────────────
 
     def create(self, spec: WorkspaceSpec) -> WorkspaceHandle:
         if not spec.project_root.exists():
@@ -132,15 +126,15 @@ class LocalWorkspaceManager:
             return failed_marker
 
     def cleanup_old(self, days: int = 30) -> None:
-        """Remove old archives and failed workspace directories older than the given threshold."""
+        """同时清 archives/<run>.tar.gz 与 workspaces/<run>/(若有 .failed),按 mtime 阈值。"""
         threshold = time.time() - days * 86400
 
-        # clean up archives
+        # 清 archives
         for arch in self.archives_root.glob("*.tar.gz"):
             if arch.stat().st_mtime < threshold:
                 arch.unlink()
 
-        # clean up .failed workspace directories
+        # 清 .failed workspace
         for ws in self.workspaces_root.iterdir():
             if not ws.is_dir():
                 continue
@@ -148,10 +142,10 @@ class LocalWorkspaceManager:
             if failed_marker.exists() and failed_marker.stat().st_mtime < threshold:
                 shutil.rmtree(ws)
 
-    # ── Internal helpers ─────────────────────────────────────
+    # ── 内部辅助 ─────────────────────────────────────────────
 
     def _git_hash(self, path: Path) -> str | None:
-        """Return the HEAD short hash of the git repo at path; None if not a git repo or on failure."""
+        """返回 path 所在 git 仓库的 HEAD short hash;非 git 或失败返回 None。"""
         try:
             result = subprocess.run(
                 ["git", "-C", str(path), "rev-parse", "--short", "HEAD"],
@@ -167,7 +161,7 @@ class LocalWorkspaceManager:
             return None
 
     def _git_is_dirty(self, path: Path) -> bool:
-        """Return True if the git repo at path has uncommitted changes; False if not a git repo or on failure."""
+        """返回 path 所在 git 仓库是否有未提交修改;非 git 或失败返回 False。"""
         try:
             result = subprocess.run(
                 ["git", "-C", str(path), "status", "--porcelain"],
@@ -183,7 +177,7 @@ class LocalWorkspaceManager:
             return False
 
     def _acquire_lock(self, run_id: str) -> IO[str]:
-        """Acquire an exclusive lock for run_id. Raises WorkspaceError on conflict; returns a file object (close() is safer than raw fd)."""
+        """对 run_id 取独占锁。冲突抛 WorkspaceError;返回 file object(其 close() 比 fd 更安全)。"""
         lock_path = self.workspaces_root / f".{run_id}.lock"
         lock_fd = open(lock_path, "w")
         try:
@@ -194,7 +188,7 @@ class LocalWorkspaceManager:
         return lock_fd
 
     def _release_lock(self, lock_fd: IO[str], run_id: str) -> None:
-        """Release the lock file for run_id."""
+        """释放 run_id 对应的锁文件。"""
         try:
             fcntl.flock(lock_fd, fcntl.LOCK_UN)
         finally:
@@ -206,5 +200,27 @@ def build_workspace_manager(
     workspaces_root: Path | str = "~/.scrivai/workspaces",
     archives_root: Path | str = "~/.scrivai/archives",
 ) -> WorkspaceManager:
-    """Build the default LocalWorkspaceManager (return type is the Protocol, leaving room for alternative implementations)."""
+    """Create a workspace manager with default directory layout.
+
+    Returns a ``WorkspaceManager`` (Protocol-typed) backed by the local
+    filesystem. Workspaces are created under ``workspaces_root`` and
+    archived to ``archives_root``.
+
+    Args:
+        workspaces_root: Directory for active workspaces.
+            Defaults to ``~/.scrivai/workspaces``.
+        archives_root: Directory for archived workspaces.
+            Defaults to ``~/.scrivai/archives``.
+
+    Returns:
+        A ``WorkspaceManager`` instance.
+
+    Example:
+        >>> from scrivai import build_workspace_manager
+        >>> ws_mgr = build_workspace_manager()
+        >>> ws_mgr = build_workspace_manager(
+        ...     workspaces_root="/tmp/my-workspaces",
+        ...     archives_root="/tmp/my-archives",
+        ... )
+    """
     return LocalWorkspaceManager(Path(workspaces_root), Path(archives_root))

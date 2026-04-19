@@ -1,9 +1,4 @@
-"""BasePES — abstract base class for the three-phase (plan->execute->summarize) execution engine.
-
-References:
-- docs/design.md §4.2 / §5.1
-- docs/superpowers/specs/2026-04-16-scrivai-m0.5-design.md §3.1
-"""
+"""BasePES — Three-phase (plan → execute → summarize) execution engine."""
 
 from __future__ import annotations
 
@@ -43,7 +38,7 @@ def _utcnow() -> datetime:
 
 
 class _NullHookManager:
-    """No-op dispatch used when no hooks are registered (avoids if hooks checks)."""
+    """无 hook 时的空 dispatch(避免 if hooks 判断)。"""
 
     def dispatch(self, hook_name: str, context: object) -> None:
         pass
@@ -53,10 +48,33 @@ class _NullHookManager:
 
 
 class BasePES:
-    """Abstract base class for the three-phase execution engine.
+    """Three-phase (plan → execute → summarize) execution engine base class.
 
-    Subclasses customise behaviour by overriding _call_sdk_query and the 4 extension points.
-    The M0.5 default _call_sdk_query raises NotImplementedError; M1 plugs in the real SDK.
+    Subclasses customize behavior by overriding ``_call_sdk_query`` and
+    four extension points: ``_build_plan_prompt``, ``_build_execute_prompt``,
+    ``_build_summarize_prompt``, and ``_post_summarize``.
+
+    Args:
+        config: PES configuration loaded via ``load_pes_config()``.
+        model: LLM provider configuration.
+        workspace: Isolated workspace handle for this run.
+        hooks: Optional hook manager for lifecycle callbacks.
+        trajectory_store: Optional trajectory store for run recording.
+        runtime_context: Extra parameters passed to extension points
+            (e.g., ``output_schema`` for ExtractorPES).
+        llm_client: Optional pre-configured LLM client (created
+            automatically if not provided).
+
+    Example:
+        >>> from scrivai import BasePES, ModelConfig, load_pes_config
+        >>> class MyPES(BasePES):
+        ...     pass  # override extension points as needed
+        >>> pes = MyPES(
+        ...     config=load_pes_config(Path("my_pes.yaml")),
+        ...     model=ModelConfig(model="claude-sonnet-4-20250514"),
+        ...     workspace=ws,
+        ... )
+        >>> run = await pes.run("Process this document")
     """
 
     def __init__(
@@ -76,17 +94,32 @@ class BasePES:
         self.hooks: HookManager | _NullHookManager = hooks or _NullHookManager()
         self.trajectory_store = trajectory_store
         self.runtime_context = runtime_context or {}
-        # Lazy import (prevents ImportError when the SDK is absent)
+        # 延迟 import(避免无 SDK 场景下 BasePES 无法 import)
         if llm_client is None:
             from scrivai.pes.llm_client import LLMClient as _LLMClient
 
             llm_client = _LLMClient(model)
         self._llm = llm_client
 
-    # ── Public API ──────────────────────────────────────────
+    # ── 公共 API ──────────────────────────────────────────
 
     async def run(self, task_prompt: str) -> PESRun:
-        """Run plan -> execute -> summarize in sequence and return the complete PESRun."""
+        """Execute the three-phase pipeline and return the completed run.
+
+        Runs plan → execute → summarize sequentially. Each phase validates
+        its file-contract outputs and retries on failure (up to ``max_retries``
+        configured per phase).
+
+        Args:
+            task_prompt: Natural language description of the task.
+
+        Returns:
+            A ``PESRun`` with ``status='completed'`` on success, or
+            ``status='failed'`` with ``error`` details on failure.
+
+        Raises:
+            PhaseError: If a phase exhausts all retries.
+        """
         run = PESRun(
             run_id=self.workspace.run_id,
             pes_name=self.config.name,
@@ -140,24 +173,24 @@ class BasePES:
 
         return run
 
-    # ── Three-phase entry points ────────────────────────────────────────
+    # ── 三阶段入口 ────────────────────────────────────────
 
     async def plan(self, run: PESRun, task_prompt: str) -> PhaseResult:
-        """Entry point for the plan phase."""
+        """plan 阶段入口。"""
         return await self._run_phase_with_retry("plan", run, task_prompt)
 
     async def execute_phase(self, run: PESRun, task_prompt: str) -> PhaseResult:
-        """Entry point for the execute phase."""
+        """execute 阶段入口。"""
         return await self._run_phase_with_retry("execute", run, task_prompt)
 
     async def summarize(self, run: PESRun, task_prompt: str) -> PhaseResult:
-        """Entry point for the summarize phase."""
+        """summarize 阶段入口。"""
         return await self._run_phase_with_retry("summarize", run, task_prompt)
 
-    # ── 4 extension points (all have default implementations) ──────────────────────────
+    # ── 4 个扩展点(全有默认实现) ──────────────────────────
 
     async def build_execution_context(self, phase: str, run: PESRun) -> dict[str, Any]:
-        """Build the execution_context for this phase. Default returns an empty dict."""
+        """构建本阶段的 execution_context。默认返回空 dict。"""
         return {}
 
     async def build_phase_prompt(
@@ -167,7 +200,7 @@ class BasePES:
         context: dict[str, Any],
         task_prompt: str,
     ) -> str:
-        """Render the phase prompt. Default concatenates config.prompt_text + phase prompt + task + context."""
+        """渲染本阶段 prompt。默认拼接 config.prompt_text + phase prompt + task + context。"""
         parts: list[str] = []
         if self.config.prompt_text:
             parts.append(self.config.prompt_text)
@@ -179,7 +212,7 @@ class BasePES:
         return "\n\n".join(parts)
 
     async def postprocess_phase_result(self, phase: str, result: PhaseResult, run: PESRun) -> None:
-        """Post-process the phase response. Default is no-op. Exceptions become response_parse_error (not retryable)."""
+        """响应后处理。默认 no-op。异常 → response_parse_error(不可重试)。"""
         return None
 
     async def validate_phase_outputs(
@@ -189,9 +222,9 @@ class BasePES:
         result: PhaseResult,
         run: PESRun,
     ) -> None:
-        """Validate required phase outputs. Default checks each rule in required_outputs.
+        """校验必需产物。默认按 required_outputs 逐条校验。
 
-        Exceptions become output_validation_error (retryable).
+        异常 → output_validation_error(可重试)。
         """
         working = self.workspace.working_dir
         for rule in phase_cfg.required_outputs:
@@ -212,7 +245,7 @@ class BasePES:
                         f"matching '{pattern}', found {len(found)}",
                     )
 
-    # ── SDK call (subclass override point) ────────────────────────
+    # ── SDK 调用(子类 override 点) ────────────────────────
 
     async def _call_sdk_query(
         self,
@@ -222,12 +255,12 @@ class BasePES:
         attempt_no: int,
         on_turn: Callable[[PhaseTurn], None],
     ) -> tuple[str, dict[str, Any], list[PhaseTurn]]:
-        """Call LLMClient and translate exceptions to _SDKError(error_type=...).
+        """调 LLMClient,翻译异常为 _SDKError(error_type=...)。
 
-        - _MaxTurnsError -> _SDKError("max_turns_exceeded", ...)
+        - _MaxTurnsError → _SDKError("max_turns_exceeded", ...)
         - _SDKExecutionError / CLIConnectionError / ProcessError / ClaudeSDKError / RuntimeError
-          -> _SDKError("sdk_other", ...)
-        - KeyboardInterrupt / CancelledError are not caught; they propagate to BasePES.run()
+          → _SDKError("sdk_other", ...)
+        - KeyboardInterrupt / CancelledError 不接,直接冒泡到 BasePES.run()
         """
         from claude_agent_sdk import ClaudeSDKError, CLIConnectionError, ProcessError
 
@@ -249,15 +282,15 @@ class BasePES:
             raise _SDKError("max_turns_exceeded", str(e)) from e
         except _SDKExecutionError as e:
             raise _SDKError("sdk_other", str(e)) from e
-        # RuntimeError covers the sentinel RuntimeError("no ResultMessage received") from LLMClient.
-        # Non-SDK RuntimeErrors are also bucketed to sdk_other (L2 retry safety net).
+        # RuntimeError 覆盖 LLMClient.execute_task 内部的 RuntimeError("未收到 ResultMessage")
+        # 哨兵异常;非 SDK 来源的 RuntimeError 也归并到 sdk_other(L2 retry 兜底)
         except (CLIConnectionError, ProcessError, ClaudeSDKError, RuntimeError) as e:
             raise _SDKError("sdk_other", str(e)) from e
 
-    # ── Internal: phase-level retry ────────────────────────────────
+    # ── 内部:phase 级重试 ────────────────────────────────
 
     async def _run_phase_with_retry(self, phase: str, run: PESRun, task_prompt: str) -> PhaseResult:
-        """Wrap a phase with level-2 retry; dispatches on_phase_failed on each failure."""
+        """包裹 phase 级重试;on_phase_failed 在此统一 dispatch。"""
         phase_cfg = self.config.phases[phase]
         last_result: PhaseResult | None = None
         for attempt_no in range(phase_cfg.max_retries + 1):
@@ -291,7 +324,7 @@ class BasePES:
                     raise
         raise PhaseError(phase, "exhausted retries", result=last_result)
 
-    # ── Internal: single phase attempt ─────────────────────────────
+    # ── 内部:单次 phase 尝试 ─────────────────────────────
 
     async def _run_phase(
         self,
@@ -300,10 +333,10 @@ class BasePES:
         task_prompt: str,
         attempt_no: int,
     ) -> PhaseResult:
-        """Full 9-step flow for a single phase attempt."""
+        """单次 phase 尝试的完整流程(9 步)。"""
         phase_cfg = self.config.phases[phase]
 
-        # 1. before_phase hook
+        # 1. before_phase
         try:
             self.hooks.dispatch(
                 "before_phase",
@@ -312,10 +345,10 @@ class BasePES:
         except Exception as e:
             raise self._hook_error(phase, attempt_no, str(e)) from e
 
-        # 2. build execution context
+        # 2. build_execution_context
         execution_context = await self.build_execution_context(phase, run)
 
-        # 3. merge context layers
+        # 3. 合并 context
         context = self._merge_context(
             runtime=self.runtime_context,
             execution=execution_context,
@@ -327,7 +360,7 @@ class BasePES:
             },
         )
 
-        # 4. build phase prompt + before_prompt hook
+        # 4. build_phase_prompt + before_prompt
         prompt = await self.build_phase_prompt(phase, phase_cfg, context, task_prompt)
         prompt_ctx = PromptHookContext(
             phase=phase,
@@ -342,7 +375,7 @@ class BasePES:
             raise self._hook_error(phase, attempt_no, str(e)) from e
         prompt = prompt_ctx.prompt
 
-        # 5. call SDK query
+        # 5. _call_sdk_query
         started_at = _utcnow()
         try:
             response_text, usage, turns = await self._call_sdk_query(
@@ -360,9 +393,9 @@ class BasePES:
         except (KeyboardInterrupt, asyncio.CancelledError):
             raise
         except Exception as e:
-            # _SDKError carries error_type; other Exceptions (should not reach here, LLMClient covers them) -> sdk_other
+            # _SDKError 携带 error_type;其他 Exception(理论上不应到这,LLMClient 已覆盖)→ sdk_other
             error_type = e.error_type if isinstance(e, _SDKError) else "sdk_other"
-            # M1.0 contract: all SDK failures are is_retryable=True (L2 phase retry replaces L1 backoff)
+            # M1.0 契约:所有 SDK 失败 is_retryable=True(L2 phase 重试兜底替代 L1 退避)
             result = PhaseResult(
                 phase=phase,
                 attempt_no=attempt_no,
@@ -379,7 +412,7 @@ class BasePES:
             )
             raise PhaseError(phase, str(e), result=result) from e
 
-        # 6. construct PhaseResult
+        # 6. 构造 PhaseResult
         result = PhaseResult(
             phase=phase,
             attempt_no=attempt_no,
@@ -392,7 +425,7 @@ class BasePES:
             ended_at=_utcnow(),
         )
 
-        # 7. post-process phase result
+        # 7. postprocess_phase_result
         try:
             await self.postprocess_phase_result(phase, result, run)
         except PhaseError:
@@ -403,7 +436,7 @@ class BasePES:
             result.is_retryable = False
             raise PhaseError(phase, str(e), result=result) from e
 
-        # 8. validate phase outputs
+        # 8. validate_phase_outputs
         try:
             await self.validate_phase_outputs(phase, phase_cfg, result, run)
         except PhaseError as e:
@@ -419,7 +452,7 @@ class BasePES:
             result.is_retryable = True
             raise PhaseError(phase, str(e), result=result) from e
 
-        # 9a. on_output_written (only for summarize + passed validation)
+        # 9a. on_output_written(仅 summarize + validate 通过)
         if phase == "summarize":
             try:
                 self.hooks.dispatch(
@@ -433,7 +466,7 @@ class BasePES:
             except Exception as e:
                 raise self._hook_error(phase, attempt_no, str(e)) from e
 
-        # 9b. after_phase hook
+        # 9b. after_phase
         try:
             self.hooks.dispatch(
                 "after_phase",
@@ -449,10 +482,10 @@ class BasePES:
 
         return result
 
-    # ── Internal helpers ──────────────────────────────────────────
+    # ── 内部辅助 ──────────────────────────────────────────
 
     def _hook_error(self, phase: str, attempt_no: int, msg: str) -> PhaseError:
-        """Build a hook_error PhaseResult and wrap it in a PhaseError."""
+        """构造 hook_error PhaseResult + PhaseError。"""
         result = PhaseResult(
             phase=phase,
             attempt_no=attempt_no,
@@ -470,7 +503,7 @@ class BasePES:
         return PhaseError(phase, msg, result=result)
 
     def _persist_final_state(self, run: PESRun) -> None:
-        """Synchronously write the final run state to the trajectory store (does not rely on after_run hook)."""
+        """sync 写 trajectory;不依赖 after_run hook。"""
         if self.trajectory_store is None:
             return
         self.trajectory_store.finalize_run(
@@ -483,7 +516,7 @@ class BasePES:
         )
 
     def _cleanup_phase_outputs(self, phase: str, phase_cfg: PhaseConfig) -> None:
-        """Clean up phase outputs before a retry: remove files listed in required_outputs."""
+        """重试前清场:按 required_outputs 删除上一轮产物。"""
         working = self.workspace.working_dir
         for rule in phase_cfg.required_outputs:
             if isinstance(rule, str):
@@ -501,7 +534,7 @@ class BasePES:
         execution: dict[str, Any],
         framework: dict[str, Any],
     ) -> dict[str, Any]:
-        """Merge three context layers with priority: runtime < execution < framework."""
+        """三层 context 合并:runtime < execution < framework。"""
         merged: dict[str, Any] = {}
         merged.update(runtime)
         merged.update(execution)
@@ -509,7 +542,7 @@ class BasePES:
         return merged
 
     def _read_previous_phase_output(self, phase: str) -> Any:
-        """Read the previous phase output: execute reads plan.json, summarize reads findings/."""
+        """读前序 phase 产物:execute 读 plan.json,summarize 读 findings/。"""
         working = self.workspace.working_dir
         if phase == "execute":
             plan_json = working / "plan.json"
@@ -529,7 +562,7 @@ class BasePES:
         return None
 
     def _list_produced_files(self, phase: str) -> list[str]:
-        """List relative paths of all files under working/."""
+        """列出 working/ 下所有文件的相对路径。"""
         working = self.workspace.working_dir
         result: list[str] = []
         for p in working.rglob("*"):
@@ -538,7 +571,7 @@ class BasePES:
         return sorted(result)
 
     def _workspace_payload(self) -> dict[str, str]:
-        """Return a compact workspace info dict."""
+        """workspace 信息精简 dict。"""
         return {
             "working_dir": str(self.workspace.working_dir),
             "data_dir": str(self.workspace.data_dir),

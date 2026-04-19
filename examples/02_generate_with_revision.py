@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
-"""Example 02: GeneratorPES 用 docxtpl 模板生成文档
+"""Example 02: GeneratorPES template generation with docxtpl
 
-演示 3 件事:
-  1. 运行时构造 docxtpl 模板(避免入库 .docx 二进制)
-  2. GeneratorPES 填充占位符产出 output.json
-  3. --render 开关追加 docx 渲染
+Demonstrates three things:
+  1. Build a docxtpl template at runtime (avoids committing .docx binaries)
+  2. GeneratorPES fills placeholders and produces output.json
+  3. --render flag appends docx rendering
 
-运行(需已配 .env 并激活 scrivai 环境):
+Run:
+    python examples/02_generate_with_revision.py            # without docx render
+    python examples/02_generate_with_revision.py --render   # render docx
 
-    conda run -n scrivai python examples/02_generate_with_revision.py            # 不渲染 docx
-    conda run -n scrivai python examples/02_generate_with_revision.py --render   # 渲染 docx
-
-产出:
+Output:
     /tmp/scrivai-examples/ws/<run_id>/working/output.json
-    /tmp/scrivai-examples/ws/<run_id>/output/final.docx(--render 时)
+    /tmp/scrivai-examples/ws/<run_id>/output/final.docx  (with --render)
 
-依赖环境变量(可经 .env):
-    ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN
-    SCRIVAI_DEFAULT_MODEL    (可选,默认 glm-5.1)
-    SCRIVAI_DEFAULT_PROVIDER (可选,默认 glm)
+Environment variables:
+    ANTHROPIC_API_KEY         (required)
+    ANTHROPIC_BASE_URL        (optional, for compatible gateways)
+    SCRIVAI_DEFAULT_MODEL     (optional, default claude-sonnet-4-20250514)
 """
 
 from __future__ import annotations
@@ -30,7 +29,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# examples 不是 package(无 __init__.py),把 examples/ 加入 sys.path 后走相对模块路径
+# examples/ is not a package (no __init__.py), add it to sys.path for relative module imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from data.simple_template import build_template  # noqa: E402
@@ -60,19 +59,19 @@ class GeneratorOutput(BaseModel):
 
 
 def _require_env() -> None:
-    if not os.environ.get("ANTHROPIC_AUTH_TOKEN"):
-        sys.exit("[ERROR] 未设置 ANTHROPIC_AUTH_TOKEN,请配置 .env(见 README)")
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        sys.exit("[ERROR] ANTHROPIC_API_KEY not set. See README for configuration.")
 
 
 async def main(render: bool) -> None:
     _require_env()
     repo_root = Path(__file__).resolve().parents[1]
 
-    # 1. 运行时生成 docxtpl 模板(避免入库 .docx 二进制)
+    # 1. Build docxtpl template at runtime (avoids committing .docx binaries)
     template_path = Path("/tmp/scrivai-examples/simple_template.docx")
     build_template(template_path)
 
-    # 2. 构造 workspace(隔离目录 + skill 快照)
+    # 2. Build workspace (isolated directory + skill snapshot)
     ws_mgr = build_workspace_manager(
         workspaces_root="/tmp/scrivai-examples/ws",
         archives_root="/tmp/scrivai-examples/archives",
@@ -85,14 +84,13 @@ async def main(render: bool) -> None:
         )
     )
 
-    # 3. 加载 GeneratorPES config + model
+    # 3. Load GeneratorPES config + model
     config = load_pes_config(repo_root / "scrivai" / "agents" / "generator.yaml")
     model = ModelConfig(
-        model=os.environ.get("SCRIVAI_DEFAULT_MODEL", "glm-5.1"),
-        provider=os.environ.get("SCRIVAI_DEFAULT_PROVIDER", "glm"),
+        model=os.environ.get("SCRIVAI_DEFAULT_MODEL", "claude-sonnet-4-20250514"),
     )
 
-    # 4. 构造 PES 并跑
+    # 4. Build PES and run
     pes = GeneratorPES(
         config=config,
         model=model,
@@ -116,8 +114,8 @@ async def main(render: bool) -> None:
     )
     run = await pes.run(task_prompt)
 
-    # 5. 输出结果
-    print(f"\n=== GeneratorPES 生成结果 (status={run.status}) ===\n")
+    # 5. Print results
+    print(f"\n=== GeneratorPES generation result (status={run.status}) ===\n")
     if run.status != "completed":
         print(f"[FAIL] {run.error}")
         sys.exit(1)
@@ -126,13 +124,13 @@ async def main(render: bool) -> None:
         print(f"  {{{{ {s.placeholder} }}}} → {s.content[:80]}")
     if render:
         final_docx = workspace.output_dir / "final.docx"
-        print(f"\ndocx 已渲染: {final_docx} ({final_docx.stat().st_size} bytes)")
-    print(f"\nWorkspace 目录(含 working/output/logs 可 inspect): {workspace.root_dir}")
+        print(f"\ndocx rendered: {final_docx} ({final_docx.stat().st_size} bytes)")
+    print(f"\nWorkspace directory (working/output/logs available for inspection): {workspace.root_dir}")
 
 
 def _cli() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--render", action="store_true", help="开启 docxtpl auto_render")
+    ap.add_argument("--render", action="store_true", help="enable docxtpl auto_render")
     asyncio.run(main(ap.parse_args().render))
 
 

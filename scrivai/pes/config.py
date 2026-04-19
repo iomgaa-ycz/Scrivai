@@ -1,11 +1,4 @@
-"""PESConfig YAML loader.
-
-Supports:
-- ${ENV_VAR} environment variable interpolation (string level)
-- pydantic schema validation (failures wrapped as PESConfigError)
-- YAML syntax errors wrapped as PESConfigError
-- Missing file wrapped as PESConfigError
-"""
+"""PES configuration YAML loader with environment variable interpolation."""
 
 from __future__ import annotations
 
@@ -24,16 +17,16 @@ ENV_VAR_PATTERN = re.compile(r"\$\{([A-Z_][A-Z0-9_]*)\}")
 
 
 def _interpolate_env_vars(node: Any) -> Any:
-    """Recursively replace ${ENV_VAR} placeholders in dict / list / str with environment values.
+    """递归把 dict / list / str 中的 ${ENV_VAR} 替换成环境变量值。
 
-    Raises PESConfigError when an environment variable is missing (naming the missing variable).
+    缺失环境变量 → PESConfigError(明确报哪个变量缺)。
     """
     if isinstance(node, str):
 
         def _replace(match: re.Match[str]) -> str:
             var_name = match.group(1)
             if var_name not in os.environ:
-                raise PESConfigError(f"environment variable not set: {var_name} (referenced in PESConfig YAML)")
+                raise PESConfigError(f"环境变量未设置:{var_name}(在 PESConfig YAML 中引用)")
             return os.environ[var_name]
 
         return ENV_VAR_PATTERN.sub(_replace, node)
@@ -45,29 +38,45 @@ def _interpolate_env_vars(node: Any) -> Any:
 
 
 def load_pes_config(yaml_path: Path) -> PESConfig:
-    """Load a PESConfig YAML file and return the parsed PESConfig.
+    """Load and validate a PES configuration from a YAML file.
+
+    The YAML file defines phase configurations, prompt text, default skills,
+    and other PES settings. Environment variable interpolation is supported
+    using ``${VAR_NAME}`` syntax.
+
+    Args:
+        yaml_path: Path to the YAML configuration file.
+
+    Returns:
+        A validated ``PESConfig`` instance.
 
     Raises:
-        PESConfigError: File not found, YAML syntax error, missing environment variable,
-            or pydantic validation failure.
+        PESConfigError: If the file doesn't exist, contains invalid YAML,
+            references missing environment variables, or fails Pydantic
+            validation.
+
+    Example:
+        >>> from pathlib import Path
+        >>> from scrivai import load_pes_config
+        >>> config = load_pes_config(Path("scrivai/agents/extractor.yaml"))
     """
     yaml_path = Path(yaml_path)
     if not yaml_path.exists():
-        raise PESConfigError(f"PESConfig YAML file not found: {yaml_path}")
+        raise PESConfigError(f"PESConfig YAML 文件不存在:{yaml_path}")
 
     try:
         raw = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
     except yaml.YAMLError as e:
-        raise PESConfigError(f"PESConfig YAML syntax error ({yaml_path}): {e}") from e
+        raise PESConfigError(f"PESConfig YAML 语法错误({yaml_path}):{e}") from e
 
     if not isinstance(raw, dict):
         raise PESConfigError(
-            f"PESConfig YAML top level must be a mapping, got {type(raw).__name__}: {yaml_path}"
+            f"PESConfig YAML 顶层必须是 mapping,得到 {type(raw).__name__}:{yaml_path}"
         )
 
     interpolated = _interpolate_env_vars(raw)
 
-    # Inject each phases dict key as the name field of the corresponding PhaseConfig
+    # 将 phases dict 的 key 注入为每个 PhaseConfig 的 name 字段
     if isinstance(interpolated.get("phases"), dict):
         for phase_name, phase_cfg in interpolated["phases"].items():
             if isinstance(phase_cfg, dict) and "name" not in phase_cfg:
@@ -76,4 +85,4 @@ def load_pes_config(yaml_path: Path) -> PESConfig:
     try:
         return PESConfig.model_validate(interpolated)
     except ValidationError as e:
-        raise PESConfigError(f"PESConfig schema validation failed ({yaml_path}): {e}") from e
+        raise PESConfigError(f"PESConfig schema 校验失败({yaml_path}):{e}") from e

@@ -8,72 +8,95 @@ from typing import Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-# ────────────────────── Base configuration classes ─────
+# ────────────────────── 基础配置类 ──────────────────────
 
 
 class ModelConfig(BaseModel):
-    """LLM provider configuration (model ID, base_url, api_key, etc.)."""
+    """LLM provider configuration.
+
+    At minimum, provide a ``model`` name. The API key and base URL are read
+    from environment variables by default (``ANTHROPIC_API_KEY``,
+    ``ANTHROPIC_BASE_URL``).
+
+    Args:
+        model: Model identifier (e.g., ``"claude-sonnet-4-20250514"``).
+        base_url: API base URL. ``None`` uses the SDK default.
+        api_key: API key. Usually read from ``ANTHROPIC_API_KEY`` env var.
+        provider: Provider tag for trajectory recording
+            (e.g., ``"anthropic"``, ``"glm"``).
+        fallback_model: Fallback model identifier for degraded operation.
+
+    Example:
+        >>> from scrivai import ModelConfig
+        >>> model = ModelConfig(model="claude-sonnet-4-20250514")
+        >>> model = ModelConfig(
+        ...     model="glm-5.1",
+        ...     base_url="https://gateway.example.com",
+        ...     api_key="sk-xxx",
+        ...     provider="glm",
+        ... )
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    model: str = Field(..., description="Model identifier, e.g. 'claude-sonnet-4-6'.")
-    base_url: Optional[str] = Field(default=None, description="API base URL; None uses the SDK default.")
-    api_key: Optional[str] = Field(default=None, description="API key; usually read from the environment.")
-    provider: Optional[str] = Field(default=None, description="Provider tag: 'anthropic', 'glm', 'minimax', etc.")
-    fallback_model: Optional[str] = Field(default=None, description="Fallback model identifier for degraded operation.")
+    model: str = Field(..., description="模型 id,如 'claude-sonnet-4-6'")
+    base_url: Optional[str] = Field(default=None, description="API base URL,None 走 SDK 默认")
+    api_key: Optional[str] = Field(default=None, description="API key;通常从 env 读")
+    provider: Optional[str] = Field(default=None, description="anthropic / glm / minimax 等")
+    fallback_model: Optional[str] = Field(default=None, description="降级模型 id")
 
 
 class PhaseConfig(BaseModel):
-    """Configuration for a single PES phase (plan, execute, or summarize)."""
+    """单阶段配置(plan / execute / summarize 任一)。"""
 
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(
         ...,
-        description="Phase name: one of 'plan', 'execute', or 'summarize'.",
+        description=("阶段名:固定为 plan / execute / summarize 之一(BasePES 只迭代这三个名字)。"),
     )
-    additional_system_prompt: str = Field(default="", description="Phase-specific system prompt appended to the base prompt.")
-    allowed_tools: list[str] = Field(..., description="SDK allowed_tools list for this phase.")
-    max_turns: int = Field(default=10, description="Maximum Agent turns per query within this phase.")
-    max_retries: int = Field(default=1, description="Phase-level retry count (L2 retry).")
-    permission_mode: str = Field(default="default", description="SDK permission_mode for this phase.")
+    additional_system_prompt: str = Field(default="", description="阶段特定 system prompt 追加")
+    allowed_tools: list[str] = Field(..., description="SDK allowed_tools 列表")
+    max_turns: int = Field(default=10, description="单次 query 内 Agent 最多交互轮数")
+    max_retries: int = Field(default=1, description="Phase 级重试次数(L2 重试)")
+    permission_mode: str = Field(default="default", description="SDK permission_mode")
     required_outputs: list[Union[str, dict[str, Any]]] = Field(
         default_factory=list,
         description=(
-            "Required output rules: a file path string (passes if file exists) or a directory rule "
-            "dict {'path': 'findings/', 'min_files': 1, 'pattern': '*.json'}."
+            "必需产物规则:字符串路径(文件存在即通过)或目录规则 "
+            "{'path':'findings/','min_files':1,'pattern':'*.json'}"
         ),
     )
 
 
 class PESConfig(BaseModel):
-    """PES configuration loaded from a YAML file via ``load_pes_config()``."""
+    """整个 PES 配置(从 YAML 加载)。"""
 
     model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(..., description="PES type name: 'extractor', 'auditor', 'generator', or custom.")
-    display_name: str = Field(default="", description="Human-readable display name for business-layer UIs.")
-    prompt_text: str = Field(..., description="Base system prompt text.")
-    default_skills: list[str] = Field(default_factory=list, description="Skills loaded by default.")
-    phases: dict[str, PhaseConfig] = Field(..., description="Phase configurations keyed by phase name.")
+    name: str = Field(..., description="PES 类型名:extractor / auditor / generator / 自定义")
+    display_name: str = Field(default="", description="显示名(给业务层 UI 用)")
+    prompt_text: str = Field(..., description="基础 system prompt")
+    default_skills: list[str] = Field(default_factory=list, description="默认装入 skills")
+    phases: dict[str, PhaseConfig] = Field(..., description="按 phase 名索引的阶段配置")
     strict_json: bool = Field(
         default=False,
-        description="If True, JSON parsing uses strict json.loads and skips fault-tolerant repair.",
+        description="True 时 JSON 解析使用 json.loads 严格模式,跳过容错修复",
     )
 
 
-# ────────────────────── Runtime state ──────────────────
+# ────────────────────── 运行态 ──────────────────────
 
 
 class PhaseTurn(BaseModel):
-    """A single Agent turn captured in the fine-grained trajectory."""
+    """单次 Agent turn(细粒度轨迹)。"""
 
     model_config = ConfigDict(extra="forbid")
 
-    turn_index: int = Field(..., description="Zero-based turn index within the phase.")
-    role: Literal["assistant", "user"] = Field(..., description="'user' indicates a tool result message.")
+    turn_index: int = Field(..., description="从 0 开始")
+    role: Literal["assistant", "user"] = Field(..., description="user 是 tool result")
     content_type: Literal["text", "tool_use", "tool_result", "thinking"]
-    data: dict[str, Any] = Field(..., description="Raw message data preserved in full.")
+    data: dict[str, Any] = Field(..., description="原始消息数据(完整保留)")
     timestamp: datetime
 
 
@@ -89,65 +112,65 @@ PhaseErrorType = Literal[
 
 
 class PhaseResult(BaseModel):
-    """Result of a single phase (plan, execute, or summarize)."""
+    """单阶段完整结果。"""
 
     model_config = ConfigDict(extra="forbid")
 
     phase: Literal["plan", "execute", "summarize"]
-    attempt_no: int = Field(default=0, description="Attempt index for this phase (0 = first attempt; increments on phase-level retry).")
-    prompt: str = Field(default="", description="Final assembled prompt sent to the LLM.")
-    response_text: str = Field(default="", description="Final text response from the LLM.")
+    attempt_no: int = Field(default=0, description="本阶段第几次尝试(0 表首次;随 phase 级重试递增)")
+    prompt: str = Field(default="", description="最终拼接后的完整 prompt")
+    response_text: str = Field(default="", description="LLM 最终 text")
     turns: list[PhaseTurn] = Field(default_factory=list)
     produced_files: list[str] = Field(
         default_factory=list,
-        description="Files written by this phase (relative to working_dir).",
+        description="该阶段写入的文件(相对 working_dir)",
     )
-    usage: dict[str, Any] = Field(default_factory=dict, description="SDK token usage statistics.")
+    usage: dict[str, Any] = Field(default_factory=dict, description="SDK token 统计")
     started_at: datetime
     ended_at: Optional[datetime] = None
     error: Optional[str] = None
     error_type: Optional[PhaseErrorType] = Field(
-        default=None, description="Error category (see design §5.3.4)."
+        default=None, description="错误分类(详见 design §5.3.4)"
     )
-    is_retryable: bool = Field(default=False, description="Whether this failure is eligible for a phase-level retry.")
+    is_retryable: bool = Field(default=False, description="本次失败是否适合 phase 级重试")
 
 
 PESRunStatus = Literal["running", "completed", "failed", "cancelled"]
 
 
 class PESRun(BaseModel):
-    """Complete state of a single PES execution run."""
+    """一次 PES 执行的完整状态。"""
 
     model_config = ConfigDict(extra="forbid")
 
-    run_id: str = Field(..., description="Caller-assigned globally unique ID; workspace directory shares this name.")
-    pes_name: str = Field(..., description="PES type: 'extractor', 'auditor', 'generator', or custom.")
-    status: PESRunStatus = Field(default="running", description="Current run status.")
-    task_prompt: str = Field(..., description="Task description provided by the business layer.")
+    run_id: str = Field(..., description="调用方指定;workspace 同名;全局唯一")
+    pes_name: str = Field(..., description="extractor / auditor / generator / 自定义")
+    status: PESRunStatus = Field(default="running", description="当前状态")
+    task_prompt: str = Field(..., description="业务层传入的任务描述")
     phase_results: dict[str, PhaseResult] = Field(
         default_factory=dict,
-        description="Phase results keyed by phase name (multiple retries keep only the last attempt).",
+        description="按 phase 名索引的结果(同 phase 多次重试只留最后一次 attempt)",
     )
     final_output: Optional[dict[str, Any]] = Field(
-        default=None, description="Parsed content of output.json produced by the summarize phase."
+        default=None, description="summarize 阶段 output.json 解析内容"
     )
     final_output_path: Optional[Path] = Field(
-        default=None, description="Absolute path to working/output.json."
+        default=None, description="working/output.json 绝对路径"
     )
-    metadata: dict[str, Any] = Field(default_factory=dict, description="Business-layer extension fields.")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="业务扩展字段")
     skills_git_hash: Optional[str] = None
     agents_git_hash: Optional[str] = None
-    skills_is_dirty: bool = Field(default=False, description="True if the source git repo had uncommitted changes at snapshot time.")
-    model_name: str = Field(..., description="Model identifier used for this run.")
-    provider: str = Field(default="", description="Provider tag: 'anthropic', 'glm', 'minimax', etc.")
-    sdk_version: str = Field(default="", description="claude-agent-sdk version string.")
+    skills_is_dirty: bool = Field(default=False, description="快照时源 git 有未提交修改则 True")
+    model_name: str = Field(..., description="使用的模型 id")
+    provider: str = Field(default="", description="anthropic / glm / minimax 等")
+    sdk_version: str = Field(default="", description="claude-agent-sdk 版本号")
     started_at: datetime
     ended_at: Optional[datetime] = None
     error: Optional[str] = None
-    error_type: Optional[PhaseErrorType] = Field(default=None, description="Error category when the run fails.")
+    error_type: Optional[PhaseErrorType] = Field(default=None, description="失败时的错误分类")
 
     def to_prompt_payload(self) -> dict[str, Any]:
-        """Return a minimal dict suitable for injection into a prompt context."""
+        """返回供 prompt context 注入的精简 dict。"""
         return {
             "run_id": self.run_id,
             "pes_name": self.pes_name,
@@ -156,11 +179,11 @@ class PESRun(BaseModel):
         }
 
 
-# ────────────────────── 9 HookContext types ─────────────
+# ────────────────────── 9 个 HookContext ──────────────────────
 
 
 class HookContext(BaseModel):
-    """Base class for all HookContext types; carries the minimum shared state across plugins."""
+    """所有 HookContext 的基类,跨插件共享的最小语境。"""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -168,32 +191,32 @@ class HookContext(BaseModel):
 
 
 class RunHookContext(HookContext):
-    """Context for before_run / after_run hooks."""
+    """before_run / after_run 上下文。"""
 
     pass
 
 
 class PhaseHookContext(HookContext):
-    """Context for before_phase / after_phase hooks."""
+    """before_phase / after_phase 上下文。"""
 
     phase: Literal["plan", "execute", "summarize"]
-    attempt_no: int = Field(..., description="Attempt index for this phase.")
+    attempt_no: int = Field(..., description="本阶段第几次尝试")
     phase_result: Optional[PhaseResult] = Field(
-        default=None, description="Final phase result, available in after_phase."
+        default=None, description="after_phase 时携带最终结果"
     )
 
 
 class PromptHookContext(HookContext):
-    """Context for before_prompt hooks; plugins may modify ``context.prompt``."""
+    """before_prompt 上下文,允许修改 prompt。"""
 
     phase: Literal["plan", "execute", "summarize"]
     attempt_no: int
-    prompt: str = Field(..., description="Fully rendered prompt (plugins may modify this field).")
-    context: dict[str, Any] = Field(default_factory=dict, description="Merged full prompt context.")
+    prompt: str = Field(..., description="渲染后的完整 prompt(允许 hook 修改)")
+    context: dict[str, Any] = Field(default_factory=dict, description="合并后的完整 context")
 
 
 class PromptTurnHookContext(HookContext):
-    """Context for after_prompt_turn hooks; fired once per SDK turn."""
+    """after_prompt_turn 上下文,每个 SDK turn 触发一次。"""
 
     phase: Literal["plan", "execute", "summarize"]
     attempt_no: int
@@ -201,25 +224,25 @@ class PromptTurnHookContext(HookContext):
 
 
 class FailureHookContext(HookContext):
-    """Context for on_phase_failed hooks."""
+    """on_phase_failed 上下文。"""
 
     phase: Literal["plan", "execute", "summarize"]
     attempt_no: int
-    will_retry: bool = Field(..., description="True if the phase will be retried.")
+    will_retry: bool = Field(..., description="是否会再次尝试本 phase")
     error_type: PhaseErrorType
     phase_result: PhaseResult
 
 
 class OutputHookContext(HookContext):
-    """Context for on_output_written hooks (fired once after summarize validates successfully)."""
+    """on_output_written 上下文(仅 summarize 阶段 validate 通过后触发一次)。"""
 
     output_path: Path
     final_output: dict[str, Any]
 
 
 class CancelHookContext(HookContext):
-    """Context for on_run_cancelled hooks."""
+    """on_run_cancelled 上下文。"""
 
     reason: str = Field(
-        default="", description="Cancellation reason (e.g. KeyboardInterrupt or asyncio.CancelledError)."
+        default="", description="取消原因(KeyboardInterrupt / asyncio.CancelledError)"
     )

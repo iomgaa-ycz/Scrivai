@@ -1,12 +1,4 @@
-"""ExtractorPES — extracts structured entries from documents (M1.5a T1.4).
-
-runtime_context business fields:
-- output_schema: type[BaseModel]  (required, used by summarize validation)
-
-References:
-- docs/design.md §4.4.1
-- docs/superpowers/specs/2026-04-17-scrivai-m1.5-design.md §4.1 / §5.2
-"""
+"""ExtractorPES — Extract structured data from documents using LLM."""
 
 from __future__ import annotations
 
@@ -23,17 +15,35 @@ if TYPE_CHECKING:
 
 
 class ExtractorPES(BasePES):
-    """Extracts structured entries from documents.
+    """Extract structured data from documents using LLM.
 
-    Constructor signature = BasePES.__init__ (no new parameters); business parameters
-    go in runtime_context:
-    - output_schema: type[BaseModel]  (required)
+    Inherits from ``BasePES`` with no additional constructor parameters.
+    Business parameters are passed via ``runtime_context``.
 
-    Phase contract:
-    - plan     → working/plan.md + working/plan.json
-                 plan.json: {"items_to_extract": [{"id": str, "description": str}, ...]}
-    - execute  → working/findings/<id>.json (one per plan item)
-    - summarize→ working/output.json (matches output_schema)
+    Args:
+        config: PES configuration (use ``load_pes_config("extractor.yaml")``).
+        model: LLM provider configuration.
+        workspace: Isolated workspace for this run.
+        runtime_context: Must include:
+            - ``output_schema`` (``type[BaseModel]``): Pydantic model for output validation.
+
+    Phase contracts:
+        - **plan** → ``working/plan.json`` with extraction items
+        - **execute** → ``working/findings/<id>.json`` per planned item
+        - **summarize** → ``working/output.json`` conforming to ``output_schema``
+
+    Example:
+        >>> from pydantic import BaseModel
+        >>> from scrivai import ExtractorPES, ModelConfig, load_pes_config
+        >>> class Items(BaseModel):
+        ...     items: list[str]
+        >>> pes = ExtractorPES(
+        ...     config=load_pes_config(Path("extractor.yaml")),
+        ...     model=ModelConfig(model="claude-sonnet-4-20250514"),
+        ...     workspace=ws,
+        ...     runtime_context={"output_schema": Items},
+        ... )
+        >>> run = await pes.run("Extract items from data/source.md")
     """
 
     async def postprocess_phase_result(
@@ -42,25 +52,25 @@ class ExtractorPES(BasePES):
         result: "PhaseResult",
         run: "PESRun",
     ) -> None:
-        """Read output.json in the summarize phase and validate against output_schema. No-op for other phases."""
+        """summarize 阶段读 output.json 并用 output_schema 校验。其他阶段 no-op。"""
         if phase != "summarize":
             return
 
         schema = self.runtime_context.get("output_schema")
         if schema is None:
             raise ValueError(
-                "ExtractorPES requires runtime_context['output_schema'] (a pydantic BaseModel subclass)"
+                "ExtractorPES 需要 runtime_context['output_schema'](pydantic BaseModel 子类)"
             )
         if not (isinstance(schema, type) and issubclass(schema, BaseModel)):
             raise ValueError(
-                "runtime_context['output_schema'] must be a BaseModel subclass, got "
-                f"{type(schema).__name__}"
+                "runtime_context['output_schema'] 必须是 BaseModel 子类,"
+                f"得到 {type(schema).__name__}"
             )
 
         output_path = self.workspace.working_dir / "output.json"
         if not output_path.exists():
             raise FileNotFoundError(
-                f"ExtractorPES summarize phase: output.json not generated: {output_path}"
+                f"ExtractorPES summarize 阶段 output.json 未生成: {output_path}"
             )
 
         try:
@@ -68,12 +78,12 @@ class ExtractorPES(BasePES):
                 output_path.read_text(encoding="utf-8"), strict=self.config.strict_json
             )
         except json.JSONDecodeError as e:
-            raise ValueError(f"output.json is not valid JSON: {e}") from e
+            raise ValueError(f"output.json 不是合法 JSON: {e}") from e
 
         try:
             validated = schema.model_validate(data)
         except ValidationError as e:
-            raise ValueError(f"output.json does not match output_schema: {e}") from e
+            raise ValueError(f"output.json 不符 output_schema 定义: {e}") from e
 
         run.final_output = validated.model_dump()
         run.final_output_path = output_path
@@ -85,7 +95,7 @@ class ExtractorPES(BasePES):
         result: "PhaseResult",
         run: "PESRun",
     ) -> None:
-        """Validate execute outputs: extends required_outputs check with plan-to-findings coverage."""
+        """execute 阶段在 required_outputs 基础上追加 plan→findings 覆盖率校验。"""
         await super().validate_phase_outputs(phase, phase_cfg, result, run)
 
         if phase != "execute":
@@ -93,14 +103,14 @@ class ExtractorPES(BasePES):
 
         plan_path = self.workspace.working_dir / "plan.json"
         if not plan_path.exists():
-            raise ValueError(f"execute coverage check requires plan.json (not found: {plan_path})")
+            raise ValueError(f"execute 覆盖率校验需要 plan.json,但未找到: {plan_path}")
 
         try:
             plan = relaxed_json_loads(
                 plan_path.read_text(encoding="utf-8"), strict=self.config.strict_json
             )
         except json.JSONDecodeError as e:
-            raise ValueError(f"plan.json is not valid JSON: {e}") from e
+            raise ValueError(f"plan.json 不是合法 JSON: {e}") from e
 
         expected_ids = {
             item["id"]
@@ -115,4 +125,4 @@ class ExtractorPES(BasePES):
 
         missing = expected_ids - actual_ids
         if missing:
-            raise ValueError(f"uncovered plan item ids: {sorted(missing)}")
+            raise ValueError(f"未覆盖的 plan item id: {sorted(missing)}")

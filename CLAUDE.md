@@ -76,9 +76,9 @@ doc = project.generate_and_review(inputs={...}, max_revisions=2)
 ### Phase 1: 规划与设计 (Planning)
 
 1. **查阅规格 (Read Specs)**
-   必须仔细阅读 `docs/` 下文档：
-   - `docs/design.md` — 完整设计文档（权威：架构 / 契约 / 模块依赖拓扑 / SDK 集成）
-   - `docs/TD.md` — 任务分解与里程碑
+   必须仔细阅读 `dev-docs/` 下文档：
+   - `dev-docs/design.md` — 完整设计文档（权威：架构 / 契约 / 模块依赖拓扑 / SDK 集成）
+   - `dev-docs/TD.md` — 任务分解与里程碑
 
 2. **计划 (Plan)**
    必须使用 plan 模式输出开发计划，包含：
@@ -156,8 +156,8 @@ doc = project.generate_and_review(inputs={...}, max_revisions=2)
 | 需求 | 文档路径 | 说明 |
 |------|----------|------|
 | 项目目标与背景 | `README.md` | Scrivai 是什么、解决什么问题 |
-| 完整设计（权威） | `docs/design.md` | 架构 / 对外契约 / 模块依赖拓扑 / SDK 集成 / 不变量 |
-| 任务分解与里程碑 | `docs/TD.md` | M0-M3 任务清单 + DoD + 估时 |
+| 完整设计（权威） | `dev-docs/design.md` | 架构 / 对外契约 / 模块依赖拓扑 / SDK 集成 / 不变量 |
+| 任务分解与里程碑 | `dev-docs/TD.md` | M0-M3 任务清单 + DoD + 估时 |
 | 三项目顶层计划 | `../GOVDOC_PROGRAM_PLAN.md` | qmd / Scrivai / GovDoc 三方契约 |
 | 代码规范与 SOP | `CLAUDE.md`（本文件） | 开发流程与规则 |
 | 审查标准 | `REVIEW_GUIDE.md` | 代码审查依据 |
@@ -189,3 +189,10 @@ doc = project.generate_and_review(inputs={...}, max_revisions=2)
 - 优先使用: 简洁文本、伪代码、表格、流程图(Mermaid)、项目符号列表
 - 避免: 大段完整代码、冗长自然语言解释
 - 核心原则: **用最少字符传递最多信息**
+
+## 7. 文档规范 (Documentation Standards)
+- Docstring 语言：英文，Google style
+- 用户文档：`docs/`（英文）+ `docs/zh/`（中文镜像）
+- 内部开发文档：`dev-docs/`
+- API reference：由 docstring 自动生成，不要直接编辑 `docs/api/*.md`
+- 完整规范见 `CONTRIBUTING.md § Documentation Standards`

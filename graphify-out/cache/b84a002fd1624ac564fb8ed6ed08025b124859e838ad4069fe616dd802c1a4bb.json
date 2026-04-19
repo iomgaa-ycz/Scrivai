@@ -1,0 +1,1 @@
+{"nodes": [{"id": "m1_e2e_checkpoints_golden", "label": "checkpoints_golden.json (10 entries)", "file_type": "fixture", "source_file": "tests/fixtures/m1_e2e/checkpoints_golden.json", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}
