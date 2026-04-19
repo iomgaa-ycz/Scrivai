@@ -189,7 +189,7 @@ def _remove_comments_outside_strings(text: str) -> str:
     return "".join(result)
 
 
-_OPEN_QUOTES = {"\u201c", "\u2018"}   # " '
+_OPEN_QUOTES = {"\u201c", "\u2018"}  # " '
 _CLOSE_QUOTES = {"\u201d", "\u2019"}  # " '
 _ALL_FANCY_QUOTES = _OPEN_QUOTES | _CLOSE_QUOTES
 _FULLWIDTH_COMMA = "\uff0c"  # ，
@@ -311,7 +311,7 @@ def _remove_trailing_commas(text: str) -> str:
     return text
 
 
-_JSON_STRUCTURAL = set(':,}] \t\n\r')
+_JSON_STRUCTURAL = set(":,}] \t\n\r")
 
 
 def _escape_inner_quotes(text: str) -> str:
@@ -339,15 +339,15 @@ def _escape_inner_quotes(text: str) -> str:
         while i < len(text):
             c = text[i]
 
-            if c == '\\' and i + 1 < len(text):
+            if c == "\\" and i + 1 < len(text):
                 result.append(c)
                 result.append(text[i + 1])
                 i += 2
                 continue
 
             if c == '"':
-                next_char = text[i + 1] if i + 1 < len(text) else ''
-                if next_char in _JSON_STRUCTURAL or next_char == '':
+                next_char = text[i + 1] if i + 1 < len(text) else ""
+                if next_char in _JSON_STRUCTURAL or next_char == "":
                     result.append('"')
                     i += 1
                     break

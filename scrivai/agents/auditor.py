@@ -65,7 +65,9 @@ class AuditorPES(BasePES):
             raise FileNotFoundError(f"AuditorPES summarize 阶段 output.json 未生成: {output_path}")
 
         try:
-            data = relaxed_json_loads(output_path.read_text(encoding="utf-8"), strict=self.config.strict_json)
+            data = relaxed_json_loads(
+                output_path.read_text(encoding="utf-8"), strict=self.config.strict_json
+            )
         except json.JSONDecodeError as e:
             raise ValueError(f"output.json 不是合法 JSON: {e}") from e
 
@@ -117,7 +119,9 @@ class AuditorPES(BasePES):
             raise ValueError(f"AuditorPES 需要业务层预置 data/checkpoints.json(未找到: {cp_path})")
 
         try:
-            checkpoints = relaxed_json_loads(cp_path.read_text(encoding="utf-8"), strict=self.config.strict_json)
+            checkpoints = relaxed_json_loads(
+                cp_path.read_text(encoding="utf-8"), strict=self.config.strict_json
+            )
         except json.JSONDecodeError as e:
             raise ValueError(f"data/checkpoints.json 不是合法 JSON: {e}") from e
 

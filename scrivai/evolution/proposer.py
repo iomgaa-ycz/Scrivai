@@ -165,9 +165,7 @@ def _extract_json(text: str) -> dict[str, Any]:
         except (json.JSONDecodeError, Exception):
             pass
 
-    raise ProposerError(
-        f"JSON parse failed; snippet: {text[:300]}"
-    )
+    raise ProposerError(f"JSON parse failed; snippet: {text[:300]}")
 
 
 class Proposer:
@@ -207,9 +205,14 @@ class Proposer:
         for attempt in (0, 1):  # 最多 2 次(首发 + 1 次重试)
             if budget is not None:
                 budget.consume(1)  # Budget 不因重试豁免
-            prompt = base_prompt if attempt == 0 else base_prompt + (
-                "\n\n[严格化提示]你上次输出无法解析,请严格按上面的 JSON 模板返回,"
-                "不要附加任何说明文字,不要用 markdown 代码块包裹。"
+            prompt = (
+                base_prompt
+                if attempt == 0
+                else base_prompt
+                + (
+                    "\n\n[严格化提示]你上次输出无法解析,请严格按上面的 JSON 模板返回,"
+                    "不要附加任何说明文字,不要用 markdown 代码块包裹。"
+                )
             )
             raw = await self.llm_client.simple_query(prompt, model=self.model)
             try:
@@ -239,6 +242,4 @@ class Proposer:
                 return out
             last_error = ProposerError(f"0 valid proposals in LLM response: {parsed}")
 
-        raise ProposerError(
-            f"proposer failed after 2 attempts: {last_error}"
-        )
+        raise ProposerError(f"proposer failed after 2 attempts: {last_error}")

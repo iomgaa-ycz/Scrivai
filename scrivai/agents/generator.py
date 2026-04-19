@@ -94,7 +94,9 @@ class GeneratorPES(BasePES):
             raise FileNotFoundError(f"GeneratorPES output.json 未生成: {output_path}")
 
         try:
-            data = relaxed_json_loads(output_path.read_text(encoding="utf-8"), strict=self.config.strict_json)
+            data = relaxed_json_loads(
+                output_path.read_text(encoding="utf-8"), strict=self.config.strict_json
+            )
         except json.JSONDecodeError as e:
             raise ValueError(f"output.json 不是合法 JSON: {e}") from e
 
@@ -141,7 +143,9 @@ class GeneratorPES(BasePES):
         if phase == "plan":
             plan_path = self.workspace.working_dir / "plan.json"
             try:
-                plan = relaxed_json_loads(plan_path.read_text(encoding="utf-8"), strict=self.config.strict_json)
+                plan = relaxed_json_loads(
+                    plan_path.read_text(encoding="utf-8"), strict=self.config.strict_json
+                )
             except json.JSONDecodeError as e:
                 raise ValueError(f"plan.json 不是合法 JSON: {e}") from e
             declared = {

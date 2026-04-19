@@ -101,6 +101,9 @@ from scrivai.testing import (
 from scrivai.trajectory.hooks import TrajectoryRecorderHook
 from scrivai.trajectory.store import TrajectoryStore
 
+# Utils
+from scrivai.utils import relaxed_json_loads
+
 # Workspace 工厂
 from scrivai.workspace.manager import build_workspace_manager
 
@@ -167,6 +170,8 @@ __all__ = [
     "TempWorkspaceManager",
     "FakeTrajectoryStore",
     "PhaseOutcome",
+    # Utils
+    "relaxed_json_loads",
     # Hook 装饰器
     "hookimpl",
     # Evolution(M2)

@@ -63,7 +63,9 @@ class ExtractorPES(BasePES):
             )
 
         try:
-            data = relaxed_json_loads(output_path.read_text(encoding="utf-8"), strict=self.config.strict_json)
+            data = relaxed_json_loads(
+                output_path.read_text(encoding="utf-8"), strict=self.config.strict_json
+            )
         except json.JSONDecodeError as e:
             raise ValueError(f"output.json 不是合法 JSON: {e}") from e
 
@@ -93,7 +95,9 @@ class ExtractorPES(BasePES):
             raise ValueError(f"execute 覆盖率校验需要 plan.json,但未找到: {plan_path}")
 
         try:
-            plan = relaxed_json_loads(plan_path.read_text(encoding="utf-8"), strict=self.config.strict_json)
+            plan = relaxed_json_loads(
+                plan_path.read_text(encoding="utf-8"), strict=self.config.strict_json
+            )
         except json.JSONDecodeError as e:
             raise ValueError(f"plan.json 不是合法 JSON: {e}") from e
 
