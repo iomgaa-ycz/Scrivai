@@ -26,7 +26,7 @@ from importlib import metadata as _metadata
 try:
     __version__: str = _metadata.version("scrivai")
 except _metadata.PackageNotFoundError:  # 未安装时(开发 checkout 首次)
-    __version__ = "0.1.5"
+    __version__ = "0.1.6"
 
 # qmd re-export(身份相等,非副本)
 from qmd import ChunkRef, CollectionInfo, SearchResult
