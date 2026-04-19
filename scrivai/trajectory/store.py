@@ -1,14 +1,15 @@
-"""TrajectoryStore - SQLite 单文件 trajectory 存储(同步接口)。
+"""TrajectoryStore — SQLite-backed trajectory storage (synchronous interface).
 
-参考:
-- docs/design.md §4.5(schema、PRAGMAs、并发模型、时间预算)
+References:
+- docs/design.md §4.5 (schema, PRAGMAs, concurrency model, time budget)
 - docs/TD.md T0.7
 - docs/superpowers/specs/2026-04-16-scrivai-m0.25-design.md §4.3
 
-接口设计要点:
-- 全同步:record_* / get_* / list_* 都是普通 def。
-- 文件模式:每次操作新 conn(WAL 保证并发);:memory: 模式:单 conn 持久。
-- 框架级 1 次 busy 重试(0.5s 间隔);超 → TrajectoryWriteError。
+Interface design:
+- Fully synchronous: all record_*/get_*/list_* methods are plain def.
+- File mode: each operation opens a new connection (WAL handles concurrency).
+  :memory: mode uses a single persistent connection.
+- One framework-level busy retry (0.5s interval); further failure raises TrajectoryWriteError.
 """
 
 from __future__ import annotations
@@ -47,22 +48,23 @@ def _json_loads(value: str | None) -> object | None:
 
 
 class TrajectoryStore:
-    """SQLite 单文件 trajectory 存储。所有 record_* / get_* / list_* 都是同步。"""
+    """SQLite-backed trajectory storage. All record/get/list methods are synchronous."""
 
     def __init__(self, db_path: Path | str | None = None) -> None:
-        """初始化:解析 db_path,打开/建库,执行一次 schema 初始化。
+        """Initialize the store: resolve db_path, open/create the database, and run schema initialization once.
 
         Args:
-            db_path: SQLite 路径。可选三态:
-                - ":memory:":内存库,单 conn 持久化(测试用)。
-                - None:读 env SCRIVAI_TRAJECTORY_DB,缺省走 ~/.scrivai/trajectories.sqlite。
-                - Path | str:显式路径。
+            db_path: SQLite database path. Three modes:
+                - ``":memory:"``: in-memory database with a single persistent connection (for testing).
+                - ``None``: reads the ``SCRIVAI_TRAJECTORY_DB`` env var, falling back to
+                  ``~/.scrivai/trajectories.sqlite``.
+                - ``Path | str``: explicit file path.
         """
         self.db_path: Path | str
         self._memory_conn: sqlite3.Connection | None = None
-        # 跨线程串行锁:仅保护 :memory: 共享 conn(防 to_thread 多 worker 在
-        # execute→commit 边界相互踩踏);文件模式每次 record 新建 conn,
-        # 由 SQLite WAL 处理并发,无需 Python 层加锁。
+        # Cross-thread serial lock: only protects the shared :memory: conn (prevents
+        # execute->commit races across multiple to_thread workers). File mode creates a
+        # new connection per record call; SQLite WAL handles concurrency there.
         self._write_lock = threading.Lock()
 
         if db_path == ":memory:":
@@ -70,17 +72,18 @@ class TrajectoryStore:
             self._memory_conn = sqlite3.connect(":memory:", check_same_thread=False)
         else:
             if db_path is None:
-                # 实时读 env(允许测试 monkeypatch.setenv 后构造新实例即生效)
+                # Read env at runtime (allows monkeypatch.setenv in tests to take effect
+                # when a new instance is constructed)
                 db_path = os.environ.get("SCRIVAI_TRAJECTORY_DB", DEFAULT_DB_FALLBACK)
             self.db_path = Path(db_path).expanduser()
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         self._init_schema()
 
-    # ── 内部:连接与 schema ────────────────────────────────
+    # -- internal: connection and schema --
 
     def _get_connection(self) -> sqlite3.Connection:
-        """:memory: 返回单例 conn;文件模式新 conn(每次 record 跑完即关)。"""
+        """Return the singleton connection for :memory: mode, or a new connection for file mode."""
         if self._memory_conn is not None:
             return self._memory_conn
         assert isinstance(self.db_path, Path)
@@ -90,7 +93,7 @@ class TrajectoryStore:
         return conn
 
     def _init_schema(self) -> None:
-        """同步;__init__ 调一次。CREATE TABLE IF NOT EXISTS + 索引 + PRAGMAs。"""
+        """Synchronous; called once by __init__. Executes CREATE TABLE IF NOT EXISTS, indexes, and PRAGMAs."""
         conn = self._get_connection()
         try:
             for pragma in PRAGMAS:
@@ -105,12 +108,8 @@ class TrajectoryStore:
                 conn.close()
 
     def _execute_with_retry(self, work: Callable[[sqlite3.Connection], T]) -> T:
-        """跑 work(conn) 一次;遇 SQLITE_BUSY 重试 1 次(间隔 0.5s);仍失败抛 TrajectoryWriteError。
-
-        work 是接受 conn 的 callable,可以执行任意操作(execute / fetchall / lastrowid);
-        :memory: 模式共享单 conn,文件模式每次新 conn。
-        """
-        # 仅 :memory: 模式锁保护;文件模式靠 WAL,跳锁以保 BasePES 多 run 并发吞吐
+        """Run work(conn) once; on SQLITE_BUSY retry once after 0.5s; raise TrajectoryWriteError on failure."""
+        # Lock only for :memory: mode; file mode relies on WAL
         lock_ctx: AbstractContextManager[Any] = (
             self._write_lock if self._memory_conn is not None else nullcontext()
         )
@@ -125,7 +124,6 @@ class TrajectoryStore:
                     msg = str(e).lower()
                     if attempt == 1 and ("busy" in msg or "locked" in msg):
                         logger.warning("TrajectoryStore busy retry [attempt={}]: {}", attempt, e)
-                        # 关掉非 :memory: 的临时 conn 后重试
                         if self._memory_conn is None:
                             conn.close()
                         time.sleep(0.5)
@@ -136,7 +134,7 @@ class TrajectoryStore:
                         conn.close()
             raise TrajectoryWriteError("unreachable")
 
-    # ── runs 表 API ───────────────────────────────────────
+    # -- runs table API --
 
     def start_run(
         self,
@@ -151,7 +149,7 @@ class TrajectoryStore:
         task_prompt: str,
         runtime_context: dict[str, Any] | None,
     ) -> None:
-        """写入 runs 表新行,status='running',started_at=now。"""
+        """Insert a new row into the runs table with status='running' and started_at=now."""
         sql = """
             INSERT INTO runs (run_id, pes_name, model_name, provider, sdk_version,
                               skills_git_hash, agents_git_hash, skills_is_dirty,
@@ -186,7 +184,7 @@ class TrajectoryStore:
         error: str | None,
         error_type: str | None,
     ) -> None:
-        """更新 runs 表:status / ended_at / final_output / archive / error。"""
+        """Update the runs table: status, ended_at, final_output, archive path, and error fields."""
         sql = """
             UPDATE runs
             SET status=?, final_output=?, workspace_archive_path=?,
@@ -209,7 +207,7 @@ class TrajectoryStore:
         self._execute_with_retry(_work)
 
     def get_run(self, run_id: str) -> TrajectoryRecord | None:
-        """读 runs 行 + 联查 phases(按 phase_order, attempt_no 升序)。"""
+        """Fetch a runs row joined with its phases (ordered by phase_order, attempt_no ascending)."""
 
         def _work(
             conn: sqlite3.Connection,
@@ -238,10 +236,10 @@ class TrajectoryStore:
         return rec
 
     def delete_run(self, run_id: str) -> None:
-        """删除 run 及其关联的 phases / turns / tool_calls / feedback。
+        """Delete a run and its associated phases, turns, tool_calls, and feedback rows.
 
-        参数:
-            run_id: 要删除的 run ID。不存在时静默返回。
+        Args:
+            run_id: ID of the run to delete. Silently returns if the run does not exist.
         """
 
         def _work(conn: sqlite3.Connection) -> None:
@@ -282,7 +280,7 @@ class TrajectoryStore:
         status: str | None = None,
         limit: int = 50,
     ) -> list[TrajectoryRecord]:
-        """按 pes_name / status 过滤,返回最新 limit 条(按 started_at 降序)。"""
+        """Filter by pes_name and/or status; return the latest limit rows ordered by started_at descending."""
         clauses: list[str] = []
         params: list[Any] = []
         if pes_name is not None:
@@ -307,7 +305,7 @@ class TrajectoryStore:
         rows = self._execute_with_retry(_work)
         return [self._row_to_trajectory_record(r) for r in rows]
 
-    # ── phases 表 API ─────────────────────────────────────
+    # -- phases table API --
 
     def record_phase_start(
         self,
@@ -316,7 +314,7 @@ class TrajectoryStore:
         phase_order: int,
         attempt_no: int,
     ) -> int:
-        """插入 phases 行(started_at=now),返回新 phase_id;UNIQUE 冲突直接抛 IntegrityError。"""
+        """Insert a phases row (started_at=now) and return the new phase_id; UNIQUE conflicts raise IntegrityError."""
         sql = """
             INSERT INTO phases (run_id, phase_name, phase_order, attempt_no, started_at)
             VALUES (?,?,?,?,?)
@@ -325,7 +323,7 @@ class TrajectoryStore:
 
         def _work(conn: sqlite3.Connection) -> int:
             cur = conn.execute(sql, params)
-            assert cur.lastrowid is not None, "INSERT 必须设置 lastrowid"
+            assert cur.lastrowid is not None, "INSERT must set lastrowid"
             return cur.lastrowid
 
         return self._execute_with_retry(_work)
@@ -341,7 +339,7 @@ class TrajectoryStore:
         error_type: str | None,
         is_retryable: bool | None,
     ) -> None:
-        """更新 phases 行:prompt / response_text / produced_files / usage / error / ended_at。"""
+        """Update a phases row: prompt, response_text, produced_files, usage, error, and ended_at."""
         sql = """
             UPDATE phases
             SET prompt=?, response_text=?, produced_files=?, usage=?,
@@ -365,7 +363,7 @@ class TrajectoryStore:
 
         self._execute_with_retry(_work)
 
-    # ── turns / tool_calls 表 API ────────────────────────
+    # -- turns / tool_calls table API --
 
     def record_turn(
         self,
@@ -375,7 +373,7 @@ class TrajectoryStore:
         content_type: str,
         data: dict[str, Any],
     ) -> int:
-        """插入 turns 行,返回新 turn_id。"""
+        """Insert a turns row and return the new turn_id."""
         sql = """
             INSERT INTO turns (phase_id, turn_index, role, content_type, data, timestamp)
             VALUES (?,?,?,?,?,?)
@@ -384,7 +382,7 @@ class TrajectoryStore:
 
         def _work(conn: sqlite3.Connection) -> int:
             cur = conn.execute(sql, params)
-            assert cur.lastrowid is not None, "INSERT 必须设置 lastrowid"
+            assert cur.lastrowid is not None, "INSERT must set lastrowid"
             return cur.lastrowid
 
         return self._execute_with_retry(_work)
@@ -398,7 +396,7 @@ class TrajectoryStore:
         status: str | None,
         duration_ms: int | None,
     ) -> None:
-        """插入 tool_calls 行。"""
+        """Insert a tool_calls row."""
         sql = """
             INSERT INTO tool_calls (turn_id, tool_name, tool_input, tool_output,
                                     status, duration_ms, timestamp)
@@ -419,7 +417,7 @@ class TrajectoryStore:
 
         self._execute_with_retry(_work)
 
-    # ── feedback 表 API ──────────────────────────────────
+    # -- feedback table API --
 
     def record_feedback(
         self,
@@ -433,7 +431,7 @@ class TrajectoryStore:
         confidence: float = 1.0,
         submitted_by: str | None = None,
     ) -> None:
-        """插入 feedback 行。draft / final 都必填(NOT NULL)。"""
+        """Insert a feedback row. draft_output and final_output are required (NOT NULL)."""
         sql = """
             INSERT INTO feedback (run_id, input_summary, draft_output, final_output,
                                   corrections, review_policy_version, source, confidence,
@@ -464,7 +462,7 @@ class TrajectoryStore:
         min_confidence: float | None = None,
         limit: int | None = None,
     ) -> list[FeedbackRecord]:
-        """按 pes_name(联查 runs)+ min_confidence 过滤,按 submitted_at 升序。"""
+        """Filter by pes_name (joined to runs) and min_confidence; return rows ordered by submitted_at ascending."""
         clauses: list[str] = []
         params: list[Any] = []
         join = ""
@@ -494,7 +492,7 @@ class TrajectoryStore:
         return [self._row_to_feedback_record(r) for r in rows]
 
     def _row_to_feedback_record(self, row: dict[str, Any]) -> FeedbackRecord:
-        """SQLite row → FeedbackRecord pydantic。"""
+        """Convert a SQLite row dict to a FeedbackRecord pydantic model."""
         return FeedbackRecord(
             feedback_id=row["feedback_id"],
             run_id=row["run_id"],
@@ -509,10 +507,10 @@ class TrajectoryStore:
             submitted_by=row.get("submitted_by"),
         )
 
-    # ── pydantic 转换 ────────────────────────────────────
+    # -- pydantic conversion --
 
     def _row_to_trajectory_record(self, row: dict[str, Any]) -> TrajectoryRecord:
-        """SQLite row → TrajectoryRecord pydantic。"""
+        """Convert a SQLite row dict to a TrajectoryRecord pydantic model."""
         return TrajectoryRecord(
             run_id=row["run_id"],
             pes_name=row["pes_name"],
@@ -535,7 +533,7 @@ class TrajectoryStore:
         )
 
     def _row_to_phase_record(self, row: dict[str, Any]) -> PhaseRecord:
-        """SQLite row → PhaseRecord pydantic。"""
+        """Convert a SQLite row dict to a PhaseRecord pydantic model."""
         produced = _json_loads(row.get("produced_files")) or []
         usage = _json_loads(row.get("usage")) or {}
         is_ret = row.get("is_retryable")

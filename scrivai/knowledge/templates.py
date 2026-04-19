@@ -1,4 +1,4 @@
-"""TemplateLibrary — 模板文件供相似度匹配,collection 名固定 'templates'。"""
+"""Template knowledge library wrapping qmd (fixed collection: 'templates')."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class TemplateLibrary(_BaseLibrary):
-    """模板知识库,固定 collection 'templates'。"""
+    """Template knowledge library (fixed collection: 'templates')."""
 
     def __init__(self, qmd_client: "QmdClient") -> None:
         super().__init__(qmd_client, "templates")

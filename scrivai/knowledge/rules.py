@@ -1,4 +1,4 @@
-"""RuleLibrary — 法规 / 指引 / 标准的 markdown 分块,collection 名固定 'rules'。"""
+"""Rule knowledge library wrapping qmd (fixed collection: 'rules')."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class RuleLibrary(_BaseLibrary):
-    """规则知识库,固定 collection 'rules'。"""
+    """Rule knowledge library (fixed collection: 'rules')."""
 
     def __init__(self, qmd_client: "QmdClient") -> None:
         super().__init__(qmd_client, "rules")

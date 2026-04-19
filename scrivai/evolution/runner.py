@@ -1,6 +1,6 @@
-"""run_evolution — 自研进化循环总编排(M2)。
+"""run_evolution — full evolution cycle orchestrator (M2).
 
-参考 docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.4 / §6.3
+Reference: docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.4 / §6.3
 """
 
 from __future__ import annotations
@@ -29,21 +29,21 @@ from scrivai.models.workspace import WorkspaceHandle
 
 
 def _utcnow() -> datetime:
-    """返回当前 UTC 时间。"""
+    """Return the current UTC datetime."""
     return datetime.now(timezone.utc)
 
 
 def _version_id(pes: str, skill: str, parent: Optional[str], snapshot: dict[str, str]) -> str:
-    """为候选生成确定性版本 ID。
+    """Generate a deterministic version ID for a candidate.
 
-    参数:
-        pes: PES 名称。
-        skill: skill 名称。
-        parent: 父版本 ID(baseline 时为 None)。
-        snapshot: 内容快照字典。
+    Args:
+        pes: PES name.
+        skill: Skill name.
+        parent: Parent version ID (``None`` for baseline).
+        snapshot: Content snapshot dict.
 
-    返回:
-        格式为 `{pes}:{skill}:{parent_tag}:{ts}:{hash8}` 的版本 ID 字符串。
+    Returns:
+        Version ID string in the format ``{pes}:{skill}:{parent_tag}:{ts}:{hash8}``.
     """
     h = hashlib.sha256(
         json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()
@@ -54,14 +54,14 @@ def _version_id(pes: str, skill: str, parent: Optional[str], snapshot: dict[str,
 
 
 def _unified_diff(parent_snapshot: dict[str, str], new_snapshot: dict[str, str]) -> str:
-    """生成两个快照之间的 unified diff 字符串。
+    """Generate a unified diff string between two content snapshots.
 
-    参数:
-        parent_snapshot: 父版本内容快照。
-        new_snapshot: 新版本内容快照。
+    Args:
+        parent_snapshot: Parent version content snapshot.
+        new_snapshot: New version content snapshot.
 
-    返回:
-        unified diff 字符串。
+    Returns:
+        Unified diff string.
     """
     lines: list[str] = []
     all_keys = set(parent_snapshot) | set(new_snapshot)
@@ -74,25 +74,25 @@ def _unified_diff(parent_snapshot: dict[str, str], new_snapshot: dict[str, str])
 
 @dataclass
 class Frontier:
-    """贪心 top-K 前沿,维护当前最优候选集合。
+    """Greedy top-K frontier maintaining the current best candidate set.
 
-    参数:
-        size: 前沿最大保留数量。
-        members: (version_id, score) 有序列表(降序)。
+    Args:
+        size: Maximum number of candidates to retain.
+        members: Ordered list of (version_id, score) tuples (descending).
     """
 
     size: int
     members: list[tuple[str, float]] = field(default_factory=list)
 
     def consider(self, version_id: str, score: float) -> bool:
-        """尝试将候选加入前沿。
+        """Attempt to add a candidate to the frontier.
 
-        参数:
-            version_id: 候选版本 ID。
-            score: 候选评分。
+        Args:
+            version_id: Candidate version ID.
+            score: Candidate score.
 
-        返回:
-            True 表示候选成功加入前沿。
+        Returns:
+            True if the candidate was admitted to the frontier.
         """
         if len(self.members) < self.size:
             self.members.append((version_id, score))
@@ -106,10 +106,10 @@ class Frontier:
         return False
 
     def top(self) -> Optional[tuple[str, float]]:
-        """返回前沿最优候选。
+        """Return the best candidate in the frontier.
 
-        返回:
-            (version_id, score) 或 None(前沿为空时)。
+        Returns:
+            ``(version_id, score)`` tuple, or ``None`` if the frontier is empty.
         """
         return self.members[0] if self.members else None
 
@@ -124,26 +124,23 @@ async def run_evolution(
     llm_client: Any,
     version_store: Optional[SkillVersionStore] = None,
 ) -> EvolutionRunRecord:
-    """执行一次完整进化循环,返回 EvolutionRunRecord。
+    """Run a complete skill evolution cycle.
 
-    流程:
-    1. 加载或创建 baseline SkillVersion 并评分。
-    2. 按 max_iterations 循环:Proposer 生成候选 → CandidateEvaluator 打分 → 更新前沿。
-    3. 遇到 BudgetExceededError 时立即 finalize_run(status='budget_exceeded')并返回。
-    4. best_version_id == baseline 时清空(本次无增益)。
+    Workflow: load/create baseline -> iterate (Proposer generates candidates ->
+    CandidateEvaluator scores them) -> finalize with best version.
 
-    参数:
-        config: 进化配置。
-        trajectory_store: TrajectoryStore 实例。
-        workspace_mgr: WorkspaceManager 实例。
-        pes_factory: (pes_name, workspace) -> PES 工厂函数。
-        evaluator_fn: (question, predicted, ground_truth) -> float 评分函数。
-        source_project_root: 源项目根目录。
-        llm_client: LLM 客户端实例。
-        version_store: SkillVersionStore 实例(可选,默认全局路径)。
+    Args:
+        config: Evolution run configuration.
+        trajectory_store: TrajectoryStore instance for feedback data.
+        workspace_mgr: WorkspaceManager for creating evaluation workspaces.
+        pes_factory: Factory ``(pes_name, workspace) -> PES`` for evaluation.
+        evaluator_fn: Scoring function ``(question, predicted, truth) -> float``.
+        source_project_root: Project root containing ``skills/`` directory.
+        llm_client: LLM client for the Proposer.
+        version_store: Optional SkillVersionStore (defaults to global path).
 
-    返回:
-        EvolutionRunRecord:包含 status / scores / best 等完整记录。
+    Returns:
+        EvolutionRunRecord with status, scores, and best version ID.
     """
     vstore = version_store or SkillVersionStore()
     budget = LLMCallBudget(limit=config.max_llm_calls)

@@ -1,4 +1,4 @@
-"""CaseLibrary — 历史定稿(经专家审核的优质样本),collection 名固定 'cases'。"""
+"""Case knowledge library wrapping qmd (fixed collection: 'cases')."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class CaseLibrary(_BaseLibrary):
-    """案例知识库,固定 collection 'cases'。"""
+    """Case knowledge library (fixed collection: 'cases')."""
 
     def __init__(self, qmd_client: "QmdClient") -> None:
         super().__init__(qmd_client, "cases")

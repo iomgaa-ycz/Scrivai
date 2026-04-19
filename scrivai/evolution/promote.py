@@ -1,6 +1,6 @@
-"""promote — 把评估通过的 SkillVersion 写回主仓 skills/ 目录。
+"""promote — write an evaluated SkillVersion back to the project's skills/ directory.
 
-参考 docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.5
+Reference: docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.5
 """
 
 from __future__ import annotations
@@ -19,20 +19,17 @@ def promote(
     version_store: Optional[SkillVersionStore] = None,
     backup: bool = True,
 ) -> Path:
-    """把 version.content_snapshot 原子写入 source_project_root/skills/<skill_name>/。
+    """Atomically write a skill version's content back to the project.
 
-    参数:
-        version_id: 待 promote 的版本 ID。
-        source_project_root: 项目根目录路径。
-        version_store: SkillVersionStore 实例,默认使用全局默认路径。
-        backup: 是否备份当前内容到 skills/<skill_name>/.backup/evo-<ts>/。
+    Args:
+        version_id: ID of the version to promote.
+        source_project_root: Project root path.
+        version_store: SkillVersionStore instance (defaults to global path).
+        backup: If True, back up current content before overwriting.
 
-    返回:
-        backup=True 时返回备份目录;backup=False 时返回新 skill 目录。
-
-    说明:
-        - backup=True: 备份当前内容到 skills/<skill_name>/.backup/evo-<ts>/
-        - 更新 SkillVersion.status = 'promoted' + promoted_at = now()
+    Returns:
+        Path to the backup directory (if backup=True) or the new skill
+        directory (if backup=False).
     """
     store = version_store or SkillVersionStore()
     version = store.get_version(version_id)
