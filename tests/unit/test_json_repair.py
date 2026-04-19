@@ -259,3 +259,27 @@ class TestPerformance:
         relaxed = timeit.timeit(lambda: relaxed_json_loads(valid_json), number=n)
         overhead = (relaxed - baseline) / baseline
         assert overhead < 0.05, f"Stage-0 开销 {overhead:.1%} 超过 5%"
+
+
+from scrivai.models.pes import PESConfig
+
+
+class TestPESConfigStrictJson:
+    """PESConfig.strict_json 字段测试。"""
+
+    def test_default_false(self) -> None:
+        cfg = PESConfig(
+            name="test",
+            prompt_text="test prompt",
+            phases={},
+        )
+        assert cfg.strict_json is False
+
+    def test_explicit_true(self) -> None:
+        cfg = PESConfig(
+            name="test",
+            prompt_text="test prompt",
+            phases={},
+            strict_json=True,
+        )
+        assert cfg.strict_json is True

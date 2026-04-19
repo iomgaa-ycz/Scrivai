@@ -59,6 +59,10 @@ class PESConfig(BaseModel):
     prompt_text: str = Field(..., description="基础 system prompt")
     default_skills: list[str] = Field(default_factory=list, description="默认装入 skills")
     phases: dict[str, PhaseConfig] = Field(..., description="按 phase 名索引的阶段配置")
+    strict_json: bool = Field(
+        default=False,
+        description="True 时 JSON 解析使用 json.loads 严格模式,跳过容错修复",
+    )
 
 
 # ────────────────────── 运行态 ──────────────────────
