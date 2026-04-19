@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -56,3 +57,30 @@ class _SDKError(ScrivaiError):
     def __init__(self, error_type: str, message: str) -> None:
         super().__init__(message)
         self.error_type = error_type
+
+
+class ScrivaiJSONRepairError(ScrivaiError, json.JSONDecodeError):
+    """JSON 容错解析全部阶段失败。
+
+    多重继承:可被 except ScrivaiError 和 except json.JSONDecodeError 同时捕获。
+
+    Attributes:
+        original_text: 原始输入文本。
+        repaired_text: 最后一次修复后的文本。
+        stages_applied: 已尝试的修复阶段名称列表。
+    """
+
+    def __init__(
+        self,
+        msg: str,
+        doc: str,
+        pos: int,
+        *,
+        original_text: str,
+        repaired_text: str,
+        stages_applied: list[str],
+    ) -> None:
+        json.JSONDecodeError.__init__(self, msg, doc, pos)
+        self.original_text = original_text
+        self.repaired_text = repaired_text
+        self.stages_applied = stages_applied
