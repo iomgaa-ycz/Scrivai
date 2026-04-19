@@ -95,5 +95,5 @@ print(result.output)  # 'Hola, mundo!'
 
 ## 另请参阅
 
-- [API 参考：PES](../api/pes.md)
-- [模型：PESConfig、PhaseConfig、PESRun](../api/models.md)
+- [API 参考：PES](../../api/pes.md)
+- [模型：PESConfig、PhaseConfig、PESRun](../../api/models.md)

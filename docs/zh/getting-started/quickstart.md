@@ -92,4 +92,4 @@ print(result.output)   # {'date': '2024-03-01', 'provider': 'Acme Corp', ...}
 - [概念：PES 引擎](../concepts/pes.md) — 了解文件契约与自定义 PES 类
 - [概念：工作区](../concepts/workspace.md) — 理解运行隔离机制
 - [概念：轨迹存储](../concepts/trajectory.md) — 记录与回放运行
-- [API 参考：PES](../api/pes.md) — 完整类文档
+- [API 参考：PES](../../api/pes.md) — 完整类文档

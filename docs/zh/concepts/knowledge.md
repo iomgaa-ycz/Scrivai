@@ -68,4 +68,4 @@ result = pes.run(
 
 ## 另请参阅
 
-- [API 参考：Knowledge](../api/knowledge.md)
+- [API 参考：Knowledge](../../api/knowledge.md)

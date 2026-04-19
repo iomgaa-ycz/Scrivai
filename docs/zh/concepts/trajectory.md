@@ -51,5 +51,5 @@ store = TrajectoryStore(db_path="/data/scrivai/my-project.db")
 
 ## 另请参阅
 
-- [API 参考：（TrajectoryStore 位于 workspace API 页面）](../api/workspace.md)
+- [API 参考：（TrajectoryStore 位于 workspace API 页面）](../../api/workspace.md)
 - [概念：Skill 进化](evolution.md) — 进化机制使用轨迹存储采集失败样本

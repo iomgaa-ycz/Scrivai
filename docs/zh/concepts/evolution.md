@@ -79,5 +79,5 @@ if evo_record.best_version_id:
 
 ## 另请参阅
 
-- [API 参考：Evolution](../api/evolution.md)
+- [API 参考：Evolution](../../api/evolution.md)
 - [概念：轨迹存储](trajectory.md) — 进化机制从轨迹存储读取失败样本
