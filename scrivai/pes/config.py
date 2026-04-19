@@ -1,11 +1,4 @@
-"""PESConfig YAML 加载器。
-
-支持:
-- ${ENV_VAR} 环境变量插值(字符串级)
-- pydantic schema 校验(失败包装为 PESConfigError)
-- YAML 语法错误包装为 PESConfigError
-- 文件不存在包装为 PESConfigError
-"""
+"""PES configuration YAML loader with environment variable interpolation."""
 
 from __future__ import annotations
 
@@ -45,10 +38,27 @@ def _interpolate_env_vars(node: Any) -> Any:
 
 
 def load_pes_config(yaml_path: Path) -> PESConfig:
-    """加载 PESConfig YAML 并返回解析后的 PESConfig。
+    """Load and validate a PES configuration from a YAML file.
 
-    异常:
-      PESConfigError — 文件不存在 / YAML 语法错误 / 环境变量缺失 / pydantic 校验失败
+    The YAML file defines phase configurations, prompt text, default skills,
+    and other PES settings. Environment variable interpolation is supported
+    using ``${VAR_NAME}`` syntax.
+
+    Args:
+        yaml_path: Path to the YAML configuration file.
+
+    Returns:
+        A validated ``PESConfig`` instance.
+
+    Raises:
+        PESConfigError: If the file doesn't exist, contains invalid YAML,
+            references missing environment variables, or fails Pydantic
+            validation.
+
+    Example:
+        >>> from pathlib import Path
+        >>> from scrivai import load_pes_config
+        >>> config = load_pes_config(Path("scrivai/agents/extractor.yaml"))
     """
     yaml_path = Path(yaml_path)
     if not yaml_path.exists():

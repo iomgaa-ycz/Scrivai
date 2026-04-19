@@ -1,14 +1,4 @@
-"""GeneratorPES — 按 docxtpl 模板生成最终文档(M1.5a T1.6)。
-
-runtime_context 业务字段:
-- template_path: Path                        (必需)
-- context_schema: type[BaseModel]            (必需)
-- auto_render: bool                          (可选,默认 False)
-
-参考:
-- docs/design.md §4.4.3
-- docs/superpowers/specs/2026-04-17-scrivai-m1.5-design.md §4.1 / §5.2
-"""
+"""GeneratorPES — Generate a document by filling a docxtpl template."""
 
 from __future__ import annotations
 
@@ -33,13 +23,36 @@ def _parse_placeholders(template_path: Path) -> list[str]:
 
 
 class GeneratorPES(BasePES):
-    """按 docxtpl 模板生成最终文档。
+    """Generate a document by filling a docxtpl template.
 
-    阶段契约:
-    - plan     → working/plan.md + working/plan.json({"fills": [{"placeholder","source"}]})
-    - execute  → working/findings/<placeholder>.json
-    - summarize→ working/output.json(含 context dict + sections);
-                 auto_render=True 时追加 output/final.docx
+    The LLM plans which template placeholders to fill, executes data
+    gathering for each placeholder, and summarizes results into a context
+    dict. Optionally renders the final ``.docx`` file.
+
+    Args:
+        config: PES configuration (use ``load_pes_config("generator.yaml")``).
+        model: LLM provider configuration.
+        workspace: Isolated workspace for this run.
+        runtime_context: Must include:
+            - ``template_path`` (``Path``): Path to docxtpl template.
+            - ``context_schema`` (``type[BaseModel]``): Schema for template context.
+            - ``auto_render`` (``bool``, optional): If True, render final.docx.
+
+    Phase contracts:
+        - **plan** → ``working/plan.json`` with placeholder fill plan
+        - **execute** → ``working/findings/<placeholder>.json`` per fill
+        - **summarize** → ``working/output.json`` with context dict;
+          ``output/final.docx`` if ``auto_render=True``
+
+    Example:
+        >>> from scrivai import GeneratorPES, ModelConfig, load_pes_config
+        >>> pes = GeneratorPES(
+        ...     config=load_pes_config(Path("generator.yaml")),
+        ...     model=ModelConfig(model="claude-sonnet-4-20250514"),
+        ...     workspace=ws,
+        ...     runtime_context={"template_path": Path("t.docx"), ...},
+        ... )
+        >>> run = await pes.run("Fill the project report template")
     """
 
     async def build_execution_context(

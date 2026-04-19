@@ -1,7 +1,4 @@
-"""Workspace 沙箱相关 pydantic + WorkspaceManager Protocol。
-
-参考 docs/design.md §4.1 / §4.9。
-"""
+"""Workspace sandbox data models: WorkspaceSpec, WorkspaceHandle, and WorkspaceManager Protocol."""
 
 from __future__ import annotations
 
@@ -13,7 +10,28 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class WorkspaceSpec(BaseModel):
-    """创建 workspace 的输入规范。"""
+    """Specification for creating an isolated workspace.
+
+    Args:
+        run_id: Globally unique identifier. The workspace directory is
+            named after this ID.
+        project_root: Path to the business project root (must contain
+            ``skills/`` and ``agents/`` directories).
+        data_inputs: Mapping of logical names to source file paths.
+            Files are copied into ``workspace/data/`` at creation time.
+        extra_env: Additional environment variables passed to the Agent SDK.
+        force: If True, overwrite existing workspace with the same
+            ``run_id``. If False (default), raise ``WorkspaceError``.
+
+    Example:
+        >>> from pathlib import Path
+        >>> from scrivai import WorkspaceSpec
+        >>> spec = WorkspaceSpec(
+        ...     run_id="audit-001",
+        ...     project_root=Path("/path/to/project"),
+        ...     force=True,
+        ... )
+    """
 
     model_config = ConfigDict(extra="forbid")
 

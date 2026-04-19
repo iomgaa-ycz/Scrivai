@@ -1,9 +1,4 @@
-"""BasePES — 三阶段(plan→execute→summarize)执行引擎抽象基类。
-
-参考:
-- docs/design.md §4.2 / §5.1
-- docs/superpowers/specs/2026-04-16-scrivai-m0.5-design.md §3.1
-"""
+"""BasePES — Three-phase (plan → execute → summarize) execution engine."""
 
 from __future__ import annotations
 
@@ -53,10 +48,33 @@ class _NullHookManager:
 
 
 class BasePES:
-    """三阶段执行引擎抽象基类。
+    """Three-phase (plan → execute → summarize) execution engine base class.
 
-    子类通过 override _call_sdk_query + 4 个扩展点定制行为。
-    M0.5 默认 _call_sdk_query 抛 NotImplementedError;M1 填入真实 SDK。
+    Subclasses customize behavior by overriding ``_call_sdk_query`` and
+    four extension points: ``_build_plan_prompt``, ``_build_execute_prompt``,
+    ``_build_summarize_prompt``, and ``_post_summarize``.
+
+    Args:
+        config: PES configuration loaded via ``load_pes_config()``.
+        model: LLM provider configuration.
+        workspace: Isolated workspace handle for this run.
+        hooks: Optional hook manager for lifecycle callbacks.
+        trajectory_store: Optional trajectory store for run recording.
+        runtime_context: Extra parameters passed to extension points
+            (e.g., ``output_schema`` for ExtractorPES).
+        llm_client: Optional pre-configured LLM client (created
+            automatically if not provided).
+
+    Example:
+        >>> from scrivai import BasePES, ModelConfig, load_pes_config
+        >>> class MyPES(BasePES):
+        ...     pass  # override extension points as needed
+        >>> pes = MyPES(
+        ...     config=load_pes_config(Path("my_pes.yaml")),
+        ...     model=ModelConfig(model="claude-sonnet-4-20250514"),
+        ...     workspace=ws,
+        ... )
+        >>> run = await pes.run("Process this document")
     """
 
     def __init__(
@@ -86,7 +104,22 @@ class BasePES:
     # ── 公共 API ──────────────────────────────────────────
 
     async def run(self, task_prompt: str) -> PESRun:
-        """顺序执行 plan → execute → summarize,返回完整 PESRun。"""
+        """Execute the three-phase pipeline and return the completed run.
+
+        Runs plan → execute → summarize sequentially. Each phase validates
+        its file-contract outputs and retries on failure (up to ``max_retries``
+        configured per phase).
+
+        Args:
+            task_prompt: Natural language description of the task.
+
+        Returns:
+            A ``PESRun`` with ``status='completed'`` on success, or
+            ``status='failed'`` with ``error`` details on failure.
+
+        Raises:
+            PhaseError: If a phase exhausts all retries.
+        """
         run = PESRun(
             run_id=self.workspace.run_id,
             pes_name=self.config.name,

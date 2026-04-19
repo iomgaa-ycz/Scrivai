@@ -1,10 +1,4 @@
-"""LocalWorkspaceManager - WorkspaceManager Protocol POSIX 实现。
-
-参考:
-- docs/design.md §4.9 / §5.2
-- docs/TD.md T0.4
-- docs/superpowers/specs/2026-04-16-scrivai-m0.25-design.md §4.1
-"""
+"""LocalWorkspaceManager — POSIX filesystem implementation of the WorkspaceManager Protocol."""
 
 from __future__ import annotations
 
@@ -206,5 +200,27 @@ def build_workspace_manager(
     workspaces_root: Path | str = "~/.scrivai/workspaces",
     archives_root: Path | str = "~/.scrivai/archives",
 ) -> WorkspaceManager:
-    """构造默认 LocalWorkspaceManager(返回类型用 Protocol,留替换实现的空间)。"""
+    """Create a workspace manager with default directory layout.
+
+    Returns a ``WorkspaceManager`` (Protocol-typed) backed by the local
+    filesystem. Workspaces are created under ``workspaces_root`` and
+    archived to ``archives_root``.
+
+    Args:
+        workspaces_root: Directory for active workspaces.
+            Defaults to ``~/.scrivai/workspaces``.
+        archives_root: Directory for archived workspaces.
+            Defaults to ``~/.scrivai/archives``.
+
+    Returns:
+        A ``WorkspaceManager`` instance.
+
+    Example:
+        >>> from scrivai import build_workspace_manager
+        >>> ws_mgr = build_workspace_manager()
+        >>> ws_mgr = build_workspace_manager(
+        ...     workspaces_root="/tmp/my-workspaces",
+        ...     archives_root="/tmp/my-archives",
+        ... )
+    """
     return LocalWorkspaceManager(Path(workspaces_root), Path(archives_root))

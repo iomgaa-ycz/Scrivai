@@ -1,14 +1,4 @@
-"""AuditorPES — 对照 data/checkpoints.json 审核(M1.5a T1.5)。
-
-runtime_context 业务字段:
-- output_schema: type[BaseModel]            (必需)
-- verdict_levels: list[str]                 (可选,默认 DEFAULT_VERDICT_LEVELS)
-- evidence_required: bool                   (可选,默认 True)
-
-参考:
-- docs/design.md §4.4.2
-- docs/superpowers/specs/2026-04-17-scrivai-m1.5-design.md §4.1 / §5.2
-"""
+"""AuditorPES — Audit a document against a checklist of checkpoints."""
 
 from __future__ import annotations
 
@@ -29,15 +19,33 @@ DEFAULT_VERDICT_LEVELS: list[str] = ["合格", "不合格", "不适用", "需要
 
 
 class AuditorPES(BasePES):
-    """对照 data/checkpoints.json 审核文档合规性。
+    """Audit a document against a checklist of checkpoints.
 
-    阶段契约:
-    - plan     → working/plan.md + working/plan.json(Agent 读 data/checkpoints.json)
-    - execute  → working/findings/<cp_id>.json(每 checkpoint 一个)
-    - summarize→ working/output.json(汇总 findings + summary)
+    Before calling ``run()``, place a JSON file at
+    ``workspace.data_dir / "checkpoints.json"`` containing a list of
+    checkpoint objects: ``[{"id": "CP001", "description": "..."}, ...]``.
 
-    业务层需在调 pes.run() 前把 checkpoints 以 `[{id, description, ...}]`
-    写入 `workspace.data_dir/checkpoints.json`。
+    Args:
+        config: PES configuration (use ``load_pes_config("auditor.yaml")``).
+        model: LLM provider configuration.
+        workspace: Isolated workspace for this run.
+        runtime_context: Must include:
+            - ``output_schema`` (``type[BaseModel]``): Pydantic model for audit output.
+
+    Phase contracts:
+        - **plan** → ``working/plan.json`` (reads ``data/checkpoints.json``)
+        - **execute** → ``working/findings/<cp_id>.json`` per checkpoint
+        - **summarize** → ``working/output.json`` with findings + summary
+
+    Example:
+        >>> from scrivai import AuditorPES, ModelConfig, load_pes_config
+        >>> pes = AuditorPES(
+        ...     config=load_pes_config(Path("auditor.yaml")),
+        ...     model=ModelConfig(model="claude-sonnet-4-20250514"),
+        ...     workspace=ws,
+        ...     runtime_context={"output_schema": AuditOutput},
+        ... )
+        >>> run = await pes.run("Audit data/document.md against checkpoints")
     """
 
     async def postprocess_phase_result(

@@ -1,7 +1,4 @@
-"""PES 执行引擎相关 pydantic + 9 个 HookContext。
-
-参考 docs/design.md §4.1 / §4.3。
-"""
+"""PES execution engine data models: ModelConfig, PESConfig, PESRun, and hook contexts."""
 
 from __future__ import annotations
 
@@ -15,7 +12,30 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ModelConfig(BaseModel):
-    """LLM 模型配置(model id / base_url / api_key 等)。"""
+    """LLM provider configuration.
+
+    At minimum, provide a ``model`` name. The API key and base URL are read
+    from environment variables by default (``ANTHROPIC_API_KEY``,
+    ``ANTHROPIC_BASE_URL``).
+
+    Args:
+        model: Model identifier (e.g., ``"claude-sonnet-4-20250514"``).
+        base_url: API base URL. ``None`` uses the SDK default.
+        api_key: API key. Usually read from ``ANTHROPIC_API_KEY`` env var.
+        provider: Provider tag for trajectory recording
+            (e.g., ``"anthropic"``, ``"glm"``).
+        fallback_model: Fallback model identifier for degraded operation.
+
+    Example:
+        >>> from scrivai import ModelConfig
+        >>> model = ModelConfig(model="claude-sonnet-4-20250514")
+        >>> model = ModelConfig(
+        ...     model="glm-5.1",
+        ...     base_url="https://gateway.example.com",
+        ...     api_key="sk-xxx",
+        ...     provider="glm",
+        ... )
+    """
 
     model_config = ConfigDict(extra="forbid")
 

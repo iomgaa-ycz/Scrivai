@@ -1,7 +1,24 @@
-"""Scrivai v3 — Claude Agent 编排框架。
+"""Scrivai — Configurable document generation & audit framework.
 
-完整 Public API(M0.75 冻结):参考 docs/design.md §4.1。
-M2 Evolution API:参考 docs/superpowers/specs/2026-04-17-scrivai-m2-design.md。
+Built on Claude Agent SDK, Scrivai wraps LLM calls into a three-phase
+(plan → execute → summarize) engine called PES. Use the built-in PES
+implementations or subclass BasePES for custom workflows.
+
+Quick start::
+
+    from scrivai import (
+        ExtractorPES, ModelConfig, WorkspaceSpec,
+        build_workspace_manager, load_pes_config,
+    )
+
+Key entry points:
+    - ``ExtractorPES`` / ``AuditorPES`` / ``GeneratorPES``: Built-in agents
+    - ``BasePES``: Base class for custom PES implementations
+    - ``ModelConfig``: LLM provider configuration
+    - ``load_pes_config()``: Load PES config from YAML
+    - ``build_workspace_manager()``: Create isolated workspaces
+
+Full documentation: https://iomgaa-ycz.github.io/Scrivai/
 """
 
 from importlib import metadata as _metadata

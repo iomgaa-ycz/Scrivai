@@ -1,12 +1,4 @@
-"""ExtractorPES — 从文档抽取结构化条目(M1.5a T1.4)。
-
-runtime_context 业务字段:
-- output_schema: type[BaseModel]  (必需,summarize 校验用)
-
-参考:
-- docs/design.md §4.4.1
-- docs/superpowers/specs/2026-04-17-scrivai-m1.5-design.md §4.1 / §5.2
-"""
+"""ExtractorPES — Extract structured data from documents using LLM."""
 
 from __future__ import annotations
 
@@ -23,16 +15,35 @@ if TYPE_CHECKING:
 
 
 class ExtractorPES(BasePES):
-    """从文档抽取结构化条目。
+    """Extract structured data from documents using LLM.
 
-    构造签名 = BasePES.__init__(零新参数);业务参数走 runtime_context:
-    - output_schema: type[BaseModel]  (必需)
+    Inherits from ``BasePES`` with no additional constructor parameters.
+    Business parameters are passed via ``runtime_context``.
 
-    阶段契约:
-    - plan     → working/plan.md + working/plan.json
-                 plan.json: {"items_to_extract": [{"id": str, "description": str}, ...]}
-    - execute  → working/findings/<id>.json(每 plan item 一个)
-    - summarize→ working/output.json(matches output_schema)
+    Args:
+        config: PES configuration (use ``load_pes_config("extractor.yaml")``).
+        model: LLM provider configuration.
+        workspace: Isolated workspace for this run.
+        runtime_context: Must include:
+            - ``output_schema`` (``type[BaseModel]``): Pydantic model for output validation.
+
+    Phase contracts:
+        - **plan** → ``working/plan.json`` with extraction items
+        - **execute** → ``working/findings/<id>.json`` per planned item
+        - **summarize** → ``working/output.json`` conforming to ``output_schema``
+
+    Example:
+        >>> from pydantic import BaseModel
+        >>> from scrivai import ExtractorPES, ModelConfig, load_pes_config
+        >>> class Items(BaseModel):
+        ...     items: list[str]
+        >>> pes = ExtractorPES(
+        ...     config=load_pes_config(Path("extractor.yaml")),
+        ...     model=ModelConfig(model="claude-sonnet-4-20250514"),
+        ...     workspace=ws,
+        ...     runtime_context={"output_schema": Items},
+        ... )
+        >>> run = await pes.run("Extract items from data/source.md")
     """
 
     async def postprocess_phase_result(
