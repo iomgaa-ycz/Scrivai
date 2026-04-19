@@ -15,10 +15,11 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+from govdoc.pipelines.output_utils import relaxed_json_loads
+
 from pydantic import BaseModel, ValidationError
 
 from scrivai.pes.base import BasePES
-from scrivai.utils import relaxed_json_loads
 
 if TYPE_CHECKING:
     from scrivai.models.pes import PESRun, PhaseConfig, PhaseResult
@@ -65,10 +66,8 @@ class AuditorPES(BasePES):
             raise FileNotFoundError(f"AuditorPES summarize 阶段 output.json 未生成: {output_path}")
 
         try:
-            data = relaxed_json_loads(
-                output_path.read_text(encoding="utf-8"), strict=self.config.strict_json
-            )
-        except json.JSONDecodeError as e:
+            data = relaxed_json_loads(output_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, ValueError) as e:
             raise ValueError(f"output.json 不是合法 JSON: {e}") from e
 
         try:
@@ -89,14 +88,22 @@ class AuditorPES(BasePES):
             if not isinstance(finding, dict):
                 raise ValueError(f"findings[{idx}] 必须是对象")
             verdict = finding.get("verdict")
-            if verdict not in verdict_levels:
+            verdict_str = verdict.get("verdict") if isinstance(verdict, dict) else verdict
+            if verdict_str not in verdict_levels:
                 raise ValueError(
-                    f"findings[{idx}].verdict={verdict!r} 不在 verdict_levels={verdict_levels}"
+                    f"findings[{idx}].verdict={verdict_str!r} 不在 verdict_levels={verdict_levels}"
                 )
             if evidence_required:
-                evidence = finding.get("evidence") or []
-                if not isinstance(evidence, list) or len(evidence) == 0:
-                    raise ValueError(f"findings[{idx}] 缺少 evidence(evidence_required=True)")
+                evidence_quotes = (
+                    verdict.get("evidence_quotes") if isinstance(verdict, dict) else []
+                ) or []
+                evidence_refs = finding.get("evidence_refs") or []
+                has_quotes = isinstance(evidence_quotes, list) and len(evidence_quotes) > 0
+                has_refs = isinstance(evidence_refs, list) and len(evidence_refs) > 0
+                if not has_quotes and not has_refs:
+                    raise ValueError(
+                        f"findings[{idx}] 缺少 evidence(evidence_required=True)"
+                    )
 
         run.final_output = validated.model_dump()
         run.final_output_path = output_path
@@ -119,10 +126,8 @@ class AuditorPES(BasePES):
             raise ValueError(f"AuditorPES 需要业务层预置 data/checkpoints.json(未找到: {cp_path})")
 
         try:
-            checkpoints = relaxed_json_loads(
-                cp_path.read_text(encoding="utf-8"), strict=self.config.strict_json
-            )
-        except json.JSONDecodeError as e:
+            checkpoints = relaxed_json_loads(cp_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, ValueError) as e:
             raise ValueError(f"data/checkpoints.json 不是合法 JSON: {e}") from e
 
         if not isinstance(checkpoints, list):
@@ -138,3 +143,19 @@ class AuditorPES(BasePES):
         missing = expected_ids - actual_ids
         if missing:
             raise ValueError(f"未覆盖的 checkpoint id: {sorted(missing)}")
+
+        # Fix findings files with Chinese quotes / bad JSON written by the model
+        if findings_dir.exists():
+            for fp in findings_dir.glob("*.json"):
+                raw = fp.read_text(encoding="utf-8")
+                try:
+                    json.loads(raw)
+                except (json.JSONDecodeError, ValueError):
+                    try:
+                        fixed = relaxed_json_loads(raw)
+                        fp.write_text(
+                            json.dumps(fixed, ensure_ascii=False, indent=2),
+                            encoding="utf-8",
+                        )
+                    except Exception:
+                        pass

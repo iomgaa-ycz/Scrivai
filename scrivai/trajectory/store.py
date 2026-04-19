@@ -153,7 +153,7 @@ class TrajectoryStore:
     ) -> None:
         """写入 runs 表新行,status='running',started_at=now。"""
         sql = """
-            INSERT INTO runs (run_id, pes_name, model_name, provider, sdk_version,
+            INSERT OR REPLACE INTO runs (run_id, pes_name, model_name, provider, sdk_version,
                               skills_git_hash, agents_git_hash, skills_is_dirty,
                               status, task_prompt, runtime_context, started_at)
             VALUES (?,?,?,?,?,?,?,?,'running',?,?,?)
@@ -237,6 +237,41 @@ class TrajectoryStore:
         )
         return rec
 
+    def delete_run(self, run_id: str) -> None:
+        """删除 run 及其关联的 phases/turns/tool_calls/feedback。"""
+
+        def _work(conn: sqlite3.Connection) -> None:
+            phase_ids = [
+                row[0]
+                for row in conn.execute(
+                    "SELECT phase_id FROM phases WHERE run_id=?", (run_id,)
+                ).fetchall()
+            ]
+            if phase_ids:
+                placeholders = ",".join("?" * len(phase_ids))
+                turn_ids = [
+                    row[0]
+                    for row in conn.execute(
+                        f"SELECT turn_id FROM turns WHERE phase_id IN ({placeholders})",
+                        phase_ids,
+                    ).fetchall()
+                ]
+                if turn_ids:
+                    tc_ph = ",".join("?" * len(turn_ids))
+                    conn.execute(
+                        f"DELETE FROM tool_calls WHERE turn_id IN ({tc_ph})", turn_ids
+                    )
+                    conn.execute(
+                        f"DELETE FROM turns WHERE turn_id IN ({tc_ph})", turn_ids
+                    )
+                conn.execute(
+                    f"DELETE FROM phases WHERE phase_id IN ({placeholders})", phase_ids
+                )
+            conn.execute("DELETE FROM feedback WHERE run_id=?", (run_id,))
+            conn.execute("DELETE FROM runs WHERE run_id=?", (run_id,))
+
+        self._execute_with_retry(_work)
+
     def list_runs(
         self,
         pes_name: str | None = None,
@@ -277,9 +312,9 @@ class TrajectoryStore:
         phase_order: int,
         attempt_no: int,
     ) -> int:
-        """插入 phases 行(started_at=now),返回新 phase_id;UNIQUE 冲突直接抛 IntegrityError。"""
+        """插入 phases 行(started_at=now),返回新 phase_id;UNIQUE 冲突时替换旧行。"""
         sql = """
-            INSERT INTO phases (run_id, phase_name, phase_order, attempt_no, started_at)
+            INSERT OR REPLACE INTO phases (run_id, phase_name, phase_order, attempt_no, started_at)
             VALUES (?,?,?,?,?)
         """
         params = (run_id, phase_name, phase_order, attempt_no, _utcnow_iso())
