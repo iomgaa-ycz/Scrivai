@@ -88,7 +88,7 @@ def pdf_to_markdown(
     path: str | Path,
     *,
     base_url: str = "http://100.81.95.44:7861",
-    timeout: int = 120,
+    timeout: int = 300,
 ) -> str:
     """MonkeyOCR HTTP 服务把 PDF 转 markdown。
 
@@ -113,10 +113,14 @@ def pdf_to_markdown(
 
     base = base_url.rstrip("/")
 
+    # MonkeyOCR 通常是内网服务,绕过系统代理
+    session = requests.Session()
+    session.trust_env = False
+
     try:
         with src.open("rb") as f:
             files = {"file": (src.name, f, "application/pdf")}
-            resp = requests.post(f"{base}/parse", files=files, timeout=timeout)
+            resp = session.post(f"{base}/parse", files=files, timeout=timeout)
     except requests.exceptions.RequestException as e:
         raise IOError(f"MonkeyOCR 网络请求失败({base}):{e}") from e
 
@@ -133,7 +137,7 @@ def pdf_to_markdown(
     full_url = f"{base}{download_url}" if download_url.startswith("/") else download_url
 
     try:
-        zip_resp = requests.get(full_url, timeout=timeout)
+        zip_resp = session.get(full_url, timeout=timeout)
     except requests.exceptions.RequestException as e:
         raise IOError(f"MonkeyOCR 下载 ZIP 失败({full_url}):{e}") from e
 
