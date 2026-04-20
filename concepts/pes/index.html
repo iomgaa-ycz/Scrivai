@@ -626,15 +626,37 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#file-contracts" class="md-nav__link">
+  <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        File Contracts
+        Configuration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="File Contracts">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prompt-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prompt Management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-pes-implementations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in PES Implementations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Built-in PES Implementations">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1172,15 +1194,37 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#file-contracts" class="md-nav__link">
+  <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        File Contracts
+        Configuration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="File Contracts">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prompt-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prompt Management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-pes-implementations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in PES Implementations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Built-in PES Implementations">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1264,150 +1308,243 @@
 
 
 <h1 id="pes-engine">PES Engine</h1>
-<p>A <strong>PES</strong> (Plan–Execute–Summarize) is the core abstraction in Scrivai. Every interaction with an LLM is wrapped in a PES, which enforces a deterministic three-phase lifecycle.</p>
+<p>A <strong>PES</strong> (Plan–Execute–Summarize) is the core abstraction in Scrivai. Every LLM interaction is wrapped in a three-phase pipeline with file-contract enforcement.</p>
 <h2 id="the-three-phases">The Three Phases</h2>
 <table>
 <thead>
 <tr>
 <th>Phase</th>
 <th>Purpose</th>
-<th>Output</th>
+<th>File Contract</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Plan</strong></td>
-<td>The LLM reads the system prompt and runtime context, then generates a step-by-step plan.</td>
-<td><code>PhaseResult</code> with plan text</td>
+<td>Read inputs, produce a step-by-step plan</td>
+<td><code>working/plan.md</code> + <code>working/plan.json</code></td>
 </tr>
 <tr>
 <td><strong>Execute</strong></td>
-<td>The LLM follows the plan, optionally using tools in a multi-turn conversation.</td>
-<td><code>PhaseResult</code> with all turns</td>
+<td>Follow the plan, produce per-item findings</td>
+<td><code>working/findings/&lt;id&gt;.json</code></td>
 </tr>
 <tr>
 <td><strong>Summarize</strong></td>
-<td>The LLM distils the execution trace into a clean, structured final output.</td>
-<td><code>PhaseResult</code> with structured output</td>
+<td>Merge findings into a single structured output</td>
+<td><code>working/output.json</code></td>
 </tr>
 </tbody>
 </table>
-<p>The three phases map to <code>PESRun.phases[0]</code>, <code>phases[1]</code>, and <code>phases[2]</code>.</p>
-<h2 id="file-contracts">File Contracts</h2>
-<p>Each built-in PES specifies which keys it reads from <code>runtime_context</code> and what it writes to <code>output</code>. These contracts are enforced at runtime.</p>
-<h3 id="extractorpes">ExtractorPES</h3>
-<p>Reads structured fields out of a document.</p>
-<table>
-<thead>
-<tr>
-<th><code>runtime_context</code> key</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>document_text</code></td>
-<td><code>str</code></td>
-<td>The raw text to extract from</td>
-</tr>
-<tr>
-<td><code>extraction_schema</code></td>
-<td><code>dict</code></td>
-<td>Field names mapped to their expected types</td>
-</tr>
-</tbody>
-</table>
-<p>Output: a <code>dict</code> matching <code>extraction_schema</code>.</p>
-<h3 id="auditorpes">AuditorPES</h3>
-<p>Reviews a document against a set of rules and produces findings.</p>
-<table>
-<thead>
-<tr>
-<th><code>runtime_context</code> key</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>document_text</code></td>
-<td><code>str</code></td>
-<td>The document to audit</td>
-</tr>
-<tr>
-<td><code>rules</code></td>
-<td><code>list[str]</code></td>
-<td>Audit criteria as plain-text rules</td>
-</tr>
-</tbody>
-</table>
-<p>Output: a <code>dict</code> with keys <code>findings</code> (list) and <code>verdict</code> (str).</p>
-<h3 id="generatorpes">GeneratorPES</h3>
-<p>Generates a document from a template and input variables.</p>
-<table>
-<thead>
-<tr>
-<th><code>runtime_context</code> key</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>template</code></td>
-<td><code>str</code></td>
-<td>A Markdown template with <code>{{variable}}</code> placeholders</td>
-</tr>
-<tr>
-<td><code>inputs</code></td>
-<td><code>dict</code></td>
-<td>Values to substitute into the template</td>
-</tr>
-</tbody>
-</table>
-<p>Output: the rendered document as a <code>str</code>.</p>
-<h2 id="custom-pes-via-subclassing">Custom PES via Subclassing</h2>
-<p>To create your own PES, subclass <code>BasePES</code> and implement <code>_build_plan_prompt</code> and <code>_parse_output</code>:</p>
-<pre><code class="language-python">from scrivai.pes.base import BasePES
-from scrivai import PESConfig, ModelConfig, PhaseConfig
-
-class TranslatorPES(BasePES):
-    &quot;&quot;&quot;Translate a document from one language to another.&quot;&quot;&quot;
-
-    def _build_plan_prompt(self, runtime_context: dict) -&gt; str:
-        src = runtime_context[&quot;source_language&quot;]
-        tgt = runtime_context[&quot;target_language&quot;]
-        return f&quot;Translate the following text from {src} to {tgt}.&quot;
-
-    def _parse_output(self, raw: str) -&gt; str:
-        return raw.strip()
-
-
-config = PESConfig(
-    name=&quot;translator&quot;,
-    model=ModelConfig(model=&quot;claude-sonnet-4-20250514&quot;),
-    phases=[
-        PhaseConfig(name=&quot;plan&quot;),
-        PhaseConfig(name=&quot;execute&quot;),
-        PhaseConfig(name=&quot;summarize&quot;),
-    ],
-)
-
-pes = TranslatorPES(config=config)
-result = pes.run(
-    runtime_context={
-        &quot;document_text&quot;: &quot;Hello, world!&quot;,
-        &quot;source_language&quot;: &quot;English&quot;,
-        &quot;target_language&quot;: &quot;Spanish&quot;,
-    }
-)
-print(result.output)  # 'Hola, mundo!'
+<p>Phase results are stored in <code>PESRun.phase_results["plan"]</code>, <code>phase_results["execute"]</code>, and <code>phase_results["summarize"]</code>.</p>
+<h2 id="configuration">Configuration</h2>
+<p>PES behavior is defined in a YAML config loaded via <code>load_pes_config()</code>:</p>
+<pre><code class="language-yaml">name: auditor
+display_name: Auditor — Compliance Audit
+prompt_text: |
+  You are a compliance audit agent. ...
+default_skills:
+  - available-tools
+phases:
+  plan:
+    allowed_tools: [&quot;Bash&quot;, &quot;Read&quot;, &quot;Write&quot;, &quot;Edit&quot;, &quot;Glob&quot;, &quot;Grep&quot;]
+    max_turns: 10
+    max_retries: 1
+    required_outputs: [plan.md, plan.json]
+  execute:
+    allowed_tools: [&quot;Bash&quot;, &quot;Read&quot;, &quot;Write&quot;, &quot;Edit&quot;, &quot;Glob&quot;, &quot;Grep&quot;]
+    max_turns: 25
+    max_retries: 1
+    required_outputs:
+      - {path: &quot;findings&quot;, min_files: 1, pattern: &quot;*.json&quot;}
+  summarize:
+    allowed_tools: [&quot;Bash&quot;, &quot;Read&quot;, &quot;Write&quot;]
+    max_turns: 10
+    max_retries: 1
+    required_outputs: [output.json]
 </code></pre>
+<p>Key fields:</p>
+<ul>
+<li><code>prompt_text</code> — base system prompt sent to the Agent SDK</li>
+<li><code>phases</code> — a dict of three <code>PhaseConfig</code> entries (plan/execute/summarize)</li>
+<li><code>external_cli_tools</code> — Bash commands the Agent is allowed to execute (prompt-level constraint)</li>
+</ul>
+<h2 id="prompt-management">Prompt Management</h2>
+<p>Since v0.1.7, phase-specific instructions are managed by <strong>Jinja2 templates</strong> via <code>PromptManager</code>. Each built-in PES has 3 templates (<code>{name}_{phase}.j2</code>) that control exactly what the Agent sees:</p>
+<pre><code>scrivai/pes/prompts/
+├── prompt_spec.yaml          # Variable contracts per template
+├── templates/                # Jinja2 templates
+│   ├── auditor_plan.j2
+│   ├── auditor_execute.j2
+│   └── ...
+└── fragments/                # Shared rules injected into all templates
+    └── workspace_rules.md
+</code></pre>
+<p>Templates reference only the variables they need (e.g. <code>{{ workspace.working_dir }}</code>). Internal paths like <code>output_dir</code> are never exposed to the Agent.</p>
+<h2 id="built-in-pes-implementations">Built-in PES Implementations</h2>
+<h3 id="extractorpes">ExtractorPES</h3>
+<p>Extract structured data from documents.</p>
+<table>
+<thead>
+<tr>
+<th><code>runtime_context</code> key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>output_schema</code></td>
+<td><code>type[BaseModel]</code></td>
+<td>Yes</td>
+<td>Pydantic model for output validation</td>
+</tr>
+</tbody>
+</table>
+<p>File contract: plan → <code>plan.json</code> with <code>items_to_extract</code> list; execute → <code>findings/&lt;id&gt;.json</code> per item; summarize → <code>output.json</code> validated against <code>output_schema</code>.</p>
+<h3 id="auditorpes">AuditorPES</h3>
+<p>Audit a document against a checklist of checkpoints.</p>
+<table>
+<thead>
+<tr>
+<th><code>runtime_context</code> key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>output_schema</code></td>
+<td><code>type[BaseModel]</code></td>
+<td>Yes</td>
+<td>Pydantic model for audit output</td>
+</tr>
+<tr>
+<td><code>verdict_levels</code></td>
+<td><code>list[str]</code></td>
+<td>No</td>
+<td>Default: <code>["合格", "不合格", "不适用", "需要澄清"]</code></td>
+</tr>
+<tr>
+<td><code>evidence_required</code></td>
+<td><code>bool</code></td>
+<td>No</td>
+<td>Default: <code>True</code></td>
+</tr>
+</tbody>
+</table>
+<p>Prerequisite: place <code>data/checkpoints.json</code> in workspace before running.</p>
+<h3 id="generatorpes">GeneratorPES</h3>
+<p>Fill a docxtpl template with LLM-gathered content.</p>
+<table>
+<thead>
+<tr>
+<th><code>runtime_context</code> key</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>template_path</code></td>
+<td><code>Path</code></td>
+<td>Yes</td>
+<td>Path to docxtpl <code>.docx</code> template</td>
+</tr>
+<tr>
+<td><code>context_schema</code></td>
+<td><code>type[BaseModel]</code></td>
+<td>Yes</td>
+<td>Pydantic model for template context</td>
+</tr>
+<tr>
+<td><code>auto_render</code></td>
+<td><code>bool</code></td>
+<td>No</td>
+<td>If True, render <code>output/final.docx</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="custom-pes-via-subclassing">Custom PES via Subclassing</h2>
+<p>To create a custom PES, subclass <code>BasePES</code> and override the extension points:</p>
+<pre><code class="language-python">from pathlib import Path
+from pydantic import BaseModel
+from scrivai import (
+    BasePES, ModelConfig, WorkspaceSpec,
+    build_workspace_manager, load_pes_config,
+)
+
+class MyOutput(BaseModel):
+    summary: str
+
+class MyPES(BasePES):
+    &quot;&quot;&quot;Custom PES with additional execution context.&quot;&quot;&quot;
+
+    async def build_execution_context(self, phase, run):
+        if phase == &quot;plan&quot;:
+            return {&quot;custom_field&quot;: &quot;injected into template context&quot;}
+        return {}
+
+# 1. Create workspace
+ws_mgr = build_workspace_manager()
+spec = WorkspaceSpec(
+    run_id=&quot;my-run-001&quot;,
+    project_root=Path(&quot;/path/to/project&quot;),
+    data_inputs={&quot;source.md&quot;: Path(&quot;/path/to/source.md&quot;)},
+    extra_env={&quot;MY_DB_PATH&quot;: &quot;/data/my.db&quot;},  # passed to Agent subprocess
+)
+ws = ws_mgr.create(spec)
+
+# 2. Load config and run
+config = load_pes_config(Path(&quot;my_pes.yaml&quot;))
+model = ModelConfig(model=&quot;claude-sonnet-4-20250514&quot;)
+pes = MyPES(config=config, model=model, workspace=ws,
+            runtime_context={&quot;output_schema&quot;: MyOutput})
+run = await pes.run(&quot;Process source.md and produce a summary&quot;)
+
+print(run.status)        # &quot;completed&quot;
+print(run.final_output)  # {&quot;summary&quot;: &quot;...&quot;}
+</code></pre>
+<p>Extension points (override as needed):</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>build_execution_context()</code></td>
+<td>Inject extra variables into the template context</td>
+<td>Returns <code>{}</code></td>
+</tr>
+<tr>
+<td><code>build_phase_prompt()</code></td>
+<td>Full control over prompt assembly</td>
+<td>Delegates to <code>PromptManager</code></td>
+</tr>
+<tr>
+<td><code>postprocess_phase_result()</code></td>
+<td>Validate/transform LLM output after each phase</td>
+<td>No-op</td>
+</tr>
+<tr>
+<td><code>validate_phase_outputs()</code></td>
+<td>Check file-contract outputs exist</td>
+<td>Validates <code>required_outputs</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="../../api/pes/">API Reference: PES</a></li>
 <li><a href="../../api/models/">Models: PESConfig, PhaseConfig, PESRun</a></li>
+<li><a href="../workspace/">Concepts: Workspace</a></li>
 </ul>
 
 

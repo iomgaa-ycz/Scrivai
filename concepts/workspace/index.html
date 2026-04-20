@@ -687,6 +687,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#environment-variables-extra_env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables (extra_env)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1177,6 +1188,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#environment-variables-extra_env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables (extra_env)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1244,6 +1266,25 @@ print(snapshot.label)  # 'after-phase-1'
 <pre><code class="language-python">manager.archive(handle)
 </code></pre>
 <p>Archived workspaces are moved to <code>~/.scrivai/workspaces/_archive/&lt;run_id&gt;/</code>.</p>
+<h2 id="environment-variables-extra_env">Environment Variables (<code>extra_env</code>)</h2>
+<p><code>WorkspaceSpec.extra_env</code> lets you pass environment variables to the Agent SDK subprocess. This is how business-layer tools (e.g. qmd search engines, database connectors) become available to the Agent.</p>
+<pre><code class="language-python">spec = WorkspaceSpec(
+    run_id=&quot;audit-with-qmd&quot;,
+    project_root=project_root,
+    extra_env={
+        &quot;QMD_COLLECTION&quot;: &quot;tender_001&quot;,
+        &quot;QMD_DB_PATH&quot;: &quot;/data/qmd.db&quot;,
+    },
+)
+ws = ws_mgr.create(spec)
+# ws.extra_env == {&quot;QMD_COLLECTION&quot;: &quot;tender_001&quot;, &quot;QMD_DB_PATH&quot;: &quot;/data/qmd.db&quot;}
+</code></pre>
+<p>The <code>extra_env</code> dict flows through the full chain:</p>
+<pre><code>WorkspaceSpec.extra_env → meta.json → WorkspaceHandle.extra_env
+    → BasePES._call_sdk_query → LLMClient.execute_task(extra_env=...)
+    → Agent subprocess environment
+</code></pre>
+<p>The Agent can then use these variables in Bash tool calls or read them programmatically.</p>
 <h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="../../api/workspace/">API Reference: Workspace</a></li>
