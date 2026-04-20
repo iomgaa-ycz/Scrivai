@@ -577,3 +577,18 @@ class BasePES:
             "data_dir": str(self.workspace.data_dir),
             "output_dir": str(self.workspace.output_dir),
         }
+
+    def _resolve_cli_tools(self) -> list[str]:
+        """Merge external_cli_tools from config and runtime_context.
+
+        Deduplicated, order-preserved.
+        """
+        from_config = self.config.external_cli_tools
+        from_runtime = self.runtime_context.get("external_cli_tools", [])
+        seen: set[str] = set()
+        result: list[str] = []
+        for cmd in [*from_config, *from_runtime]:
+            if cmd not in seen:
+                seen.add(cmd)
+                result.append(cmd)
+        return result

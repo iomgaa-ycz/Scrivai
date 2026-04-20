@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from scrivai.models.pes import PESConfig, PhaseConfig
+from scrivai.models.workspace import WorkspaceHandle, WorkspaceSnapshot
+from scrivai.testing.mock_pes import MockPES, PhaseOutcome
 
 
 def _phase(name: str) -> PhaseConfig:
@@ -99,3 +103,97 @@ phases:
 
         cfg = load_pes_config(p)
         assert cfg.external_cli_tools == []
+
+
+# ---------------------------------------------------------------------------
+# Task 2: _resolve_cli_tools merges config + runtime_context
+# ---------------------------------------------------------------------------
+
+
+def _make_workspace(tmp_path: Path) -> WorkspaceHandle:
+    root = tmp_path / "ws" / "run-1"
+    for d in ("working", "data", "output", "logs"):
+        (root / d).mkdir(parents=True, exist_ok=True)
+    return WorkspaceHandle(
+        run_id="run-1",
+        root_dir=root,
+        working_dir=root / "working",
+        data_dir=root / "data",
+        output_dir=root / "output",
+        logs_dir=root / "logs",
+        snapshot=WorkspaceSnapshot(
+            run_id="run-1",
+            project_root=tmp_path,
+            snapshot_at=datetime.now(timezone.utc),
+        ),
+    )
+
+
+def _make_config_with_cli_tools(tools: list[str]) -> PESConfig:
+    return PESConfig(
+        name="auditor",
+        prompt_text="system prompt",
+        phases={
+            "plan": _phase("plan"),
+            "execute": _phase("execute"),
+            "summarize": _phase("summarize"),
+        },
+        external_cli_tools=tools,
+    )
+
+
+def _make_pes(
+    tmp_path: Path,
+    config_tools: list[str],
+    runtime_tools: list[str] | None = None,
+) -> MockPES:
+    rt: dict[str, Any] = {}
+    if runtime_tools is not None:
+        rt["external_cli_tools"] = runtime_tools
+    return MockPES(
+        config=_make_config_with_cli_tools(config_tools),
+        workspace=_make_workspace(tmp_path),
+        runtime_context=rt,
+        phase_outcomes={
+            "plan": [PhaseOutcome(response_text="ok")],
+            "execute": [PhaseOutcome(response_text="ok")],
+            "summarize": [PhaseOutcome(response_text="ok")],
+        },
+    )
+
+
+class TestResolveCliTools:
+    """_resolve_cli_tools should merge config and runtime_context, deduplicated."""
+
+    def test_config_only(self, tmp_path: Path) -> None:
+        pes = _make_pes(tmp_path, config_tools=["qmd search --collection rules"])
+        result = pes._resolve_cli_tools()
+        assert result == ["qmd search --collection rules"]
+
+    def test_runtime_only(self, tmp_path: Path) -> None:
+        pes = _make_pes(
+            tmp_path,
+            config_tools=[],
+            runtime_tools=["qmd search --collection tender_001"],
+        )
+        result = pes._resolve_cli_tools()
+        assert result == ["qmd search --collection tender_001"]
+
+    def test_merge_dedup(self, tmp_path: Path) -> None:
+        pes = _make_pes(
+            tmp_path,
+            config_tools=["qmd search --collection rules"],
+            runtime_tools=[
+                "qmd search --collection rules",
+                "qmd search --collection tender_001",
+            ],
+        )
+        result = pes._resolve_cli_tools()
+        assert "qmd search --collection rules" in result
+        assert "qmd search --collection tender_001" in result
+        assert len(result) == 2
+
+    def test_empty_when_none(self, tmp_path: Path) -> None:
+        pes = _make_pes(tmp_path, config_tools=[])
+        result = pes._resolve_cli_tools()
+        assert result == []
