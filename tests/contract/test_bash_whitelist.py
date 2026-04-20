@@ -231,3 +231,31 @@ class TestPromptInjection:
             task_prompt="审核招标文书",
         )
         assert "ALLOWED EXTERNAL CLI" not in prompt
+
+
+class TestEndToEnd:
+    """完整 run() 流程中白名单应出现在每个 phase 的 prompt 中。"""
+
+    @pytest.mark.asyncio
+    async def test_whitelist_appears_in_phase_prompts(self, tmp_path: Path) -> None:
+        cfg = _make_config_with_cli_tools(["qmd search --collection tender_001"])
+        pes = MockPES(
+            config=cfg,
+            workspace=_make_workspace(tmp_path),
+            runtime_context={"external_cli_tools": ["qmd document get --collection tender_001"]},
+            phase_outcomes={
+                "plan": [PhaseOutcome(response_text="plan done")],
+                "execute": [PhaseOutcome(response_text="execute done")],
+                "summarize": [PhaseOutcome(response_text="summarize done")],
+            },
+        )
+        run = await pes.run("审核招标文书")
+        assert run.status == "completed"
+
+        for phase in ("plan", "execute", "summarize"):
+            prompt = run.phase_results[phase].prompt
+            assert "qmd search --collection tender_001" in prompt, f"{phase} missing config tool"
+            assert "qmd document get --collection tender_001" in prompt, (
+                f"{phase} missing runtime tool"
+            )
+            assert "ALLOWED EXTERNAL CLI" in prompt, f"{phase} missing whitelist header"
