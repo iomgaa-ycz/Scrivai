@@ -7,56 +7,72 @@
 
 ## 前提条件
 
+- Python >= 3.11
 - 已安装 Scrivai（`pip install scrivai`）
-- 在环境变量（或 `.env` 文件）中设置了 `ANTHROPIC_API_KEY`
+- Claude Agent SDK CLI 可用（`claude` 命令）
+- 已配置 API 密钥（通过 `.env` 文件或环境变量）
 
-## 最简 ExtractorPES 示例
+```bash
+pip install scrivai
+# Create .env with your API credentials
+echo 'ANTHROPIC_BASE_URL=https://your-gateway.example.com' >> .env
+echo 'ANTHROPIC_AUTH_TOKEN=your-key-here' >> .env
+```
 
-以下脚本从一段短文档字符串中提取结构化字段。
+## 最简 AuditorPES 示例
+
+以下脚本按照一组检查点审核文档。
 
 ```python
-import os
-from scrivai import ExtractorPES, ModelConfig, PESConfig, PhaseConfig
+import asyncio
+from pathlib import Path
+from pydantic import BaseModel
+from scrivai import (
+    AuditorPES, ModelConfig, WorkspaceSpec,
+    build_workspace_manager, load_pes_config,
+)
 
-# 1. Define the model to use
+# 1. Define output schema
+class AuditOutput(BaseModel):
+    findings: list[dict]
+    summary: dict
+
+# 2. Set up workspace
+ws_mgr = build_workspace_manager()
+spec = WorkspaceSpec(
+    run_id="quickstart-audit",
+    project_root=Path("."),  # must contain skills/ and agents/ dirs
+    data_inputs={"document.md": Path("my_document.md")},
+    force=True,
+)
+ws = ws_mgr.create(spec)
+
+# 3. Place checkpoints in workspace
+import json
+checkpoints = [
+    {"id": "CP001", "description": "Document must have a title"},
+    {"id": "CP002", "description": "All figures must have captions"},
+]
+(ws.data_dir / "checkpoints.json").write_text(
+    json.dumps(checkpoints, ensure_ascii=False)
+)
+
+# 4. Load config, create PES, and run
+config = load_pes_config(Path("scrivai/agents/auditor.yaml"))
 model = ModelConfig(model="claude-sonnet-4-20250514")
-
-# 2. Build a PES configuration with one extraction phase
-config = PESConfig(
-    name="quickstart-extractor",
+pes = AuditorPES(
+    config=config,
     model=model,
-    phases=[
-        PhaseConfig(
-            name="extract",
-            system_prompt=(
-                "You are a precise document extractor. "
-                "Return a JSON object matching the requested schema."
-            ),
-        ),
-    ],
+    workspace=ws,
+    runtime_context={"output_schema": AuditOutput},
 )
 
-# 3. Instantiate the PES
-pes = ExtractorPES(config=config)
+async def main():
+    run = await pes.run("Audit data/document.md against all checkpoints")
+    print(f"Status: {run.status}")           # "completed"
+    print(f"Findings: {run.final_output}")   # {"findings": [...], "summary": {...}}
 
-# 4. Provide runtime context and run
-result = pes.run(
-    runtime_context={
-        "document_text": (
-            "Service Agreement dated 2024-03-01 between Acme Corp (provider) "
-            "and Globex Ltd (client). Total value: $45,000."
-        ),
-        "extraction_schema": {
-            "date": "str",
-            "provider": "str",
-            "client": "str",
-            "value_usd": "int",
-        },
-    }
-)
-
-print(result.status)   # completed
-print(result.output)   # {'date': '2024-03-01', 'provider': 'Acme Corp', ...}
+asyncio.run(main())
 ```
 
 ## 三阶段生命周期
@@ -64,32 +80,32 @@ print(result.output)   # {'date': '2024-03-01', 'provider': 'Acme Corp', ...}
 每次 PES 运行都严格经历三个阶段：
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      PES Run                            │
-│                                                         │
-│  ┌──────────┐    ┌──────────────┐    ┌───────────────┐  │
-│  │  PLAN    │───▶│   EXECUTE    │───▶│   SUMMARIZE   │  │
-│  │          │    │              │    │               │  │
-│  │ Generate │    │ Multi-turn   │    │ Distil final  │  │
-│  │ a step-  │    │ tool-use     │    │ output from   │  │
-│  │ by-step  │    │ conversation │    │ raw turns     │  │
-│  │ plan     │    │ following    │    │               │  │
-│  │          │    │ the plan     │    │               │  │
-│  └──────────┘    └──────────────┘    └───────────────┘  │
-│                                                         │
-│  result.phases[0]  result.phases[1]  result.phases[2]   │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                       PES Run                            │
+│                                                          │
+│  ┌──────────┐    ┌──────────────┐    ┌───────────────┐   │
+│  │   PLAN   │───▶│   EXECUTE    │───▶│  SUMMARIZE    │   │
+│  │          │    │              │    │               │   │
+│  │ Read     │    │ Per-item     │    │ Merge all     │   │
+│  │ inputs,  │    │ processing   │    │ findings into │   │
+│  │ produce  │    │ with tool    │    │ output.json   │   │
+│  │ plan.json│    │ use          │    │               │   │
+│  └──────────┘    └──────────────┘    └───────────────┘   │
+│                                                          │
+│  phase_results     phase_results      phase_results      │
+│  ["plan"]          ["execute"]        ["summarize"]      │
+└──────────────────────────────────────────────────────────┘
 ```
 
-- **计划（Plan）**：LLM 读取系统提示词和运行时上下文，生成结构化计划。
-- **执行（Execute）**：LLM 按计划执行，可能发起多轮工具调用。
-- **摘要（Summarize）**：LLM 将执行轨迹提炼为简洁、结构化的最终输出。
+- **计划（Plan）**：Agent 读取输入并生成 `plan.json` + `plan.md`。
+- **执行（Execute）**：Agent 按计划执行，为每个条目生成 `findings/<id>.json`。
+- **摘要（Summarize）**：Agent 将发现结果合并为 `output.json`（由框架验证）。
 
-每个阶段以 `PhaseResult` 形式记录，包含所有轮次（`PhaseTurn`）和该阶段的最终文本。
+每个阶段以 `PhaseResult` 形式记录，包含所有轮次和该阶段的最终文本。
 
 ## 下一步
 
-- [概念：PES 引擎](../concepts/pes.md) — 了解文件契约与自定义 PES 类
-- [概念：工作区](../concepts/workspace.md) — 理解运行隔离机制
+- [概念：PES 引擎](../concepts/pes.md) — 文件契约、提示词模板、自定义 PES
+- [概念：工作区](../concepts/workspace.md) — 运行隔离与 `extra_env`
 - [概念：轨迹存储](../concepts/trajectory.md) — 记录与回放运行
-- [API 参考：PES](../../api/pes.md) — 完整类文档
+- [API 参考：PES](../api/pes.md) — 完整类文档

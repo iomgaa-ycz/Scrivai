@@ -58,6 +58,33 @@ manager.archive(handle)
 
 已归档的工作区将被移至 `~/.scrivai/workspaces/_archive/<run_id>/`。
 
+## 环境变量（`extra_env`）
+
+`WorkspaceSpec.extra_env` 允许你向 Agent SDK 子进程传递环境变量。这是业务层工具（例如 qmd 搜索引擎、数据库连接器）对 Agent 可用的方式。
+
+```python
+spec = WorkspaceSpec(
+    run_id="audit-with-qmd",
+    project_root=project_root,
+    extra_env={
+        "QMD_COLLECTION": "tender_001",
+        "QMD_DB_PATH": "/data/qmd.db",
+    },
+)
+ws = ws_mgr.create(spec)
+# ws.extra_env == {"QMD_COLLECTION": "tender_001", "QMD_DB_PATH": "/data/qmd.db"}
+```
+
+`extra_env` 字典在完整链路中流转：
+
+```
+WorkspaceSpec.extra_env → meta.json → WorkspaceHandle.extra_env
+    → BasePES._call_sdk_query → LLMClient.execute_task(extra_env=...)
+    → Agent subprocess environment
+```
+
+Agent 随后可以在 Bash 工具调用中使用这些变量，或以编程方式读取它们。
+
 ## 另请参阅
 
 - [API 参考：Workspace](../../api/workspace.md)
