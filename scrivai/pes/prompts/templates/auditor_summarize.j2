@@ -1,0 +1,22 @@
+{{ static_fragments_text }}
+
+PHASE = summarize
+
+Merge `findings/*.json` into `output.json` with shape:
+  {
+    "findings": [...all findings from findings/ ...],
+    "summary": {"total": <int>, "合格": <int>, "不合格": <int>, ...}
+  }
+
+The output structure is validated by the framework against the caller's
+output_schema (pydantic). Respond "summarize done".
+
+## TASK
+
+{{ task_prompt }}
+
+{% if previous_phase_output %}
+## FINDINGS (from execute phase)
+
+{{ previous_phase_output | tojson(indent=2) }}
+{% endif %}

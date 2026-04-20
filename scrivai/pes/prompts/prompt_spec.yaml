@@ -1,0 +1,48 @@
+# Scrivai Prompt Spec — variable contracts per PES/phase
+
+templates:
+
+  auditor_plan:
+    required_context: [task_prompt, workspace]
+    static_fragments: [workspace_rules]
+    artifacts: []
+
+  auditor_execute:
+    required_context: [task_prompt, workspace]
+    static_fragments: [workspace_rules]
+    artifacts: []
+
+  auditor_summarize:
+    required_context: [task_prompt, workspace]
+    static_fragments: [workspace_rules]
+    artifacts: []
+
+  extractor_plan:
+    required_context: [task_prompt, workspace]
+    static_fragments: [workspace_rules]
+    artifacts: []
+
+  extractor_execute:
+    required_context: [task_prompt, workspace]
+    static_fragments: [workspace_rules]
+    artifacts: []
+
+  extractor_summarize:
+    required_context: [task_prompt, workspace]
+    static_fragments: [workspace_rules]
+    artifacts: []
+
+  generator_plan:
+    required_context: [task_prompt, workspace]
+    static_fragments: [workspace_rules]
+    artifacts: []
+
+  generator_execute:
+    required_context: [task_prompt, workspace]
+    static_fragments: [workspace_rules]
+    artifacts: []
+
+  generator_summarize:
+    required_context: [task_prompt, workspace]
+    static_fragments: [workspace_rules]
+    artifacts: []

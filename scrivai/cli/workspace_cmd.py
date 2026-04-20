@@ -37,7 +37,9 @@ def cmd_create(args) -> dict[str, Any]:
     mgr = build_workspace_manager(workspaces_root=ws, archives_root=arc)
 
     data_inputs = {k: Path(v).expanduser() for k, v in _parse_kv_list(args.data).items()}
-    extra_env = _parse_kv_list(args.env)  # defaults to empty dict; WorkspaceSpec does not accept None
+    extra_env = _parse_kv_list(
+        args.env
+    )  # defaults to empty dict; WorkspaceSpec does not accept None
 
     spec = WorkspaceSpec(
         run_id=args.run_id,

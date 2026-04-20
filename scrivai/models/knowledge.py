@@ -32,7 +32,8 @@ class LibraryEntry(BaseModel):
     entry_id: str = Field(..., description="Unique within the collection.")
     markdown: str = Field(..., description="Text content.")
     metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Passed through from qmd chunk metadata; no semantic interpretation."
+        default_factory=dict,
+        description="Passed through from qmd chunk metadata; no semantic interpretation.",
     )
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

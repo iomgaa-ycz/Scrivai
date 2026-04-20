@@ -22,24 +22,6 @@ phases:
     allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     max_turns: 10
     max_retries: 1
-    additional_system_prompt: |
-      PHASE = plan
-
-      The template placeholders are listed in the context under `placeholders`.
-      Produce TWO files in `working/`:
-
-      1. `plan.md` — human-readable material-gathering plan per placeholder.
-
-      2. `plan.json` — strict JSON with this shape:
-         {
-           "fills": [
-             {"placeholder": "<name>", "source": "where you'll draw content from"},
-             ...
-           ]
-         }
-         Every placeholder in `context.placeholders` must appear in plan.json.fills.
-
-      Respond "plan done" once both files are valid.
     required_outputs:
       - plan.md
       - plan.json
@@ -48,18 +30,6 @@ phases:
     allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     max_turns: 25
     max_retries: 1
-    additional_system_prompt: |
-      PHASE = execute
-
-      For each placeholder, produce exactly one file:
-      `working/findings/<placeholder>.json` with this shape:
-        {
-          "placeholder": "<name>",
-          "content": "<filled content, possibly multiline markdown>",
-          "source_refs": [{"chunk_id": "...", "quote": "..."}]
-        }
-
-      Respond "execute done" once every placeholder has a findings file.
     required_outputs:
       - path: findings
         min_files: 1
@@ -69,19 +39,5 @@ phases:
     allowed_tools: ["Bash", "Read", "Write"]
     max_turns: 10
     max_retries: 1
-    additional_system_prompt: |
-      PHASE = summarize
-
-      Merge findings into `working/output.json` with shape:
-        {
-          "context": {"<placeholder>": "<content>", ...},
-          "sections": [
-            {"placeholder": "<name>", "content": "...", "source_refs": [...]},
-            ...
-          ]
-        }
-
-      The `context` dict is what docxtpl uses to render the template if the
-      caller enabled `auto_render=True`. Respond "summarize done".
     required_outputs:
       - output.json

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -14,7 +12,6 @@ from scrivai.models.evolution import (
     EvolutionRunConfig,
     EvolutionScore,
     FailureSample,
-    SkillVersion,
 )
 
 
@@ -132,11 +129,10 @@ async def test_run_evolution_baseline_plus_one_iter(source_project, tmp_path):
 @pytest.mark.asyncio
 async def test_run_evolution_budget_exceeded(source_project, tmp_path):
     """budget 满了提前退出 + status budget_exceeded。"""
+    import scrivai.evolution.runner as runner_mod
     from scrivai.evolution.budget import BudgetExceededError
     from scrivai.evolution.runner import run_evolution
     from scrivai.evolution.store import SkillVersionStore
-
-    import scrivai.evolution.runner as runner_mod
 
     orig_ev_cls = runner_mod.CandidateEvaluator
     orig_prop_cls = runner_mod.Proposer

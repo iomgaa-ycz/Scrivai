@@ -274,7 +274,7 @@ def _normalize_quotes(text: str) -> str:
 
 
 def _remove_trailing_commas(text: str) -> str:
-    """Stage-3: Remove trailing commas after the last element of objects/arrays.
+    r"""Stage-3: Remove trailing commas after the last element of objects/arrays.
 
     A state machine skips string contents; only syntactic ,\s*[}\]] patterns are removed.
     """

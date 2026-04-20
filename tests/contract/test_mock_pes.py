@@ -23,7 +23,7 @@ def _make_config(max_retries: int = 0) -> PESConfig:
         return PhaseConfig(name=name, allowed_tools=["Bash"], max_retries=max_retries)
 
     return PESConfig(
-        name="mock-test",
+        name="extractor",
         prompt_text="sys",
         phases={
             "plan": phase_tmpl("plan"),

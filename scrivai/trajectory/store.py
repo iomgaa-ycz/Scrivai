@@ -263,15 +263,9 @@ class TrajectoryStore:
                 ]
                 if turn_ids:
                     tc_ph = ",".join("?" * len(turn_ids))
-                    conn.execute(
-                        f"DELETE FROM tool_calls WHERE turn_id IN ({tc_ph})", turn_ids
-                    )
-                    conn.execute(
-                        f"DELETE FROM turns WHERE turn_id IN ({tc_ph})", turn_ids
-                    )
-                conn.execute(
-                    f"DELETE FROM phases WHERE phase_id IN ({placeholders})", phase_ids
-                )
+                    conn.execute(f"DELETE FROM tool_calls WHERE turn_id IN ({tc_ph})", turn_ids)
+                    conn.execute(f"DELETE FROM turns WHERE turn_id IN ({tc_ph})", turn_ids)
+                conn.execute(f"DELETE FROM phases WHERE phase_id IN ({placeholders})", phase_ids)
             conn.execute("DELETE FROM feedback WHERE run_id=?", (run_id,))
             conn.execute("DELETE FROM runs WHERE run_id=?", (run_id,))
 

@@ -96,9 +96,7 @@ async def test_verdict_as_dict_accepted(workspace, config):
         ],
         "summary": {"total": 1, "合格": 1},
     }
-    (workspace.working_dir / "output.json").write_text(
-        json.dumps(output), encoding="utf-8"
-    )
+    (workspace.working_dir / "output.json").write_text(json.dumps(output), encoding="utf-8")
     run = _run(pes)
     await pes.postprocess_phase_result("summarize", _phase_result(), run)
     assert run.final_output is not None
@@ -123,9 +121,7 @@ async def test_verdict_dict_invalid_level_rejected(workspace, config):
         ],
         "summary": {"total": 1},
     }
-    (workspace.working_dir / "output.json").write_text(
-        json.dumps(output), encoding="utf-8"
-    )
+    (workspace.working_dir / "output.json").write_text(json.dumps(output), encoding="utf-8")
     with pytest.raises(ValueError, match="verdict"):
         await pes.postprocess_phase_result("summarize", _phase_result(), _run(pes))
 
@@ -150,9 +146,7 @@ async def test_evidence_via_evidence_refs(workspace, config):
         ],
         "summary": {"total": 1, "合格": 1},
     }
-    (workspace.working_dir / "output.json").write_text(
-        json.dumps(output), encoding="utf-8"
-    )
+    (workspace.working_dir / "output.json").write_text(json.dumps(output), encoding="utf-8")
     run = _run(pes)
     await pes.postprocess_phase_result("summarize", _phase_result(), run)
     assert run.final_output is not None
@@ -177,9 +171,7 @@ async def test_evidence_via_verdict_dict_quotes(workspace, config):
         ],
         "summary": {"total": 1, "合格": 1},
     }
-    (workspace.working_dir / "output.json").write_text(
-        json.dumps(output), encoding="utf-8"
-    )
+    (workspace.working_dir / "output.json").write_text(json.dumps(output), encoding="utf-8")
     run = _run(pes)
     await pes.postprocess_phase_result("summarize", _phase_result(), run)
     assert run.final_output is not None
@@ -204,8 +196,6 @@ async def test_all_evidence_sources_empty_rejected(workspace, config):
         ],
         "summary": {"total": 1, "合格": 1},
     }
-    (workspace.working_dir / "output.json").write_text(
-        json.dumps(output), encoding="utf-8"
-    )
+    (workspace.working_dir / "output.json").write_text(json.dumps(output), encoding="utf-8")
     with pytest.raises(ValueError, match="evidence"):
         await pes.postprocess_phase_result("summarize", _phase_result(), _run(pes))

@@ -295,5 +295,3 @@ def test_library_protocol_runtime_checkable() -> None:
         def search(self, query: str, top_k: int = 5, filters: dict | None = None) -> list: ...
 
     assert isinstance(FakeLib(), Library)
-
-

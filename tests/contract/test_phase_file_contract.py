@@ -52,7 +52,7 @@ async def test_default_validate_phase_outputs_catches_missing_file(
     )
 
     cfg = PESConfig(
-        name="test",
+        name="extractor",
         display_name="Test",
         prompt_text="",
         default_skills=[],

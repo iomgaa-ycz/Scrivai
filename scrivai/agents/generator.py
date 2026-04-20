@@ -66,7 +66,9 @@ class GeneratorPES(BasePES):
 
         template_path = self.runtime_context.get("template_path")
         if template_path is None:
-            raise ValueError("GeneratorPES requires runtime_context['template_path'] (docxtpl template path).")
+            raise ValueError(
+                "GeneratorPES requires runtime_context['template_path'] (docxtpl template path)."
+            )
         template_path = Path(template_path)
         if not template_path.exists():
             raise FileNotFoundError(f"template_path does not exist: {template_path}")

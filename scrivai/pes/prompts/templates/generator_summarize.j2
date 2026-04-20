@@ -1,0 +1,25 @@
+{{ static_fragments_text }}
+
+PHASE = summarize
+
+Merge findings into `output.json` with shape:
+  {
+    "context": {"<placeholder>": "<content>", ...},
+    "sections": [
+      {"placeholder": "<name>", "content": "...", "source_refs": [...]},
+      ...
+    ]
+  }
+
+The `context` dict is what docxtpl uses to render the template if the
+caller enabled `auto_render=True`. Respond "summarize done".
+
+## TASK
+
+{{ task_prompt }}
+
+{% if previous_phase_output %}
+## FINDINGS (from execute phase)
+
+{{ previous_phase_output | tojson(indent=2) }}
+{% endif %}

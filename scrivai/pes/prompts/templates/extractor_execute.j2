@@ -1,0 +1,33 @@
+{{ static_fragments_text }}
+
+PHASE = execute
+
+For each entry in `plan.json.items_to_extract`, produce exactly one
+finding file: `findings/<id>.json`.
+
+Each finding is free-form JSON (structured as needed by the downstream
+summarize phase). Treat source references carefully; include char offsets
+or chunk IDs when possible.
+
+When every plan item has a matching findings/<id>.json, respond "execute done".
+
+{% if cli_tools %}
+## ALLOWED EXTERNAL CLI TOOLS
+
+You have access to the following external CLI commands via Bash:
+{% for cmd in cli_tools %}
+- `{{ cmd }}`
+{% endfor %}
+
+Do NOT run Bash commands outside this whitelist.
+{% endif %}
+
+## TASK
+
+{{ task_prompt }}
+
+{% if previous_phase_output %}
+## PLAN OUTPUT (from plan phase)
+
+{{ previous_phase_output | tojson(indent=2) }}
+{% endif %}

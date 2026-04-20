@@ -49,7 +49,7 @@ def workspace(tmp_path: Path) -> WorkspaceHandle:
 def _minimal_config() -> PESConfig:
     """最简 PESConfig:三阶段都允许 Bash + 没有 required_outputs。"""
     return PESConfig(
-        name="test",
+        name="extractor",
         display_name="Test PES",
         prompt_text="You are a test assistant.",
         default_skills=[],
@@ -113,19 +113,16 @@ async def test_real_sdk_smoke_minimal_phase(workspace) -> None:
     - 至少 1 个 PhaseTurn(Agent 至少响应一次)
     """
     cfg = PESConfig(
-        name="smoke",
+        name="extractor",
         display_name="Smoke Test PES",
         prompt_text=(
-            "You are a test assistant. Follow instructions exactly and write files when asked."
+            "You are a test assistant. Follow instructions exactly and write files when asked. "
+            "For plan phase: write the requested files. For execute/summarize: just respond 'skip'."
         ),
         default_skills=[],
         phases={
             "plan": PhaseConfig(
                 name="plan",
-                additional_system_prompt=(
-                    "Write a file `working/plan.md` containing exactly two lines:\n"
-                    "Line 1: hello\nLine 2: world\nThen respond 'done'."
-                ),
                 allowed_tools=["Write"],
                 max_turns=4,
                 max_retries=0,
@@ -133,7 +130,6 @@ async def test_real_sdk_smoke_minimal_phase(workspace) -> None:
             ),
             "execute": PhaseConfig(
                 name="execute",
-                additional_system_prompt="Just respond 'skip' immediately, write nothing.",
                 allowed_tools=[],
                 max_turns=1,
                 max_retries=0,
@@ -141,7 +137,6 @@ async def test_real_sdk_smoke_minimal_phase(workspace) -> None:
             ),
             "summarize": PhaseConfig(
                 name="summarize",
-                additional_system_prompt="Just respond 'skip' immediately, write nothing.",
                 allowed_tools=[],
                 max_turns=1,
                 max_retries=0,

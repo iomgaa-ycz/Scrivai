@@ -212,10 +212,15 @@ class TestPromptInjection:
     @pytest.mark.asyncio
     async def test_tools_injected_into_prompt(self, tmp_path: Path) -> None:
         pes = _make_pes(tmp_path, config_tools=["qmd search --collection tender_001"])
+        context: dict[str, Any] = {
+            "workspace": {"working_dir": "/tmp/w", "data_dir": "/tmp/d"},
+            "cli_tools": pes._resolve_cli_tools(),
+            "previous_phase_output": None,
+        }
         prompt = await pes.build_phase_prompt(
             phase="execute",
             phase_cfg=pes.config.phases["execute"],
-            context={},
+            context=context,
             task_prompt="审核招标文书",
         )
         assert "qmd search --collection tender_001" in prompt
@@ -224,10 +229,15 @@ class TestPromptInjection:
     @pytest.mark.asyncio
     async def test_no_injection_when_empty(self, tmp_path: Path) -> None:
         pes = _make_pes(tmp_path, config_tools=[])
+        context: dict[str, Any] = {
+            "workspace": {"working_dir": "/tmp/w", "data_dir": "/tmp/d"},
+            "cli_tools": [],
+            "previous_phase_output": None,
+        }
         prompt = await pes.build_phase_prompt(
             phase="execute",
             phase_cfg=pes.config.phases["execute"],
-            context={},
+            context=context,
             task_prompt="审核招标文书",
         )
         assert "ALLOWED EXTERNAL CLI" not in prompt

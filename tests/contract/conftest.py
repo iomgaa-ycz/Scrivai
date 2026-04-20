@@ -25,14 +25,12 @@ default_skills:
   - available-tools
 phases:
   plan:
-    additional_system_prompt: "draft an extraction strategy."
     allowed_tools: [Bash, Read, Write]
     max_turns: 6
     max_retries: 1
     permission_mode: default
     required_outputs: [plan.md, plan.json]
   execute:
-    additional_system_prompt: "execute plan.json."
     allowed_tools: [Bash, Read, Write]
     max_turns: 30
     max_retries: 1
@@ -40,7 +38,6 @@ phases:
     required_outputs:
       - {path: "findings/", min_files: 1, pattern: "*.json"}
   summarize:
-    additional_system_prompt: "aggregate."
     allowed_tools: [Bash, Read, Write]
     max_turns: 4
     max_retries: 1

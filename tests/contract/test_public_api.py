@@ -41,6 +41,7 @@ EXPECTED_PUBLIC_API = {
     # 抽象类
     "BasePES",
     "HookManager",
+    "PromptManager",
     # 预置 PES (占位)
     "ExtractorPES",
     "AuditorPES",

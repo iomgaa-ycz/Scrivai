@@ -13,11 +13,6 @@ default_skills:
   - inspect-document
 phases:
   plan:
-    additional_system_prompt: |
-      Read the checkpoint list. For each checkpoint, plan how you will gather
-      evidence — which sections of the document, which knowledge libraries to
-      consult. Write working/plan.md and working/plan.json (with
-      checkpoints_to_audit list).
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill]
     max_turns: 6
     max_retries: 1
@@ -25,10 +20,6 @@ phases:
       - plan.md
       - plan.json
   execute:
-    additional_system_prompt: |
-      For each checkpoint, gather evidence and decide a verdict. Write each
-      checkpoint's finding to working/findings/<cp_id>.json with fields:
-      checkpoint_id, verdict, evidence (list of {chunk_id, quote}), reasoning.
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill]
     max_turns: 40
     max_retries: 1
@@ -37,9 +28,6 @@ phases:
         min_files: 1
         pattern: "*.json"
   summarize:
-    additional_system_prompt: |
-      Aggregate findings into working/output.json with fields: findings (list)
-      and summary (count by verdict level).
     allowed_tools: [Bash, Read, Write]
     max_turns: 4
     max_retries: 1
