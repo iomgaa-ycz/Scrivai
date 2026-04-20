@@ -26,7 +26,7 @@ from importlib import metadata as _metadata
 try:
     __version__: str = _metadata.version("scrivai")
 except _metadata.PackageNotFoundError:  # not installed yet (first development checkout)
-    __version__ = "0.1.6"
+    __version__ = "0.1.7"
 
 # qmd re-export (identity, not a copy)
 from qmd import ChunkRef, CollectionInfo, SearchResult

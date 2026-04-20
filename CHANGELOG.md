@@ -3,6 +3,65 @@
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 
+## [0.1.7] — 2026-04-20
+
+### Added — Jinja2 Prompt Management + Issue #8 Fix
+
+- `scrivai.PromptManager` — Jinja2 template-based prompt assembly with YAML contract validation (replaces `json.dumps` approach)
+- 9 built-in prompt templates (`{auditor,extractor,generator}_{plan,execute,summarize}.j2`) + shared `workspace_rules.md` fragment
+- `prompt_spec.yaml` — declares required context variables per PES/phase
+- `WorkspaceHandle.extra_env` — environment variables now flow through to Agent SDK subprocess (fixes issue #8)
+- `PESConfig.external_cli_tools` — Bash command whitelist injected into Agent prompts
+- `jinja2>=3.1` as explicit dependency
+
+### Changed
+
+- `BasePES.build_phase_prompt()` now delegates to `PromptManager` instead of `json.dumps(context)` — Agent only sees explicitly templated variables
+- `BasePES._call_sdk_query()` passes `extra_env` to `LLMClient.execute_task()` and uses only `config.prompt_text` as `system_prompt` (fixes duplication bug)
+- `BasePES.__init__()` accepts optional `prompt_manager` parameter for dependency injection
+- `_workspace_payload()` no longer exposes `output_dir` to Agent (fixes path ambiguity from issue #8)
+- `relaxed_json_loads` removed from public API (`__all__`)
+
+### Removed
+
+- `PhaseConfig.additional_system_prompt` — content migrated to Jinja2 templates
+
+## [0.1.6] — 2026-04-19
+
+### Changed — Documentation System Redesign
+
+- All docstrings rewritten to English (Google style) per `CONTRIBUTING.md`
+- MkDocs Material site skeleton with API reference (auto-generated from docstrings)
+- Chinese translation skeleton (`docs/zh/`)
+- README rewritten in English; `README.zh-CN.md` added
+- License migrated from MIT to Apache 2.0
+- Internal dev docs moved to `dev-docs/`
+
+### Fixed
+
+- LLM client: manual assistant turn counting to prevent infinite loops
+- Auditor: verdict dict compatibility + evidence multi-field tolerance
+- Auditor: auto-repair malformed JSON in findings/
+- IO: MonkeyOCR bypass system proxy + timeout 120→300s
+
+### Added
+
+- `TrajectoryStore.delete_run()` — cascade delete for run cleanup
+- `CONTRIBUTING.md` with documentation standards
+
+## [0.1.5] — 2026-04-17
+
+### Added — Relaxed JSON Repair
+
+- `scrivai.relaxed_json_loads()` — 5-stage fault-tolerant JSON parser (strip envelope → normalize quotes → remove trailing commas → escape inner quotes → strict fallback)
+- `PESConfig.strict_json` field — when True, skips repair and uses strict `json.loads`
+- `ScrivaiJSONRepairError` exception with dual inheritance
+
+### Changed
+
+- `Proposer` JSON parsing switched to balanced-bracket scanning + Chinese quote normalization
+- PES layer uses `relaxed_json_loads` for all JSON file reads
+
 ## [0.1.4] — 2026-04-18
 
 ### Added — M2 自研 Skill 进化系统
