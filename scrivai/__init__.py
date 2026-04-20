@@ -103,9 +103,9 @@ from scrivai.models.workspace import (
 # PES core
 from scrivai.pes.base import BasePES
 from scrivai.pes.config import load_pes_config
-from scrivai.pes.prompts import PromptManager
 from scrivai.pes.hooks import HookManager, hookimpl
 from scrivai.pes.phase_log import PhaseLogHook
+from scrivai.pes.prompts import PromptManager
 
 # Testing helpers re-export
 from scrivai.testing import (
@@ -118,9 +118,6 @@ from scrivai.testing import (
 # Trajectory
 from scrivai.trajectory.hooks import TrajectoryRecorderHook
 from scrivai.trajectory.store import TrajectoryStore
-
-# Utils
-from scrivai.utils import relaxed_json_loads
 
 # Workspace factory
 from scrivai.workspace.manager import build_workspace_manager

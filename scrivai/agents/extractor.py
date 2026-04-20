@@ -103,7 +103,9 @@ class ExtractorPES(BasePES):
 
         plan_path = self.workspace.working_dir / "plan.json"
         if not plan_path.exists():
-            raise ValueError(f"execute coverage check requires plan.json, but it was not found: {plan_path}")
+            raise ValueError(
+                f"execute coverage check requires plan.json, but it was not found: {plan_path}"
+            )
 
         try:
             plan = relaxed_json_loads(

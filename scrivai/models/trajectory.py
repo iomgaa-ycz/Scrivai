@@ -22,7 +22,9 @@ class PhaseRecord(BaseModel):
     phase_id: int
     run_id: str
     phase_name: str = Field(..., description="Phase name: plan, execute, or summarize.")
-    attempt_no: int = Field(default=0, description="Distinguishes multiple attempts of the same phase.")
+    attempt_no: int = Field(
+        default=0, description="Distinguishes multiple attempts of the same phase."
+    )
     phase_order: int = Field(..., description="Phase order index: 0=plan, 1=execute, 2=summarize.")
     prompt: Optional[str] = None
     response_text: Optional[str] = None
@@ -57,7 +59,9 @@ class TrajectoryRecord(BaseModel):
     error_type: Optional[str] = None
     started_at: datetime
     ended_at: Optional[datetime] = None
-    phase_records: list[PhaseRecord] = Field(default_factory=list, description="Phase records from a sub-table join (optional).")
+    phase_records: list[PhaseRecord] = Field(
+        default_factory=list, description="Phase records from a sub-table join (optional)."
+    )
 
 
 class FeedbackRecord(BaseModel):
@@ -67,13 +71,18 @@ class FeedbackRecord(BaseModel):
 
     feedback_id: int
     run_id: str
-    input_summary: str = Field(..., description="Input summary for this run, provided by the business layer.")
+    input_summary: str = Field(
+        ..., description="Input summary for this run, provided by the business layer."
+    )
     draft_output: dict[str, Any] = Field(..., description="Original output produced by the Agent.")
     final_output: dict[str, Any] = Field(..., description="Expert-approved final output.")
-    corrections: Optional[list[dict[str, Any]]] = Field(default=None, description="Optional structured diff between draft and final output.")
+    corrections: Optional[list[dict[str, Any]]] = Field(
+        default=None, description="Optional structured diff between draft and final output."
+    )
     review_policy_version: Optional[str] = None
     source: str = Field(
-        default="human_expert", description="Feedback source: human_expert, second_review, or gold_set."
+        default="human_expert",
+        description="Feedback source: human_expert, second_review, or gold_set.",
     )
     confidence: float = Field(default=1.0, description="Feedback quality score in [0.0, 1.0].")
     submitted_at: datetime

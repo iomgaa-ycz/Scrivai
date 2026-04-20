@@ -35,17 +35,23 @@ class WorkspaceSpec(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    run_id: str = Field(..., description="Globally unique; the workspace directory is named after this ID.")
-    project_root: Path = Field(..., description="Business project root (must contain skills/ and agents/).")
+    run_id: str = Field(
+        ..., description="Globally unique; the workspace directory is named after this ID."
+    )
+    project_root: Path = Field(
+        ..., description="Business project root (must contain skills/ and agents/)."
+    )
     data_inputs: dict[str, Path] = Field(
         default_factory=dict,
         description="Input file mapping logical_name → source path; copied to workspace/data/ at creation time.",
     )
     extra_env: dict[str, str] = Field(
-        default_factory=dict, description="Additional environment variables passed to the Agent SDK."
+        default_factory=dict,
+        description="Additional environment variables passed to the Agent SDK.",
     )
     force: bool = Field(
-        default=False, description="On run_id conflict: True overwrites, False raises WorkspaceError."
+        default=False,
+        description="On run_id conflict: True overwrites, False raises WorkspaceError.",
     )
 
 
@@ -56,7 +62,9 @@ class WorkspaceSnapshot(BaseModel):
 
     run_id: str
     project_root: Path
-    skills_git_hash: Optional[str] = Field(default=None, description="Git hash of skills at snapshot time.")
+    skills_git_hash: Optional[str] = Field(
+        default=None, description="Git hash of skills at snapshot time."
+    )
     agents_git_hash: Optional[str] = None
     snapshot_at: datetime
     extra: dict[str, Any] = Field(default_factory=dict)
@@ -68,8 +76,12 @@ class WorkspaceHandle(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     run_id: str
-    root_dir: Path = Field(..., description="Workspace root directory (contains working / data / output / logs).")
-    working_dir: Path = Field(..., description="Agent cwd (contains .claude/skills and .claude/agents).")
+    root_dir: Path = Field(
+        ..., description="Workspace root directory (contains working / data / output / logs)."
+    )
+    working_dir: Path = Field(
+        ..., description="Agent cwd (contains .claude/skills and .claude/agents)."
+    )
     data_dir: Path
     output_dir: Path
     logs_dir: Path

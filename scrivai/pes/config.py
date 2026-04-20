@@ -26,7 +26,9 @@ def _interpolate_env_vars(node: Any) -> Any:
         def _replace(match: re.Match[str]) -> str:
             var_name = match.group(1)
             if var_name not in os.environ:
-                raise PESConfigError(f"Environment variable not set: {var_name} (referenced in PESConfig YAML)")
+                raise PESConfigError(
+                    f"Environment variable not set: {var_name} (referenced in PESConfig YAML)"
+                )
             return os.environ[var_name]
 
         return ENV_VAR_PATTERN.sub(_replace, node)

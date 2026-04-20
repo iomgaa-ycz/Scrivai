@@ -79,13 +79,11 @@ class TestRelaxedJsonLoadsStage0:
         assert result == {"a": 1, "b": 2}
 
     def test_valid_array(self) -> None:
-        result = relaxed_json_loads('[1, 2, 3]')
+        result = relaxed_json_loads("[1, 2, 3]")
         assert result == [1, 2, 3]
 
     def test_valid_json_with_report(self) -> None:
-        result, report = relaxed_json_loads(
-            '{"a": 1}', return_repair_report=True
-        )
+        result, report = relaxed_json_loads('{"a": 1}', return_repair_report=True)
         assert result == {"a": 1}
         assert isinstance(report, RepairReport)
         assert report.stages_applied == []
@@ -131,7 +129,7 @@ class TestStage2NormalizeQuotes:
     """Stage-2: 中文/全角引号 → 半角(仅语法位置)。"""
 
     def test_chinese_double_quotes(self) -> None:
-        text = '{\u201ca\u201d: \u201c值\u201d, \u201cb\u201d: \u201c文本\u201d}'
+        text = "{\u201ca\u201d: \u201c值\u201d, \u201cb\u201d: \u201c文本\u201d}"
         result = relaxed_json_loads(text)
         assert result == {"a": "值", "b": "文本"}
 
@@ -163,7 +161,7 @@ class TestStage3RemoveTrailingCommas:
         assert relaxed_json_loads('{"a": 1, "b": 2,}') == {"a": 1, "b": 2}
 
     def test_array_trailing_comma(self) -> None:
-        assert relaxed_json_loads('[1, 2, 3,]') == [1, 2, 3]
+        assert relaxed_json_loads("[1, 2, 3,]") == [1, 2, 3]
 
     def test_nested_trailing_commas(self) -> None:
         assert relaxed_json_loads('{"a": [1, 2,], "b": {"c": 3,},}') == {
@@ -219,7 +217,7 @@ class TestCombinedCases:
         assert relaxed_json_loads(text) == {"a": 1, "b": 2}
 
     def test_fence_plus_chinese_quotes(self) -> None:
-        text = '```json\n{\u201ca\u201d: 1}\n```'
+        text = "```json\n{\u201ca\u201d: 1}\n```"
         assert relaxed_json_loads(text) == {"a": 1}
 
     def test_comments_plus_trailing_comma(self) -> None:

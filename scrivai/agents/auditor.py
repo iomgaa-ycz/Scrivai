@@ -15,7 +15,12 @@ if TYPE_CHECKING:
     from scrivai.models.pes import PESRun, PhaseConfig, PhaseResult
 
 
-DEFAULT_VERDICT_LEVELS: list[str] = ["合格", "不合格", "不适用", "需要澄清"]  # Chinese domain values kept intentionally
+DEFAULT_VERDICT_LEVELS: list[str] = [
+    "合格",
+    "不合格",
+    "不适用",
+    "需要澄清",
+]  # Chinese domain values kept intentionally
 
 
 class AuditorPES(BasePES):
@@ -71,7 +76,9 @@ class AuditorPES(BasePES):
 
         output_path = self.workspace.working_dir / "output.json"
         if not output_path.exists():
-            raise FileNotFoundError(f"AuditorPES summarize phase: output.json was not produced: {output_path}")
+            raise FileNotFoundError(
+                f"AuditorPES summarize phase: output.json was not produced: {output_path}"
+            )
 
         try:
             data = relaxed_json_loads(
@@ -153,7 +160,9 @@ class AuditorPES(BasePES):
 
         cp_path = self.workspace.data_dir / "checkpoints.json"
         if not cp_path.exists():
-            raise ValueError(f"AuditorPES requires data/checkpoints.json to be pre-placed by the business layer (not found: {cp_path})")
+            raise ValueError(
+                f"AuditorPES requires data/checkpoints.json to be pre-placed by the business layer (not found: {cp_path})"
+            )
 
         try:
             checkpoints = relaxed_json_loads(
@@ -163,7 +172,9 @@ class AuditorPES(BasePES):
             raise ValueError(f"data/checkpoints.json is not valid JSON: {e}") from e
 
         if not isinstance(checkpoints, list):
-            raise ValueError("data/checkpoints.json must be a list of objects [{id, description}, ...]")
+            raise ValueError(
+                "data/checkpoints.json must be a list of objects [{id, description}, ...]"
+            )
 
         expected_ids = {cp["id"] for cp in checkpoints if isinstance(cp, dict) and "id" in cp}
 

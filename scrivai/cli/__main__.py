@@ -31,7 +31,9 @@ def build_parser() -> argparse.ArgumentParser:
     library.register(sub.add_parser("library", help="Knowledge library CRUD + search"))
     io_cmd.register(sub.add_parser("io", help="Document format conversion + docx rendering"))
     workspace_cmd.register(sub.add_parser("workspace", help="WorkspaceManager lifecycle"))
-    trajectory_cmd.register(sub.add_parser("trajectory", help="TrajectoryStore feedback + evolution trigger"))
+    trajectory_cmd.register(
+        sub.add_parser("trajectory", help="TrajectoryStore feedback + evolution trigger")
+    )
     return p
 
 
