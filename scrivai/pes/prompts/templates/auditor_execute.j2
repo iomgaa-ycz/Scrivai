@@ -1,0 +1,39 @@
+{{ static_fragments_text }}
+
+PHASE = execute
+
+For each cp_id in `data/checkpoints.json`, produce exactly one finding file:
+`findings/<cp_id>.json` with this shape:
+  {
+    "checkpoint_id": "<cp-id>",
+    "verdict": "合格" | "不合格" | "不适用" | "需要澄清",
+    "evidence": [{"chunk_id": "...", "quote": "..."}],
+    "reasoning": "why this verdict"
+  }
+
+`verdict` must match one of the four values (unless caller overrode
+`verdict_levels`). `evidence` should be non-empty unless `evidence_required`
+is explicitly disabled by the caller.
+
+Respond "execute done" once every cp_id has a findings file.
+
+{% if cli_tools %}
+## ALLOWED EXTERNAL CLI TOOLS
+
+You have access to the following external CLI commands via Bash:
+{% for cmd in cli_tools %}
+- `{{ cmd }}`
+{% endfor %}
+
+Do NOT run Bash commands outside this whitelist.
+{% endif %}
+
+## TASK
+
+{{ task_prompt }}
+
+{% if previous_phase_output %}
+## PLAN OUTPUT (from plan phase)
+
+{{ previous_phase_output | tojson(indent=2) }}
+{% endif %}

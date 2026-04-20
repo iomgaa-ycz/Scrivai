@@ -1,0 +1,23 @@
+{{ static_fragments_text }}
+
+PHASE = summarize
+
+Read all files under `findings/` and merge them into ONE file:
+`output.json`.
+
+The output structure MUST match the pydantic schema provided by the
+caller at runtime (validated by the framework after this phase).
+If the schema is unknown, default to:
+  {"items": [...merged findings...]}
+
+Respond "summarize done" when output.json is written.
+
+## TASK
+
+{{ task_prompt }}
+
+{% if previous_phase_output %}
+## FINDINGS (from execute phase)
+
+{{ previous_phase_output | tojson(indent=2) }}
+{% endif %}

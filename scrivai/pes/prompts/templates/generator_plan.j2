@@ -1,0 +1,42 @@
+{{ static_fragments_text }}
+
+PHASE = plan
+
+The template placeholders are:
+{% if placeholders %}
+{% for ph in placeholders %}
+- `{{ ph }}`
+{% endfor %}
+{% else %}
+(no placeholders detected)
+{% endif %}
+
+Produce TWO files in your working directory:
+
+1. `plan.md` — human-readable material-gathering plan per placeholder.
+
+2. `plan.json` — strict JSON with this shape:
+   {
+     "fills": [
+       {"placeholder": "<name>", "source": "where you'll draw content from"},
+       ...
+     ]
+   }
+   Every placeholder listed above must appear in plan.json.fills.
+
+Respond "plan done" once both files are valid.
+
+{% if cli_tools %}
+## ALLOWED EXTERNAL CLI TOOLS
+
+You have access to the following external CLI commands via Bash:
+{% for cmd in cli_tools %}
+- `{{ cmd }}`
+{% endfor %}
+
+Do NOT run Bash commands outside this whitelist.
+{% endif %}
+
+## TASK
+
+{{ task_prompt }}

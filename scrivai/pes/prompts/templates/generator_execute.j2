@@ -1,0 +1,34 @@
+{{ static_fragments_text }}
+
+PHASE = execute
+
+For each placeholder, produce exactly one file:
+`findings/<placeholder>.json` with this shape:
+  {
+    "placeholder": "<name>",
+    "content": "<filled content, possibly multiline markdown>",
+    "source_refs": [{"chunk_id": "...", "quote": "..."}]
+  }
+
+Respond "execute done" once every placeholder has a findings file.
+
+{% if cli_tools %}
+## ALLOWED EXTERNAL CLI TOOLS
+
+You have access to the following external CLI commands via Bash:
+{% for cmd in cli_tools %}
+- `{{ cmd }}`
+{% endfor %}
+
+Do NOT run Bash commands outside this whitelist.
+{% endif %}
+
+## TASK
+
+{{ task_prompt }}
+
+{% if previous_phase_output %}
+## PLAN OUTPUT (from plan phase)
+
+{{ previous_phase_output | tojson(indent=2) }}
+{% endif %}

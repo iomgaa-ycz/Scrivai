@@ -234,3 +234,28 @@ class TestOptionalContext:
         result = pm.build_prompt("extract", "plan", {"name": "Bob", "cli_tools": "ruff,git"})
         assert "Hello Bob" in result
         assert "Tools: ruff,git" in result
+
+
+class TestRealPromptSpec:
+    """Smoke tests against the actual shipped prompt resources."""
+
+    def test_real_prompt_spec_loads(self) -> None:
+        """Verify the actual prompt_spec.yaml shipped with scrivai loads and renders."""
+        base = Path(__file__).resolve().parent.parent.parent / "scrivai" / "pes" / "prompts"
+        pm = PromptManager(
+            template_dir=base / "templates",
+            fragments_dir=base / "fragments",
+            spec_path=base / "prompt_spec.yaml",
+        )
+        result = pm.build_prompt(
+            "auditor",
+            "plan",
+            context={
+                "task_prompt": "Audit data/doc.md against checkpoints",
+                "workspace": {"working_dir": "/tmp/ws/working", "data_dir": "/tmp/ws/data"},
+            },
+        )
+        assert "PHASE = plan" in result
+        assert "Workspace Rules" in result
+        assert "Audit data/doc.md" in result
+        assert "output_dir" not in result

@@ -1,0 +1,36 @@
+{{ static_fragments_text }}
+
+PHASE = plan
+
+Read the task prompt and any referenced source documents under `data/`.
+Produce TWO files in your working directory:
+
+1. `plan.md` — human-readable extraction plan (sections, rationale).
+
+2. `plan.json` — strict JSON with this shape:
+   {
+     "items_to_extract": [
+       {"id": "<unique-slug>", "description": "what to extract"},
+       ...
+     ]
+   }
+
+   The `id` field names the finding file in the execute phase
+   (findings/<id>.json), so use stable slugs (snake_case, no spaces).
+
+When both files exist and plan.json is valid JSON, respond "plan done".
+
+{% if cli_tools %}
+## ALLOWED EXTERNAL CLI TOOLS
+
+You have access to the following external CLI commands via Bash:
+{% for cmd in cli_tools %}
+- `{{ cmd }}`
+{% endfor %}
+
+Do NOT run Bash commands outside this whitelist.
+{% endif %}
+
+## TASK
+
+{{ task_prompt }}
