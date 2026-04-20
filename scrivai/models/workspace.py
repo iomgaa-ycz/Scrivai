@@ -74,6 +74,10 @@ class WorkspaceHandle(BaseModel):
     output_dir: Path
     logs_dir: Path
     snapshot: WorkspaceSnapshot
+    extra_env: dict[str, str] = Field(
+        default_factory=dict,
+        description="Additional environment variables to pass to the Agent SDK subprocess.",
+    )
 
 
 @runtime_checkable

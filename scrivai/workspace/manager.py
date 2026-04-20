@@ -106,6 +106,7 @@ class LocalWorkspaceManager:
                 output_dir=output,
                 logs_dir=logs,
                 snapshot=snapshot,
+                extra_env=spec.extra_env,
             )
         finally:
             self._release_lock(lock_fd, spec.run_id)

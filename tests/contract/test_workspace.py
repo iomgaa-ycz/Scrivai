@@ -229,3 +229,26 @@ def test_cleanup_respects_mtime(ws_mgr, fake_project_root: Path, tmp_path: Path)
     assert arch_new.exists()
     assert not h_old_fail.root_dir.exists()
     assert h_new_fail.root_dir.exists()
+
+
+def test_extra_env_roundtrip(ws_mgr, fake_project_root: Path, tmp_path: Path) -> None:
+    """extra_env on WorkspaceSpec should be accessible on the returned WorkspaceHandle."""
+    from scrivai import WorkspaceSpec
+
+    env = {"QMD_COLLECTION": "tender_001", "QMD_DB_PATH": "/data/qmd.db"}
+    spec = WorkspaceSpec(
+        run_id="env-test",
+        project_root=fake_project_root,
+        extra_env=env,
+    )
+    handle = ws_mgr.create(spec)
+    assert handle.extra_env == env
+
+
+def test_extra_env_defaults_empty(ws_mgr, fake_project_root: Path, tmp_path: Path) -> None:
+    """WorkspaceHandle.extra_env defaults to empty dict when not specified."""
+    from scrivai import WorkspaceSpec
+
+    spec = WorkspaceSpec(run_id="noenv-test", project_root=fake_project_root)
+    handle = ws_mgr.create(spec)
+    assert handle.extra_env == {}
