@@ -7,3 +7,5 @@
 ::: scrivai.AuditorPES
 
 ::: scrivai.GeneratorPES
+
+::: scrivai.PromptManager
