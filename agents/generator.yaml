@@ -15,10 +15,6 @@ default_skills:
   - render-output
 phases:
   plan:
-    additional_system_prompt: |
-      Read the template (path provided in task_prompt). List all placeholders
-      and decide where each piece of content will come from. Write working/plan.md
-      and working/plan.json (with placeholders list and source plan per placeholder).
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill]
     max_turns: 6
     max_retries: 1
@@ -26,9 +22,6 @@ phases:
       - plan.md
       - plan.json
   execute:
-    additional_system_prompt: |
-      For each placeholder in plan.json, gather source material and write
-      working/findings/<placeholder>.json with the content + source citations.
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill]
     max_turns: 30
     max_retries: 1
@@ -37,10 +30,6 @@ phases:
         min_files: 1
         pattern: "*.json"
   summarize:
-    additional_system_prompt: |
-      Aggregate findings into working/output.json — a flat dict keyed by
-      placeholder name. Do NOT render the docx here; rendering is handled
-      by the postprocess hook if auto_render=True, else by the business layer.
     allowed_tools: [Bash, Read, Write]
     max_turns: 4
     max_retries: 1

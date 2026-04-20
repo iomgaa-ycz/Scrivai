@@ -13,10 +13,6 @@ default_skills:
   - inspect-document
 phases:
   plan:
-    additional_system_prompt: |
-      Draft an extraction strategy. Inspect the input document, identify the
-      categories of items to extract, and write working/plan.md (human-readable
-      plan) plus working/plan.json (structured items_to_extract list).
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill]
     max_turns: 6
     max_retries: 1
@@ -24,10 +20,6 @@ phases:
       - plan.md
       - plan.json
   execute:
-    additional_system_prompt: |
-      Execute plan.json item by item. For each item, write its result to
-      working/findings/<item_id>.json. Use library search to ground the
-      extraction in source rules / cases / templates.
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep, Skill]
     max_turns: 30
     max_retries: 1
@@ -36,10 +28,6 @@ phases:
         min_files: 1
         pattern: "*.json"
   summarize:
-    additional_system_prompt: |
-      Aggregate all working/findings/*.json into working/output.json. The
-      structure of output.json must match the output schema documented in
-      the task prompt.
     allowed_tools: [Bash, Read, Write]
     max_turns: 4
     max_retries: 1

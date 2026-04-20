@@ -17,26 +17,6 @@ phases:
     allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     max_turns: 10
     max_retries: 1
-    additional_system_prompt: |
-      PHASE = plan
-
-      Read the task prompt and any referenced source documents under `data/`.
-      Produce TWO files in `working/`:
-
-      1. `plan.md` — human-readable extraction plan (sections, rationale).
-
-      2. `plan.json` — strict JSON with this shape:
-         {
-           "items_to_extract": [
-             {"id": "<unique-slug>", "description": "what to extract"},
-             ...
-           ]
-         }
-
-         The `id` field names the finding file in the execute phase
-         (findings/<id>.json), so use stable slugs (snake_case, no spaces).
-
-      When both files exist and plan.json is valid JSON, respond "plan done".
     required_outputs:
       - plan.md
       - plan.json
@@ -45,17 +25,6 @@ phases:
     allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     max_turns: 20
     max_retries: 1
-    additional_system_prompt: |
-      PHASE = execute
-
-      For each entry in `working/plan.json.items_to_extract`, produce exactly one
-      finding file: `working/findings/<id>.json`.
-
-      Each finding is free-form JSON (structured as needed by the downstream
-      summarize phase). Treat source references carefully; include char offsets
-      or chunk IDs when possible.
-
-      When every plan item has a matching findings/<id>.json, respond "execute done".
     required_outputs:
       - path: findings
         min_files: 1
@@ -65,17 +34,5 @@ phases:
     allowed_tools: ["Bash", "Read", "Write"]
     max_turns: 10
     max_retries: 1
-    additional_system_prompt: |
-      PHASE = summarize
-
-      Read all files under `working/findings/` and merge them into ONE file:
-      `working/output.json`.
-
-      The output structure MUST match the pydantic schema provided by the
-      caller at runtime (validated by the framework after this phase).
-      If the schema is unknown, default to:
-        {"items": [...merged findings...]}
-
-      Respond "summarize done" when output.json is written.
     required_outputs:
       - output.json

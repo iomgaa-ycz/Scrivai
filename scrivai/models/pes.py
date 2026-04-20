@@ -55,7 +55,6 @@ class PhaseConfig(BaseModel):
         ...,
         description="Phase name: one of plan / execute / summarize (BasePES iterates over exactly these three names).",
     )
-    additional_system_prompt: str = Field(default="", description="Additional system prompt appended for this phase.")
     allowed_tools: list[str] = Field(..., description="SDK allowed_tools list.")
     max_turns: int = Field(default=10, description="Maximum Agent interaction turns within a single query.")
     max_retries: int = Field(default=1, description="Phase-level retry count (L2 retry).")

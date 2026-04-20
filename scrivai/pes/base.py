@@ -6,10 +6,12 @@ import asyncio
 import json
 import shutil
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from scrivai.pes.llm_client import LLMClient
+    from scrivai.pes.prompts import PromptManager
 
 from scrivai.exceptions import PhaseError, _SDKError
 from scrivai.models.pes import (
@@ -87,6 +89,7 @@ class BasePES:
         trajectory_store: TrajectoryStore | None = None,
         runtime_context: dict[str, Any] | None = None,
         llm_client: "LLMClient | None" = None,
+        prompt_manager: "PromptManager | None" = None,
     ) -> None:
         self.config = config
         self.model = model
@@ -100,6 +103,20 @@ class BasePES:
 
             llm_client = _LLMClient(model)
         self._llm = llm_client
+        if prompt_manager is None:
+            prompt_manager = self._create_default_prompt_manager()
+        self._prompt_manager = prompt_manager
+
+    def _create_default_prompt_manager(self) -> "PromptManager":
+        """Create a PromptManager pointing to the built-in templates."""
+        from scrivai.pes.prompts import PromptManager as _PromptManager
+
+        base = Path(__file__).resolve().parent / "prompts"
+        return _PromptManager(
+            template_dir=base / "templates",
+            fragments_dir=base / "fragments",
+            spec_path=base / "prompt_spec.yaml",
+        )
 
     # ── Public API ────────────────────────────────────────
 
@@ -200,28 +217,37 @@ class BasePES:
         context: dict[str, Any],
         task_prompt: str,
     ) -> str:
-        """Render the prompt for this phase. Default concatenates config.prompt_text + phase prompt + task + context."""
-        parts: list[str] = []
-        if self.config.prompt_text:
-            parts.append(self.config.prompt_text)
-        if phase_cfg.additional_system_prompt:
-            parts.append(phase_cfg.additional_system_prompt)
-        parts.append(task_prompt)
-        if context:
-            parts.append(json.dumps(context, ensure_ascii=False, default=str))
+        """Render the prompt via PromptManager templates.
 
-        cli_tools = self._resolve_cli_tools()
-        if cli_tools:
-            tool_lines = "\n".join(f"- `{cmd}`" for cmd in cli_tools)
-            parts.append(
-                "## ALLOWED EXTERNAL CLI TOOLS\n\n"
-                "You have access to the following external CLI commands via Bash. "
-                "Use these for efficient document retrieval instead of Grep:\n\n"
-                f"{tool_lines}\n\n"
-                "Do NOT run Bash commands outside this whitelist."
+        Override this method for fully custom prompt assembly.
+        For most cases, override ``build_execution_context`` instead.
+        """
+        context["task_prompt"] = task_prompt
+        try:
+            return self._prompt_manager.build_prompt(
+                operation=self.config.name,
+                phase=phase,
+                context=context,
             )
-
-        return "\n\n".join(parts)
+        except (ValueError, Exception):
+            # Fallback for PES names not in prompt_spec (e.g. test fixtures).
+            parts: list[str] = []
+            if self.config.prompt_text:
+                parts.append(self.config.prompt_text)
+            parts.append(task_prompt)
+            if context:
+                parts.append(json.dumps(context, ensure_ascii=False, default=str))
+            cli_tools = context.get("cli_tools", [])
+            if cli_tools:
+                tool_lines = "\n".join(f"- `{cmd}`" for cmd in cli_tools)
+                parts.append(
+                    "## ALLOWED EXTERNAL CLI TOOLS\n\n"
+                    "You have access to the following external CLI commands via Bash. "
+                    "Use these for efficient document retrieval instead of Grep:\n\n"
+                    f"{tool_lines}\n\n"
+                    "Do NOT run Bash commands outside this whitelist."
+                )
+            return "\n\n".join(parts)
 
     async def postprocess_phase_result(self, phase: str, result: PhaseResult, run: PESRun) -> None:
         """Post-process the LLM response. Default is a no-op. Exceptions become response_parse_error (not retryable)."""
@@ -282,11 +308,12 @@ class BasePES:
         try:
             resp = await self._llm.execute_task(
                 prompt=prompt,
-                system_prompt=self.config.prompt_text + "\n\n" + phase_cfg.additional_system_prompt,
+                system_prompt=self.config.prompt_text,
                 allowed_tools=phase_cfg.allowed_tools,
                 max_turns=phase_cfg.max_turns,
                 permission_mode=phase_cfg.permission_mode,
                 cwd=self.workspace.working_dir,
+                extra_env=self.workspace.extra_env or None,
                 on_turn=on_turn,
             )
             return resp.result, resp.usage, resp.turns
@@ -360,17 +387,17 @@ class BasePES:
         # 2. build_execution_context
         execution_context = await self.build_execution_context(phase, run)
 
-        # 3. Merge context
-        context = self._merge_context(
-            runtime=self.runtime_context,
-            execution=execution_context,
-            framework={
-                "phase": phase,
-                "attempt_no": attempt_no,
-                "workspace": self._workspace_payload(),
-                "previous_phase_output": self._read_previous_phase_output(phase),
-            },
-        )
+        # 3. Build context (template selects which fields to render)
+        context: dict[str, Any] = {
+            "phase": phase,
+            "attempt_no": attempt_no,
+            "workspace": self._workspace_payload(),
+            "previous_phase_output": self._read_previous_phase_output(phase),
+            "cli_tools": self._resolve_cli_tools(),
+            "run": run.to_prompt_payload(),
+        }
+        context.update(self.runtime_context)
+        context.update(execution_context)
 
         # 4. build_phase_prompt + before_prompt
         prompt = await self.build_phase_prompt(phase, phase_cfg, context, task_prompt)
@@ -540,19 +567,6 @@ class BasePES:
                 elif target.exists():
                     target.unlink()
 
-    def _merge_context(
-        self,
-        runtime: dict[str, Any],
-        execution: dict[str, Any],
-        framework: dict[str, Any],
-    ) -> dict[str, Any]:
-        """Merge three context layers: runtime < execution < framework (later layers override earlier)."""
-        merged: dict[str, Any] = {}
-        merged.update(runtime)
-        merged.update(execution)
-        merged.update(framework)
-        return merged
-
     def _read_previous_phase_output(self, phase: str) -> Any:
         """Read previous phase output: execute reads plan.json, summarize reads findings/."""
         working = self.workspace.working_dir
@@ -583,11 +597,10 @@ class BasePES:
         return sorted(result)
 
     def _workspace_payload(self) -> dict[str, str]:
-        """Return a compact dict of workspace directory paths."""
+        """Return workspace paths visible to the Agent (excludes output_dir)."""
         return {
             "working_dir": str(self.workspace.working_dir),
             "data_dir": str(self.workspace.data_dir),
-            "output_dir": str(self.workspace.output_dir),
         }
 
     def _resolve_cli_tools(self) -> list[str]:
