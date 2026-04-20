@@ -83,6 +83,14 @@ class PESConfig(BaseModel):
         default=False,
         description="When True, JSON parsing uses strict json.loads mode and skips fault-tolerant repair.",
     )
+    external_cli_tools: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Bash command prefixes the agent is allowed to execute. "
+            "Business layer injects per-run tools (e.g. 'qmd search --collection tender_001'). "
+            "Prompt-level constraint, not SDK-enforced."
+        ),
+    )
 
 
 # ────────────────────── Runtime state ───────────────────
