@@ -1022,6 +1022,72 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PromptManager
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager.__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        __init__
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager.build_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_prompt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager.get_template_spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_template_spec
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager.validate_context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager.load_fragment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_fragment
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1495,6 +1561,72 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PromptManager
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager.__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        __init__
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager.build_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_prompt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager.get_template_spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_template_spec
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager.validate_context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scrivai.PromptManager.load_fragment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_fragment
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1828,7 +1960,7 @@ configured per phase).</p>
 
     <div class="doc doc-contents ">
 
-        <p>plan 阶段入口。</p>
+        <p>Entry point for the plan phase.</p>
 
 
     </div>
@@ -1850,7 +1982,7 @@ configured per phase).</p>
 
     <div class="doc doc-contents ">
 
-        <p>execute 阶段入口。</p>
+        <p>Entry point for the execute phase.</p>
 
 
     </div>
@@ -1872,7 +2004,7 @@ configured per phase).</p>
 
     <div class="doc doc-contents ">
 
-        <p>summarize 阶段入口。</p>
+        <p>Entry point for the summarize phase.</p>
 
 
     </div>
@@ -1894,7 +2026,7 @@ configured per phase).</p>
 
     <div class="doc doc-contents ">
 
-        <p>构建本阶段的 execution_context。默认返回空 dict。</p>
+        <p>Build the execution context for this phase. Returns empty dict by default.</p>
 
 
     </div>
@@ -1916,7 +2048,9 @@ configured per phase).</p>
 
     <div class="doc doc-contents ">
 
-        <p>渲染本阶段 prompt。默认拼接 config.prompt_text + phase prompt + task + context。</p>
+        <p>Render the prompt via PromptManager templates.</p>
+<p>Override this method for fully custom prompt assembly.
+For most cases, override <code>build_execution_context</code> instead.</p>
 
 
     </div>
@@ -1938,7 +2072,7 @@ configured per phase).</p>
 
     <div class="doc doc-contents ">
 
-        <p>响应后处理。默认 no-op。异常 → response_parse_error(不可重试)。</p>
+        <p>Post-process the LLM response. Default is a no-op. Exceptions become response_parse_error (not retryable).</p>
 
 
     </div>
@@ -1960,8 +2094,8 @@ configured per phase).</p>
 
     <div class="doc doc-contents ">
 
-        <p>校验必需产物。默认按 required_outputs 逐条校验。</p>
-<p>异常 → output_validation_error(可重试)。</p>
+        <p>Validate required output files. Default validates each rule in required_outputs.</p>
+<p>Exceptions become output_validation_error (retryable).</p>
 
 
     </div>
@@ -2137,7 +2271,7 @@ run = await pes.run("Extract items from data/source.md")</p>
 
     <div class="doc doc-contents ">
 
-        <p>summarize 阶段读 output.json 并用 output_schema 校验。其他阶段 no-op。</p>
+        <p>Summarize phase: read output.json and validate against output_schema. No-op for other phases.</p>
 
 
     </div>
@@ -2159,7 +2293,7 @@ run = await pes.run("Extract items from data/source.md")</p>
 
     <div class="doc doc-contents ">
 
-        <p>execute 阶段在 required_outputs 基础上追加 plan→findings 覆盖率校验。</p>
+        <p>Execute phase: extend required_outputs validation with plan→findings coverage check.</p>
 
 
     </div>
@@ -2333,7 +2467,7 @@ run = await pes.run("Audit data/document.md against checkpoints")</p>
 
     <div class="doc doc-contents ">
 
-        <p>summarize 阶段:schema 校验 + verdict/evidence 规则。</p>
+        <p>Summarize phase: schema validation + verdict/evidence rules.</p>
 
 
     </div>
@@ -2355,7 +2489,7 @@ run = await pes.run("Audit data/document.md against checkpoints")</p>
 
     <div class="doc doc-contents ">
 
-        <p>execute 阶段:data/checkpoints.json 的 cp_id 与 findings 对齐。</p>
+        <p>Execute phase: verify that checkpoint IDs in data/checkpoints.json are covered by findings.</p>
 
 
     </div>
@@ -2532,7 +2666,7 @@ run = await pes.run("Fill the project report template")</p>
 
     <div class="doc doc-contents ">
 
-        <p>plan 阶段:解析 template_path 占位符,注入 context['placeholders']。</p>
+        <p>Plan phase: parse template_path placeholders and inject context['placeholders'].</p>
 
 
     </div>
@@ -2554,7 +2688,7 @@ run = await pes.run("Fill the project report template")</p>
 
     <div class="doc doc-contents ">
 
-        <p>summarize:校验 context_schema;auto_render=True 时渲染 docx。</p>
+        <p>Summarize phase: validate context_schema; render docx if auto_render=True.</p>
 
 
     </div>
@@ -2576,7 +2710,609 @@ run = await pes.run("Fill the project report template")</p>
 
     <div class="doc doc-contents ">
 
-        <p>plan:检查 plan.json 覆盖所有 placeholders;execute:检查 findings/ 覆盖。</p>
+        <p>Plan phase: verify plan.json covers all placeholders; execute phase: verify findings/ coverage.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<a id="scrivai.PromptManager"></a>
+    <div class="doc doc-contents first">
+
+
+
+        <p>Assemble prompts from Jinja2 templates, YAML spec, and markdown fragments.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="scrivai.PromptManager.__init__" class="doc doc-heading">
+            <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">template_dir</span><span class="p">,</span> <span class="n">fragments_dir</span><span class="p">,</span> <span class="n">spec_path</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Initialize PromptManager.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>template_dir</code>
+            </td>
+            <td>
+                  <code><span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Directory containing Jinja2 <code>.j2</code> template files.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>fragments_dir</code>
+            </td>
+            <td>
+                  <code><span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Directory containing static <code>.md</code> prompt fragments.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>spec_path</code>
+            </td>
+            <td>
+                  <code><span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Path to the YAML prompt spec file.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="FileNotFoundError">FileNotFoundError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If spec_path does not exist.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the YAML structure is invalid.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="scrivai.PromptManager.build_prompt" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">build_prompt</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Build a complete prompt by validating context, loading fragments,
+and rendering the template.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>operation</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Operation type (e.g. <code>"extractor"</code>).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>phase</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Phase name (e.g. <code>"plan"</code>).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>context</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Render context dict; must satisfy <code>required_context</code> from spec.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Rendered prompt string.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If required context fields are missing/None or template key is unknown.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="jinja2.TemplateNotFound">TemplateNotFound</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the <code>.j2</code> file does not exist.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="scrivai.PromptManager.get_template_spec" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">get_template_spec</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">phase</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Read the spec entry for a given operation/phase combination.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>operation</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Operation type.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>phase</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Phase name.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Spec dict with <code>required_context</code>, <code>static_fragments</code>, <code>artifacts</code> keys.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the template key is not defined in the spec.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="scrivai.PromptManager.validate_context" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">validate_context</span><span class="p">(</span><span class="n">template_key</span><span class="p">,</span> <span class="n">template_spec</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Validate that all required context fields are present and non-None.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>template_key</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Template key for error messages.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>template_spec</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Spec dict containing <code>required_context</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>context</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Render context to validate.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If any required field is missing or None.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="scrivai.PromptManager.load_fragment" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">load_fragment</span><span class="p">(</span><span class="n">fragment_name</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Load a static <code>.md</code> prompt fragment by name.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>fragment_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fragment name, with or without <code>.md</code> suffix.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Stripped text content of the fragment file.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="FileNotFoundError">FileNotFoundError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the fragment file does not exist.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>

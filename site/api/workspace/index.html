@@ -1440,7 +1440,7 @@ spec = WorkspaceSpec(
 
 
 
-        <p>Reference to an already-created workspace; both business layer and PES operate through this object.</p>
+        <p>Reference to an existing workspace; used by both the business layer and PES.</p>
 
 
 
@@ -1482,7 +1482,7 @@ spec = WorkspaceSpec(
 
 
 
-        <p>WorkspaceManager Protocol.</p>
+        <p>WorkspaceManager Protocol (M0.25 implementation).</p>
 
 
 
@@ -1516,7 +1516,7 @@ spec = WorkspaceSpec(
 
     <div class="doc doc-contents ">
 
-        <p>Create a new workspace from spec; conflict behaviour determined by spec.force.</p>
+        <p>Create a new workspace from spec; behaviour on run_id conflict is determined by spec.force.</p>
 
 
     </div>
@@ -1534,7 +1534,7 @@ spec = WorkspaceSpec(
 
     <div class="doc doc-contents ">
 
-        <p>Archive workspace. success=True tars and removes the directory; False writes a .failed marker.</p>
+        <p>Archive a workspace. success=True creates a tar.gz and removes the directory; False writes a .failed marker.</p>
 
 
     </div>

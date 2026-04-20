@@ -1415,30 +1415,176 @@
 <a id="scrivai.run_evolution"></a>
     <div class="doc doc-contents first">
 
-        <p>执行一次完整进化循环,返回 EvolutionRunRecord。</p>
-<p>流程:
-1. 加载或创建 baseline SkillVersion 并评分。
-2. 按 max_iterations 循环:Proposer 生成候选 → CandidateEvaluator 打分 → 更新前沿。
-3. 遇到 BudgetExceededError 时立即 finalize_run(status='budget_exceeded')并返回。
-4. best_version_id == baseline 时清空(本次无增益)。</p>
+        <p>Run a complete skill evolution cycle.</p>
+<p>Workflow: load/create baseline -&gt; iterate (Proposer generates candidates -&gt;
+CandidateEvaluator scores them) -&gt; finalize with best version.</p>
 
 
-<details class="参数" open>
-  <summary>参数</summary>
-  <p>config: 进化配置。
-trajectory_store: TrajectoryStore 实例。
-workspace_mgr: WorkspaceManager 实例。
-pes_factory: (pes_name, workspace) -&gt; PES 工厂函数。
-evaluator_fn: (question, predicted, ground_truth) -&gt; float 评分函数。
-source_project_root: 源项目根目录。
-llm_client: LLM 客户端实例。
-version_store: SkillVersionStore 实例(可选,默认全局路径)。</p>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>config</code>
+            </td>
+            <td>
+                  <code><span title="scrivai.models.evolution.EvolutionRunConfig">EvolutionRunConfig</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Evolution run configuration.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>trajectory_store</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>TrajectoryStore instance for feedback data.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>workspace_mgr</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>WorkspaceManager for creating evaluation workspaces.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>pes_factory</code>
+            </td>
+            <td>
+                  <code><span title="typing.Callable">Callable</span>[[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="scrivai.models.workspace.WorkspaceHandle" href="../workspace/#scrivai.WorkspaceHandle">WorkspaceHandle</a>], <span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Factory <code>(pes_name, workspace) -&gt; PES</code> for evaluation.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>evaluator_fn</code>
+            </td>
+            <td>
+                  <code><span title="typing.Callable">Callable</span>[[<span title="str">str</span>, <span title="str">str</span>, <span title="str">str</span>], <span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Scoring function <code>(question, predicted, truth) -&gt; float</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>source_project_root</code>
+            </td>
+            <td>
+                  <code><span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Project root containing <code>skills/</code> directory.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>llm_client</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>LLM client for the Proposer.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>version_store</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<a class="autorefs autorefs-internal" title="scrivai.evolution.store.SkillVersionStore" href="#scrivai.SkillVersionStore">SkillVersionStore</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional SkillVersionStore (defaults to global path).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
-<details class="返回" open>
-  <summary>返回</summary>
-  <p>EvolutionRunRecord:包含 status / scores / best 等完整记录。</p>
-</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="scrivai.models.evolution.EvolutionRunRecord">EvolutionRunRecord</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>EvolutionRunRecord with status, scores, and best version ID.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1451,8 +1597,8 @@ version_store: SkillVersionStore 实例(可选,默认全局路径)。</p>
 <a id="scrivai.promote"></a>
     <div class="doc doc-contents first">
 
-        <p>promote — 把评估通过的 SkillVersion 写回主仓 skills/ 目录。</p>
-<p>参考 docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.5</p>
+        <p>promote — write an evaluated SkillVersion back to the project's skills/ directory.</p>
+<p>Reference: docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.5</p>
 
 
 
@@ -1485,29 +1631,120 @@ version_store: SkillVersionStore 实例(可选,默认全局路径)。</p>
 
     <div class="doc doc-contents ">
 
-        <p>把 version.content_snapshot 原子写入 source_project_root/skills/<skill_name>/。</p>
+        <p>Atomically write a skill version's content back to the project.</p>
 
 
-<details class="参数" open>
-  <summary>参数</summary>
-  <p>version_id: 待 promote 的版本 ID。
-source_project_root: 项目根目录路径。
-version_store: SkillVersionStore 实例,默认使用全局默认路径。
-backup: 是否备份当前内容到 skills/<skill_name>/.backup/evo-<ts>/。</p>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>version_id</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the version to promote.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>source_project_root</code>
+            </td>
+            <td>
+                  <code><span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Project root path.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>version_store</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<a class="autorefs autorefs-internal" title="scrivai.evolution.store.SkillVersionStore" href="#scrivai.SkillVersionStore">SkillVersionStore</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>SkillVersionStore instance (defaults to global path).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>backup</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, back up current content before overwriting.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
-<details class="返回" open>
-  <summary>返回</summary>
-  <p>backup=True 时返回备份目录;backup=False 时返回新 skill 目录。</p>
-</details>
 
-<details class="说明" open>
-  <summary>说明</summary>
-  <ul>
-<li>backup=True: 备份当前内容到 skills/<skill_name>/.backup/evo-<ts>/</li>
-<li>更新 SkillVersion.status = 'promoted' + promoted_at = now()</li>
-</ul>
-</details>
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Path to the backup directory (if backup=True) or the new skill</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>directory (if backup=False).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1530,18 +1767,119 @@ backup: 是否备份当前内容到 skills/<skill_name>/.backup/evo-<ts>/。</p>
 
 
 
-        <p>从 trajectory.feedback 中拉反馈,按 evaluator 打分,分 train/hold_out。</p>
+        <p>Pulls feedback from trajectory.feedback, scores with the evaluator, and splits into train/hold_out.</p>
 
 
-<details class="参数" open>
-  <summary>参数</summary>
-  <p>trajectory_store: TrajectoryStore 实例,提供 get_feedback_pairs/get_run。
-pes_name: 目标 PES 名称,用于筛选反馈记录。
-skill_name: 技能名称(当前为标识字段,供上层使用)。
-evaluator_fn: 评分函数 (question, predicted, ground_truth) -&gt; float [0,1]。
-min_confidence: 反馈质量最低阈值,低于此值的记录被过滤。
-failure_threshold: baseline_score 低于此值视为失败样本进入 train。</p>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>trajectory_store</code>
+            </td>
+            <td>
+                  <code><span title="scrivai.trajectory.store.TrajectoryStore">TrajectoryStore</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>TrajectoryStore instance providing get_feedback_pairs/get_run.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>pes_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target PES name used to filter feedback records.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>skill_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Skill name (currently an identifier field used by the caller).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>evaluator_fn</code>
+            </td>
+            <td>
+                  <code><span title="typing.Callable">Callable</span>[[<span title="str">str</span>, <span title="str">str</span>, <span title="str">str</span>], <span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Scoring function <code>(question, predicted, ground_truth) -&gt; float</code> in [0, 1].</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>min_confidence</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Minimum feedback quality threshold; records below this are filtered out.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.7</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>failure_threshold</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>baseline_score below this value is treated as a failure sample for train.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.5</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
 
 
@@ -1574,18 +1912,62 @@ failure_threshold: baseline_score 低于此值视为失败样本进入 train。<
 
     <div class="doc doc-contents ">
 
-        <p>判断是否积累了足够的反馈样本。</p>
+        <p>Check whether enough feedback samples have been accumulated.</p>
 
 
-<details class="参数" open>
-  <summary>参数</summary>
-  <p>min_samples: 最少样本数阈值。</p>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>min_samples</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Minimum sample count threshold.</p>
+              </div>
+            </td>
+            <td>
+                  <code>10</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
-<details class="返回" open>
-  <summary>返回</summary>
-  <p>True 表示样本数达到阈值,可触发 evolution。</p>
-</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True if the sample count meets the threshold and evolution can be triggered.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1602,25 +1984,85 @@ failure_threshold: baseline_score 低于此值视为失败样本进入 train。<
 
     <div class="doc doc-contents ">
 
-        <p>拉取反馈、打分并拆分 train/hold_out。</p>
-<p>流程:
-1. 从 TrajectoryStore 拉取满足 min_confidence 的反馈对。
-2. 尝试加载对应轨迹,提取截断版阶段摘要(get_run 失败则静默处理)。
-3. 调用 evaluator_fn 计算 baseline_score。
-4. 用固定随机种子 shuffle 后按 hold_out_ratio 切分。
-5. train 集只保留 baseline_score &lt; failure_threshold 的失败样本。</p>
+        <p>Fetch feedback, score samples, and split into train/hold_out.</p>
+<p>Steps:
+1. Pull feedback pairs from TrajectoryStore that meet min_confidence.
+2. Try to load the corresponding trajectory and extract truncated phase summaries
+   (silently skip if get_run fails).
+3. Call evaluator_fn to compute baseline_score.
+4. Shuffle with a fixed random seed, then split by hold_out_ratio.
+5. Keep only samples with baseline_score &lt; failure_threshold in the train set.</p>
 
 
-<details class="参数" open>
-  <summary>参数</summary>
-  <p>hold_out_ratio: hold_out 占总样本比例 [0.0, 1.0)。
-random_seed: 随机种子,保证同参数调用结果一致。</p>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>hold_out_ratio</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fraction of total samples for hold_out in [0.0, 1.0).</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.3</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>random_seed</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Random seed to guarantee reproducible results for the same parameters.</p>
+              </div>
+            </td>
+            <td>
+                  <code>42</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
-<details class="返回" open>
-  <summary>返回</summary>
-  <p>(train_failures, hold_out_samples) 两个 FailureSample 列表。</p>
-</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="tuple">tuple</span>[<span title="list">list</span>[<span title="scrivai.models.evolution.FailureSample">FailureSample</span>], <span title="list">list</span>[<span title="scrivai.models.evolution.FailureSample">FailureSample</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Tuple <code>(train_failures, hold_out_samples)</code> of two FailureSample lists.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1643,7 +2085,7 @@ random_seed: 随机种子,保证同参数调用结果一致。</p>
 
 
 
-        <p>LLM-based 候选 SKILL.md 生成器。</p>
+        <p>LLM-based candidate SKILL.md generator.</p>
 
 
 
@@ -1681,28 +2123,159 @@ random_seed: 随机种子,保证同参数调用结果一致。</p>
 
     <div class="doc doc-contents ">
 
-        <p>基于失败样本生成 N 个候选 SKILL.md 版本。</p>
+        <p>Generate N candidate SKILL.md revisions from failure samples.</p>
 
 
-<details class="参数" open>
-  <summary>参数</summary>
-  <p>current_skill_snapshot: 当前 SKILL.md 内容快照 {"SKILL.md": ...}
-failures: 失败样本列表。
-rejected_proposals: 已被拒绝的候选(避免重复方向)。
-n: 期望生成候选数量。
-budget: LLM 调用预算守卫(可选)。</p>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>current_skill_snapshot</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Current SKILL.md content snapshot {"SKILL.md": ...}.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>failures</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span>[<span title="scrivai.models.evolution.FailureSample">FailureSample</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of failure samples.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>rejected_proposals</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span>[<span title="scrivai.models.evolution.EvolutionProposal">EvolutionProposal</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Previously rejected candidates (to avoid repeating directions).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>n</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Expected number of candidate proposals.</p>
+              </div>
+            </td>
+            <td>
+                  <code>3</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>budget</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<a class="autorefs autorefs-internal" title="scrivai.evolution.budget.LLMCallBudget" href="#scrivai.LLMCallBudget">LLMCallBudget</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>LLM call budget guard (optional).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
-<details class="返回" open>
-  <summary>返回</summary>
-  <p>EvolutionProposal 列表,长度 &gt;= 1。</p>
-</details>
 
-<details class="异常" open>
-  <summary>异常</summary>
-  <p>ProposerError: 重试后仍无法解析或无有效候选。
-BudgetExceededError: 预算超限。</p>
-</details>
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<span title="scrivai.models.evolution.EvolutionProposal">EvolutionProposal</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of EvolutionProposal with length &gt;= 1.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="scrivai.evolution.proposer.ProposerError">ProposerError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If parsing still fails after retries or no valid candidates remain.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="scrivai.evolution.budget.BudgetExceededError">BudgetExceededError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the budget is exceeded.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1725,13 +2298,13 @@ BudgetExceededError: 预算超限。</p>
 
 
 
-        <p>对候选 SkillVersion 在 hold-out 样本上 replay 真实 PES 并打分。</p>
-<p>工作流:
-1. 将源 project_root copytree 到临时目录,替换目标 skill 内容。
-2. 对每个 hold-out 样本:创建 workspace → 实例化 PES → run → 打分。
-3. 每个样本消耗 3 个 LLM budget 单位。
-4. 单样本失败时 score=0.0,不影响其他样本。
-5. finally 块清理临时目录。</p>
+        <p>Replays the real PES with a candidate SkillVersion on hold-out samples and scores it.</p>
+<p>Workflow:
+1. Copytree the source project_root to a temp directory, replacing the target skill content.
+2. For each hold-out sample: create workspace -&gt; instantiate PES -&gt; run -&gt; score.
+3. Each sample consumes 3 LLM budget units.
+4. A single-sample failure yields score=0.0 without affecting other samples.
+5. The finally block cleans up the temp directory.</p>
 
 
 
@@ -1765,17 +2338,103 @@ BudgetExceededError: 预算超限。</p>
 
     <div class="doc doc-contents ">
 
-        <p>初始化 CandidateEvaluator。</p>
+        <p>Initialise CandidateEvaluator.</p>
 
 
-<details class="参数" open>
-  <summary>参数</summary>
-  <p>workspace_mgr: WorkspaceManager 实例。
-pes_factory: (pes_name, workspace) -&gt; PES 实例工厂函数。
-evaluator_fn: (question, predicted, ground_truth) -&gt; float 评分函数。
-source_project_root: 源项目根目录路径。
-budget: LLM 调用预算守卫。</p>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>workspace_mgr</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>WorkspaceManager instance.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>pes_factory</code>
+            </td>
+            <td>
+                  <code><span title="typing.Callable">Callable</span>[[<span title="str">str</span>, <a class="autorefs autorefs-internal" title="scrivai.models.workspace.WorkspaceHandle" href="../workspace/#scrivai.WorkspaceHandle">WorkspaceHandle</a>], <span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Factory <code>(pes_name, workspace) -&gt; PES</code> instance.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>evaluator_fn</code>
+            </td>
+            <td>
+                  <code><span title="typing.Callable">Callable</span>[[<span title="str">str</span>, <span title="str">str</span>, <span title="str">str</span>], <span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Scoring function <code>(question, predicted, ground_truth) -&gt; float</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>source_project_root</code>
+            </td>
+            <td>
+                  <code><span title="pathlib.Path">Path</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source project root directory path.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>budget</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="scrivai.evolution.budget.LLMCallBudget" href="#scrivai.LLMCallBudget">LLMCallBudget</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>LLM call budget guard.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1796,19 +2455,78 @@ budget: LLM 调用预算守卫。</p>
 
     <div class="doc doc-contents ">
 
-        <p>在 hold-out 样本上评估候选 SkillVersion。</p>
+        <p>Evaluate a candidate SkillVersion on hold-out samples.</p>
 
 
-<details class="参数" open>
-  <summary>参数</summary>
-  <p>version: 待评估的候选版本。
-hold_out: hold-out 样本列表。</p>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>version</code>
+            </td>
+            <td>
+                  <code><span title="scrivai.models.evolution.SkillVersion">SkillVersion</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Candidate version to evaluate.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>hold_out</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span>[<span title="scrivai.models.evolution.FailureSample">FailureSample</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of hold-out samples.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
-<details class="返回" open>
-  <summary>返回</summary>
-  <p>EvolutionScore:含总分、每样本分、预算消耗等信息。</p>
-</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="scrivai.models.evolution.EvolutionScore">EvolutionScore</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>EvolutionScore with total score, per-sample scores, and budget consumed.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1831,7 +2549,7 @@ hold_out: hold-out 样本列表。</p>
 
 
 
-        <p>封装 evolution.db 的 skill_versions / evolution_runs / evolution_scores 三表。</p>
+        <p>Encapsulates the skill_versions / evolution_runs / evolution_scores tables in evolution.db.</p>
 
 
 
@@ -1871,7 +2589,7 @@ hold_out: hold-out 样本列表。</p>
 
 
 
-        <p>追踪并限制单次 run_evolution 的 LLM 调用总数。</p>
+        <p>Tracks and enforces the maximum LLM call count for a single run_evolution call.</p>
 
 
 
@@ -1905,7 +2623,7 @@ hold_out: hold-out 样本列表。</p>
 
     <div class="doc doc-contents ">
 
-        <p>尝试消耗 n 次调用;若消耗后超预算抛 BudgetExceededError。</p>
+        <p>Consume n LLM calls; raises BudgetExceededError if the budget would be exceeded.</p>
 
 
     </div>

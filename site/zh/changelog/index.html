@@ -1020,6 +1020,145 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#017-2026-04-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.7] — 2026-04-20
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.7] — 2026-04-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-jinja2-prompt-management-issue-8-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Jinja2 Prompt Management + Issue #8 Fix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#016-2026-04-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.6] — 2026-04-19
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.6] — 2026-04-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed-documentation-system-redesign" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed — Documentation System Redesign
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#015-2026-04-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.5] — 2026-04-17
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.5] — 2026-04-17">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-relaxed-json-repair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Relaxed JSON Repair
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#014-2026-04-18" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1043,7 +1182,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -1054,7 +1193,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -1125,6 +1264,62 @@
 <h1 id="changelog">CHANGELOG</h1>
 <p>本项目遵循 <a href="https://semver.org/lang/zh-CN/">Semantic Versioning</a>。
 格式参考 <a href="https://keepachangelog.com/zh-CN/">Keep a Changelog</a>。</p>
+<h2 id="017-2026-04-20">[0.1.7] — 2026-04-20</h2>
+<h3 id="added-jinja2-prompt-management-issue-8-fix">Added — Jinja2 Prompt Management + Issue #8 Fix</h3>
+<ul>
+<li><code>scrivai.PromptManager</code> — Jinja2 template-based prompt assembly with YAML contract validation (replaces <code>json.dumps</code> approach)</li>
+<li>9 built-in prompt templates (<code>{auditor,extractor,generator}_{plan,execute,summarize}.j2</code>) + shared <code>workspace_rules.md</code> fragment</li>
+<li><code>prompt_spec.yaml</code> — declares required context variables per PES/phase</li>
+<li><code>WorkspaceHandle.extra_env</code> — environment variables now flow through to Agent SDK subprocess (fixes issue #8)</li>
+<li><code>PESConfig.external_cli_tools</code> — Bash command whitelist injected into Agent prompts</li>
+<li><code>jinja2&gt;=3.1</code> as explicit dependency</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><code>BasePES.build_phase_prompt()</code> now delegates to <code>PromptManager</code> instead of <code>json.dumps(context)</code> — Agent only sees explicitly templated variables</li>
+<li><code>BasePES._call_sdk_query()</code> passes <code>extra_env</code> to <code>LLMClient.execute_task()</code> and uses only <code>config.prompt_text</code> as <code>system_prompt</code> (fixes duplication bug)</li>
+<li><code>BasePES.__init__()</code> accepts optional <code>prompt_manager</code> parameter for dependency injection</li>
+<li><code>_workspace_payload()</code> no longer exposes <code>output_dir</code> to Agent (fixes path ambiguity from issue #8)</li>
+<li><code>relaxed_json_loads</code> removed from public API (<code>__all__</code>)</li>
+</ul>
+<h3 id="removed">Removed</h3>
+<ul>
+<li><code>PhaseConfig.additional_system_prompt</code> — content migrated to Jinja2 templates</li>
+</ul>
+<h2 id="016-2026-04-19">[0.1.6] — 2026-04-19</h2>
+<h3 id="changed-documentation-system-redesign">Changed — Documentation System Redesign</h3>
+<ul>
+<li>All docstrings rewritten to English (Google style) per <code>CONTRIBUTING.md</code></li>
+<li>MkDocs Material site skeleton with API reference (auto-generated from docstrings)</li>
+<li>Chinese translation skeleton (<code>docs/zh/</code>)</li>
+<li>README rewritten in English; <code>README.zh-CN.md</code> added</li>
+<li>License migrated from MIT to Apache 2.0</li>
+<li>Internal dev docs moved to <code>dev-docs/</code></li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li>LLM client: manual assistant turn counting to prevent infinite loops</li>
+<li>Auditor: verdict dict compatibility + evidence multi-field tolerance</li>
+<li>Auditor: auto-repair malformed JSON in findings/</li>
+<li>IO: MonkeyOCR bypass system proxy + timeout 120→300s</li>
+</ul>
+<h3 id="added">Added</h3>
+<ul>
+<li><code>TrajectoryStore.delete_run()</code> — cascade delete for run cleanup</li>
+<li><code>CONTRIBUTING.md</code> with documentation standards</li>
+</ul>
+<h2 id="015-2026-04-17">[0.1.5] — 2026-04-17</h2>
+<h3 id="added-relaxed-json-repair">Added — Relaxed JSON Repair</h3>
+<ul>
+<li><code>scrivai.relaxed_json_loads()</code> — 5-stage fault-tolerant JSON parser (strip envelope → normalize quotes → remove trailing commas → escape inner quotes → strict fallback)</li>
+<li><code>PESConfig.strict_json</code> field — when True, skips repair and uses strict <code>json.loads</code></li>
+<li><code>ScrivaiJSONRepairError</code> exception with dual inheritance</li>
+</ul>
+<h3 id="changed_1">Changed</h3>
+<ul>
+<li><code>Proposer</code> JSON parsing switched to balanced-bracket scanning + Chinese quote normalization</li>
+<li>PES layer uses <code>relaxed_json_loads</code> for all JSON file reads</li>
+</ul>
 <h2 id="014-2026-04-18">[0.1.4] — 2026-04-18</h2>
 <h3 id="added-m2-skill">Added — M2 自研 Skill 进化系统</h3>
 <ul>
@@ -1139,13 +1334,13 @@
 <li>3 个 examples:<code>01_audit_single_doc.py</code> / <code>02_generate_with_revision.py</code> / <code>03_evolve_skill_workflow.py</code></li>
 <li><code>scripts/verify_m3a_release.sh</code> — 发版前 deprecation 扫描一键 gate</li>
 </ul>
-<h3 id="changed">Changed</h3>
+<h3 id="changed_2">Changed</h3>
 <ul>
 <li><code>Proposer</code> JSON 解析改为平衡括号扫描 + 中文引号/尾逗号正规化 + 失败后一次严格化重试,修复 GLM 偶发非法 JSON 导致进化循环中断</li>
 <li><code>scrivai.__version__</code> 现在从 <code>importlib.metadata</code> 读取,与 pyproject <code>version</code> 字段单一真相</li>
 <li>README 完整重写,反映当前 PES 架构 + M2 进化系统(原 README 描述的是 M0 前原型,已完全不适用)</li>
 </ul>
-<h3 id="removed">Removed</h3>
+<h3 id="removed_1">Removed</h3>
 <ul>
 <li>M0 占位符 <code>FeedbackExample / EvolutionConfig / EvolutionRun / Evaluator / SkillsRootResolver</code> — 被 M2 实际类替代,MVP 原则不做向后兼容</li>
 </ul>

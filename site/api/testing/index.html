@@ -1199,7 +1199,7 @@
 
 
 
-        <p>按预录 PhaseOutcome 回放,不依赖 claude_agent_sdk。</p>
+        <p>Replays pre-recorded PhaseOutcome objects without depending on claude_agent_sdk.</p>
 
 
 
@@ -1241,13 +1241,15 @@
 
 
 
-        <p>把真实 LocalWorkspaceManager 的 root 锚到 tmp 目录。</p>
-<p>所有真行为(fcntl 锁 / shutil.copytree / tar.gz 归档)继承自父类,
-只是 workspaces_root / archives_root 都在 tmp 内,测试隔离。</p>
-<p>用法(pytest):
-    @pytest.fixture
-    def ws_mgr(tmp_path):
-        return TempWorkspaceManager(tmp_path)</p>
+        <p>Anchor a real LocalWorkspaceManager's root under a tmp directory.</p>
+<p>All real behaviour (fcntl locking, shutil.copytree, tar.gz archiving) is
+inherited from the parent class; only workspaces_root and archives_root are
+redirected inside tmp for test isolation.</p>
+<p>Usage (pytest)::</p>
+<pre><code>@pytest.fixture
+def ws_mgr(tmp_path):
+    return TempWorkspaceManager(tmp_path)
+</code></pre>
 
 
 
@@ -1289,14 +1291,12 @@
 
 
 
-        <p>跑真 schema 的 :memory: SQLite。</p>
+        <p>Runs the real schema against an :memory: SQLite database.</p>
+<p>Usage::</p>
+<pre><code>store = FakeTrajectoryStore()
+store.start_run(...)
+</code></pre>
 
-
-<details class="用法" open>
-  <summary>用法</summary>
-  <p>store = FakeTrajectoryStore()
-store.start_run(...)</p>
-</details>
 
 
 
@@ -1335,7 +1335,7 @@ store.start_run(...)</p>
 
 
 
-        <p>一次 phase 尝试的预录结果。</p>
+        <p>Pre-recorded result for a single phase attempt.</p>
 
 
 
