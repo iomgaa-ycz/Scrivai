@@ -1780,6 +1780,34 @@ Scrivai 所有工具通过 `scrivai-cli` + Agent 的 `Bash` tool 暴露,**不使
 
 **重新评估时机**:若单次 CLI 冷启动开销在生产中成为瓶颈(M3 末测),或 SDK 对 MCP 提供原生 trajectory 支持且优于 subprocess logging。
 
+#### 5.3.2.1 外部 CLI 工具白名单
+
+PESConfig 支持 `external_cli_tools: list[str]` 字段,业务层可声明 agent 允许执行的 Bash 命令前缀。
+
+**配置来源(合并去重)**:
+1. YAML 静态声明: `PESConfig.external_cli_tools`
+2. 运行时注入: `runtime_context["external_cli_tools"]`
+
+**注入机制**: `BasePES.build_phase_prompt` 将白名单拼接为 `## ALLOWED EXTERNAL CLI TOOLS` 段落,追加到 phase prompt 末尾。
+
+**约束级别**: 提示级约束(prompt-level),非 SDK 强制。符合 §5.3.2 "prompt-level discoverable degradation" 设计。
+
+**典型用法**(业务层指定 qmd collection):
+
+```yaml
+# auditor.yaml
+external_cli_tools:
+  - "qmd search --collection tender_001"
+```
+
+或运行时注入:
+
+```python
+runtime_context = {
+    "external_cli_tools": ["qmd search --collection tender_001"]
+}
+```
+
 #### 5.3.3 `allowed_tools × phase` 矩阵
 
 | 工具 | plan | execute | summarize | 备注 |
