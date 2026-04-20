@@ -24,7 +24,7 @@ def _make_config() -> PESConfig:
         return PhaseConfig(name=name, allowed_tools=["Bash"])
 
     return PESConfig(
-        name="traj-test",
+        name="extractor",
         prompt_text="sys",
         phases={
             "plan": phase_tmpl("plan"),
@@ -90,7 +90,7 @@ def test_full_run_recorded(tmp_path: Path) -> None:
     rec = store.get_run("traj-run")
     assert rec is not None
     assert rec.status == "completed"
-    assert rec.pes_name == "traj-test"
+    assert rec.pes_name == "extractor"
 
     assert len(rec.phase_records) == 3
 

@@ -49,7 +49,7 @@ def workspace(tmp_path: Path) -> WorkspaceHandle:
 def _minimal_config() -> PESConfig:
     """最简 PESConfig:三阶段都允许 Bash + 没有 required_outputs。"""
     return PESConfig(
-        name="test",
+        name="extractor",
         display_name="Test PES",
         prompt_text="You are a test assistant.",
         default_skills=[],
@@ -113,7 +113,7 @@ async def test_real_sdk_smoke_minimal_phase(workspace) -> None:
     - 至少 1 个 PhaseTurn(Agent 至少响应一次)
     """
     cfg = PESConfig(
-        name="smoke",
+        name="extractor",
         display_name="Smoke Test PES",
         prompt_text=(
             "You are a test assistant. Follow instructions exactly and write files when asked. "

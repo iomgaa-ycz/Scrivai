@@ -8,12 +8,12 @@ templates:
     artifacts: []
 
   auditor_execute:
-    required_context: [task_prompt, workspace, previous_phase_output]
+    required_context: [task_prompt, workspace]
     static_fragments: [workspace_rules]
     artifacts: []
 
   auditor_summarize:
-    required_context: [task_prompt, workspace, previous_phase_output]
+    required_context: [task_prompt, workspace]
     static_fragments: [workspace_rules]
     artifacts: []
 
@@ -23,12 +23,12 @@ templates:
     artifacts: []
 
   extractor_execute:
-    required_context: [task_prompt, workspace, previous_phase_output]
+    required_context: [task_prompt, workspace]
     static_fragments: [workspace_rules]
     artifacts: []
 
   extractor_summarize:
-    required_context: [task_prompt, workspace, previous_phase_output]
+    required_context: [task_prompt, workspace]
     static_fragments: [workspace_rules]
     artifacts: []
 
@@ -38,11 +38,11 @@ templates:
     artifacts: []
 
   generator_execute:
-    required_context: [task_prompt, workspace, previous_phase_output]
+    required_context: [task_prompt, workspace]
     static_fragments: [workspace_rules]
     artifacts: []
 
   generator_summarize:
-    required_context: [task_prompt, workspace, previous_phase_output]
+    required_context: [task_prompt, workspace]
     static_fragments: [workspace_rules]
     artifacts: []

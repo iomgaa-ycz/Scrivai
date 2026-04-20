@@ -43,7 +43,7 @@ def _make_config(
         )
 
     return PESConfig(
-        name="test-pes",
+        name="extractor",
         prompt_text="system prompt",
         phases={
             "plan": phase_tmpl("plan"),
@@ -429,7 +429,7 @@ def test_finalize_run_called_on_all_paths(tmp_path: Path) -> None:
         """预插 runs 行,模拟 TrajectoryRecorderHook.before_run 的 start_run 调用。"""
         store.start_run(
             run_id="test-run",
-            pes_name="test-pes",
+            pes_name="extractor",
             model_name="mock-model",
             provider="",
             sdk_version="",

@@ -223,31 +223,11 @@ class BasePES:
         For most cases, override ``build_execution_context`` instead.
         """
         context["task_prompt"] = task_prompt
-        try:
-            return self._prompt_manager.build_prompt(
-                operation=self.config.name,
-                phase=phase,
-                context=context,
-            )
-        except (ValueError, Exception):
-            # Fallback for PES names not in prompt_spec (e.g. test fixtures).
-            parts: list[str] = []
-            if self.config.prompt_text:
-                parts.append(self.config.prompt_text)
-            parts.append(task_prompt)
-            if context:
-                parts.append(json.dumps(context, ensure_ascii=False, default=str))
-            cli_tools = context.get("cli_tools", [])
-            if cli_tools:
-                tool_lines = "\n".join(f"- `{cmd}`" for cmd in cli_tools)
-                parts.append(
-                    "## ALLOWED EXTERNAL CLI TOOLS\n\n"
-                    "You have access to the following external CLI commands via Bash. "
-                    "Use these for efficient document retrieval instead of Grep:\n\n"
-                    f"{tool_lines}\n\n"
-                    "Do NOT run Bash commands outside this whitelist."
-                )
-            return "\n\n".join(parts)
+        return self._prompt_manager.build_prompt(
+            operation=self.config.name,
+            phase=phase,
+            context=context,
+        )
 
     async def postprocess_phase_result(self, phase: str, result: PhaseResult, run: PESRun) -> None:
         """Post-process the LLM response. Default is a no-op. Exceptions become response_parse_error (not retryable)."""

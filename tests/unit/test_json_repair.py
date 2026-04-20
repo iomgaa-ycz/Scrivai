@@ -269,7 +269,7 @@ class TestPESConfigStrictJson:
 
     def test_default_false(self) -> None:
         cfg = PESConfig(
-            name="test",
+            name="extractor",
             prompt_text="test prompt",
             phases={},
         )
@@ -277,7 +277,7 @@ class TestPESConfigStrictJson:
 
     def test_explicit_true(self) -> None:
         cfg = PESConfig(
-            name="test",
+            name="extractor",
             prompt_text="test prompt",
             phases={},
             strict_json=True,
