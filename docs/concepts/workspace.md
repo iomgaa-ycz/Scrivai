@@ -55,6 +55,33 @@ manager.archive(handle)
 
 Archived workspaces are moved to `~/.scrivai/workspaces/_archive/<run_id>/`.
 
+## Environment Variables (`extra_env`)
+
+`WorkspaceSpec.extra_env` lets you pass environment variables to the Agent SDK subprocess. This is how business-layer tools (e.g. qmd search engines, database connectors) become available to the Agent.
+
+```python
+spec = WorkspaceSpec(
+    run_id="audit-with-qmd",
+    project_root=project_root,
+    extra_env={
+        "QMD_COLLECTION": "tender_001",
+        "QMD_DB_PATH": "/data/qmd.db",
+    },
+)
+ws = ws_mgr.create(spec)
+# ws.extra_env == {"QMD_COLLECTION": "tender_001", "QMD_DB_PATH": "/data/qmd.db"}
+```
+
+The `extra_env` dict flows through the full chain:
+
+```
+WorkspaceSpec.extra_env → meta.json → WorkspaceHandle.extra_env
+    → BasePES._call_sdk_query → LLMClient.execute_task(extra_env=...)
+    → Agent subprocess environment
+```
+
+The Agent can then use these variables in Bash tool calls or read them programmatically.
+
 ## See Also
 
 - [API Reference: Workspace](../api/workspace.md)
