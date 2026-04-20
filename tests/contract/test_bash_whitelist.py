@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from scrivai.models.pes import PESConfig, PhaseConfig
 from scrivai.models.workspace import WorkspaceHandle, WorkspaceSnapshot
 from scrivai.testing.mock_pes import MockPES, PhaseOutcome
@@ -197,3 +199,35 @@ class TestResolveCliTools:
         pes = _make_pes(tmp_path, config_tools=[])
         result = pes._resolve_cli_tools()
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# Task 3: build_phase_prompt injects whitelist
+# ---------------------------------------------------------------------------
+
+
+class TestPromptInjection:
+    """external_cli_tools 非空时，build_phase_prompt 应注入工具白名单段落。"""
+
+    @pytest.mark.asyncio
+    async def test_tools_injected_into_prompt(self, tmp_path: Path) -> None:
+        pes = _make_pes(tmp_path, config_tools=["qmd search --collection tender_001"])
+        prompt = await pes.build_phase_prompt(
+            phase="execute",
+            phase_cfg=pes.config.phases["execute"],
+            context={},
+            task_prompt="审核招标文书",
+        )
+        assert "qmd search --collection tender_001" in prompt
+        assert "ALLOWED EXTERNAL CLI" in prompt
+
+    @pytest.mark.asyncio
+    async def test_no_injection_when_empty(self, tmp_path: Path) -> None:
+        pes = _make_pes(tmp_path, config_tools=[])
+        prompt = await pes.build_phase_prompt(
+            phase="execute",
+            phase_cfg=pes.config.phases["execute"],
+            context={},
+            task_prompt="审核招标文书",
+        )
+        assert "ALLOWED EXTERNAL CLI" not in prompt

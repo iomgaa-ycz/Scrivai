@@ -209,6 +209,18 @@ class BasePES:
         parts.append(task_prompt)
         if context:
             parts.append(json.dumps(context, ensure_ascii=False, default=str))
+
+        cli_tools = self._resolve_cli_tools()
+        if cli_tools:
+            tool_lines = "\n".join(f"- `{cmd}`" for cmd in cli_tools)
+            parts.append(
+                "## ALLOWED EXTERNAL CLI TOOLS\n\n"
+                "You have access to the following external CLI commands via Bash. "
+                "Use these for efficient document retrieval instead of Grep:\n\n"
+                f"{tool_lines}\n\n"
+                "Do NOT run Bash commands outside this whitelist."
+            )
+
         return "\n\n".join(parts)
 
     async def postprocess_phase_result(self, phase: str, result: PhaseResult, run: PESRun) -> None:
