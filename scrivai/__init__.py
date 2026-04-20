@@ -103,6 +103,7 @@ from scrivai.models.workspace import (
 # PES core
 from scrivai.pes.base import BasePES
 from scrivai.pes.config import load_pes_config
+from scrivai.pes.prompts import PromptManager
 from scrivai.pes.hooks import HookManager, hookimpl
 from scrivai.pes.phase_log import PhaseLogHook
 
@@ -156,6 +157,7 @@ __all__ = [
     # Abstract base classes
     "BasePES",
     "HookManager",
+    "PromptManager",
     # Built-in PES
     "ExtractorPES",
     "AuditorPES",
@@ -188,7 +190,6 @@ __all__ = [
     "FakeTrajectoryStore",
     "PhaseOutcome",
     # Utils
-    "relaxed_json_loads",
     # Hook decorator
     "hookimpl",
     # Evolution (M2)
