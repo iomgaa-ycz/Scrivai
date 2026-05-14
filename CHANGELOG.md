@@ -3,6 +3,24 @@
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 
+## [0.1.8] — 2026-05-14
+
+### Changed — Unified OCR Pipeline (Issue #9)
+
+- **Breaking:** `docx_to_markdown()` / `doc_to_markdown()` / `pdf_to_markdown()` removed — replaced by single `to_markdown(path)` entry point
+- All document formats (`.doc` / `.docx` / `.pdf`) now route through MonkeyOCR pipeline: doc/docx → LibreOffice headless → PDF → MonkeyOCR HTTP → Markdown
+- Pandoc fallback for `.doc` / `.docx` when MonkeyOCR is unreachable (`fallback=True` by default)
+- Upload rate limiting (default 500 KB/s) via `requests-toolbelt` streaming — prevents Tailscale / home-broadband upload stalls on large files
+- OCR service URL configurable via `SCRIVAI_OCR_BASE_URL` env var or `ocr_base_url` parameter
+- Upload rate configurable via `SCRIVAI_OCR_UPLOAD_RATE` env var or `upload_rate` parameter
+- CLI: `scrivai-cli io docx2md` / `doc2md` / `pdf2md` merged into `scrivai-cli io convert`
+- `PhaseConfig.max_turns` default raised from 10 to 16
+
+### Removed
+
+- `docx_to_markdown()`, `doc_to_markdown()`, `pdf_to_markdown()` — use `to_markdown()` instead
+- CLI subcommands `docx2md`, `doc2md`, `pdf2md` — use `convert` instead
+
 ## [0.1.7] — 2026-04-20
 
 ### Added — Jinja2 Prompt Management + Issue #8 Fix
