@@ -46,12 +46,7 @@ from scrivai.evolution import (
 )
 
 # IO
-from scrivai.io import (
-    DocxRenderer,
-    doc_to_markdown,
-    docx_to_markdown,
-    pdf_to_markdown,
-)
+from scrivai.io import DocxRenderer, to_markdown
 
 # Knowledge Libraries
 from scrivai.knowledge import (
@@ -173,9 +168,7 @@ __all__ = [
     "TrajectoryRecorderHook",
     "PhaseLogHook",
     # IO
-    "docx_to_markdown",
-    "doc_to_markdown",
-    "pdf_to_markdown",
+    "to_markdown",
     "DocxRenderer",
     # qmd re-export
     "ChunkRef",

@@ -1,128 +1,114 @@
-"""Document format conversion — pandoc / LibreOffice / MonkeyOCR HTTP.
+"""Unified document → Markdown conversion via MonkeyOCR.
 
 External dependencies:
-- pandoc binary (docx → markdown)
-- libreoffice/soffice binary (doc → docx)
-- MonkeyOCR HTTP service Docker container (default http://100.81.95.44:7861)
+- libreoffice/soffice binary (doc/docx → PDF)
+- pandoc binary (fallback: docx → markdown)
+- MonkeyOCR HTTP service Docker container
 
-All failures raise IOError with an explicit message; no silent fallback.
+All failures raise IOError with an explicit message.
 """
 
 from __future__ import annotations
 
 import io
+import logging
+import os
 import shutil
 import subprocess
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 
 import requests
+from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
+
+logger = logging.getLogger(__name__)
+
+_DEFAULT_OCR_URL = os.environ.get("SCRIVAI_OCR_BASE_URL", "http://100.81.95.44:7861")
+_DEFAULT_UPLOAD_RATE = int(os.environ.get("SCRIVAI_OCR_UPLOAD_RATE", 500 * 1024))
+
+_SUPPORTED_SUFFIXES = {".pdf", ".doc", ".docx"}
 
 
-def docx_to_markdown(path: str | Path) -> str:
-    """Convert a .docx file to Markdown (UTF-8) using pandoc.
+def _to_pdf(path: Path, *, target_dir: Path) -> Path:
+    """Convert a .doc/.docx file to PDF via LibreOffice headless.
 
     Args:
-        path: Path to the .docx file.
+        path: Source document.
+        target_dir: Directory to write the output PDF.
     Returns:
-        Markdown text.
+        Path to the generated PDF.
     Raises:
-        IOError: pandoc unavailable / file not found / conversion failed.
+        IOError: LibreOffice unavailable or conversion failed.
     """
-    src = Path(path)
-    if not src.is_file():
-        raise IOError(f"File not found: {src}")
-    if shutil.which("pandoc") is None:
-        raise IOError("pandoc binary not found (run `apt install pandoc` or conda install)")
-
-    proc = subprocess.run(
-        ["pandoc", str(src), "-t", "markdown"],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-    )
-    if proc.returncode != 0:
-        raise IOError(f"pandoc conversion failed ({src}): {proc.stderr.strip()}")
-    return proc.stdout
-
-
-def doc_to_markdown(path: str | Path) -> str:
-    """Convert a .doc file to Markdown via LibreOffice headless (doc → docx) then docx_to_markdown.
-
-    LibreOffice also accepts .docx input, so .docx files can also use this path (redundant but safe).
-    """
-    src = Path(path)
-    if not src.is_file():
-        raise IOError(f"File not found: {src}")
     soffice = shutil.which("libreoffice") or shutil.which("soffice")
     if soffice is None:
         raise IOError("libreoffice/soffice binary not found")
 
-    with tempfile.TemporaryDirectory() as td:
-        out_dir = Path(td)
-        proc = subprocess.run(
-            [
-                soffice,
-                "--headless",
-                "--convert-to",
-                "docx",
-                "--outdir",
-                str(out_dir),
-                str(src),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        if proc.returncode != 0:
-            raise IOError(f"LibreOffice docx conversion failed ({src}): {proc.stderr.strip()}")
-        # Output filename = original stem + .docx
-        converted = out_dir / f"{src.stem}.docx"
-        if not converted.is_file():
-            raise IOError(f"LibreOffice did not produce expected file: {converted}")
-        return docx_to_markdown(converted)
+    proc = subprocess.run(
+        [
+            soffice,
+            "--headless",
+            "--convert-to",
+            "pdf",
+            "--outdir",
+            str(target_dir),
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    if proc.returncode != 0:
+        raise IOError(f"LibreOffice PDF conversion failed ({path}): {proc.stderr.strip()}")
+
+    converted = target_dir / f"{path.stem}.pdf"
+    if not converted.is_file():
+        raise IOError(f"LibreOffice did not produce expected file: {converted}")
+    return converted
 
 
-def pdf_to_markdown(
-    path: str | Path,
-    *,
-    base_url: str = "http://100.81.95.44:7861",
-    timeout: int = 300,
-) -> str:
-    """Convert a PDF to Markdown using the MonkeyOCR HTTP service.
-
-    Flow (see Reference/smart-construction-ai/crawler.py):
-      1. POST {base_url}/parse to upload the PDF
-      2. Read download_url from the response
-      3. GET {download_url} to retrieve the ZIP
-      4. Extract the .md file contents from the ZIP
+def _ocr_to_markdown(pdf_path: Path, *, base_url: str, timeout: int, upload_rate: int) -> str:
+    """Send a PDF to MonkeyOCR HTTP service and return Markdown.
 
     Args:
-        path: Path to the .pdf file.
-        base_url: MonkeyOCR service URL (hardcoded default; override as needed).
+        pdf_path: Path to the PDF file.
+        base_url: MonkeyOCR service URL.
         timeout: Per-request HTTP timeout in seconds.
+        upload_rate: Max upload speed in bytes/second (0 = unlimited).
     Returns:
         Markdown text.
     Raises:
-        IOError: Service unreachable / non-200 response / no .md file in ZIP.
+        IOError: Service unreachable / non-200 / no .md in ZIP.
+        requests.exceptions.RequestException: Network-level failures.
     """
-    src = Path(path)
-    if not src.is_file():
-        raise IOError(f"File not found: {src}")
-
     base = base_url.rstrip("/")
 
-    # MonkeyOCR is typically an intranet service; bypass system proxy.
     session = requests.Session()
     session.trust_env = False
 
-    try:
-        with src.open("rb") as f:
-            files = {"file": (src.name, f, "application/pdf")}
-            resp = session.post(f"{base}/parse", files=files, timeout=timeout)
-    except requests.exceptions.RequestException as e:
-        raise IOError(f"MonkeyOCR network request failed ({base}): {e}") from e
+    with pdf_path.open("rb") as f:
+        encoder = MultipartEncoder(fields={"file": (pdf_path.name, f, "application/pdf")})
+
+        bytes_sent = 0
+
+        def _throttle_callback(monitor: MultipartEncoderMonitor) -> None:
+            nonlocal bytes_sent
+            if upload_rate <= 0:
+                return
+            delta = monitor.bytes_read - bytes_sent
+            bytes_sent = monitor.bytes_read
+            if delta > 0:
+                time.sleep(delta / upload_rate)
+
+        monitor = MultipartEncoderMonitor(encoder, _throttle_callback)
+        resp = session.post(
+            f"{base}/parse",
+            data=monitor,
+            headers={"Content-Type": monitor.content_type},
+            timeout=timeout,
+        )
 
     if resp.status_code != 200:
         raise IOError(f"MonkeyOCR /parse returned {resp.status_code}: {resp.text[:200]}")
@@ -136,10 +122,7 @@ def pdf_to_markdown(
 
     full_url = f"{base}{download_url}" if download_url.startswith("/") else download_url
 
-    try:
-        zip_resp = session.get(full_url, timeout=timeout)
-    except requests.exceptions.RequestException as e:
-        raise IOError(f"MonkeyOCR ZIP download failed ({full_url}): {e}") from e
+    zip_resp = session.get(full_url, timeout=timeout)
 
     if zip_resp.status_code != 200:
         raise IOError(f"MonkeyOCR ZIP download returned {zip_resp.status_code}")
@@ -152,3 +135,133 @@ def pdf_to_markdown(
             return zf.read(md_files[0]).decode("utf-8")
     except zipfile.BadZipFile as e:
         raise IOError(f"MonkeyOCR did not return a valid ZIP: {e}") from e
+
+
+def _pandoc_to_markdown(docx_path: Path) -> str:
+    """Convert a .docx to Markdown using pandoc (fallback path).
+
+    Args:
+        docx_path: Path to the .docx file.
+    Returns:
+        Markdown text.
+    Raises:
+        IOError: pandoc unavailable or conversion failed.
+    """
+    if shutil.which("pandoc") is None:
+        raise IOError("pandoc binary not found (run `apt install pandoc` or conda install)")
+
+    proc = subprocess.run(
+        ["pandoc", str(docx_path), "-t", "markdown"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    if proc.returncode != 0:
+        raise IOError(f"pandoc conversion failed ({docx_path}): {proc.stderr.strip()}")
+    return proc.stdout
+
+
+def to_markdown(
+    path: str | Path,
+    *,
+    ocr_base_url: str | None = None,
+    timeout: int = 300,
+    fallback: bool = True,
+    upload_rate: int | None = None,
+) -> str:
+    """Convert a document to Markdown.
+
+    Routing:
+      .pdf         → MonkeyOCR
+      .doc / .docx → LibreOffice headless → PDF → MonkeyOCR
+
+    When fallback=True and MonkeyOCR is unreachable:
+      .docx → pandoc direct conversion
+      .doc  → LibreOffice → docx → pandoc
+      .pdf  → no fallback (raises)
+
+    Config priority (both ocr_base_url and upload_rate):
+      function param > environment variable > hardcoded default.
+
+    Args:
+        path: Path to the source document (.pdf / .doc / .docx).
+        ocr_base_url: MonkeyOCR service URL override.
+        timeout: Per-request HTTP timeout in seconds.
+        fallback: Enable pandoc fallback for .doc/.docx when OCR is unreachable.
+        upload_rate: Max upload speed in bytes/second (0 = unlimited).
+            Default from SCRIVAI_OCR_UPLOAD_RATE env or 500 KB/s.
+    Returns:
+        Markdown text.
+    Raises:
+        IOError: Unsupported format / conversion failure / service unreachable without fallback.
+    """
+    src = Path(path)
+    if not src.is_file():
+        raise IOError(f"File not found: {src}")
+
+    suffix = src.suffix.lower()
+    if suffix not in _SUPPORTED_SUFFIXES:
+        raise IOError(
+            f"Unsupported format: {suffix} (supported: {', '.join(sorted(_SUPPORTED_SUFFIXES))})"
+        )
+
+    base_url = ocr_base_url or _DEFAULT_OCR_URL
+    rate = upload_rate if upload_rate is not None else _DEFAULT_UPLOAD_RATE
+
+    # --- PDF: direct OCR ---
+    if suffix == ".pdf":
+        return _ocr_to_markdown(src, base_url=base_url, timeout=timeout, upload_rate=rate)
+
+    # --- DOC / DOCX: LibreOffice → PDF → OCR (with optional fallback) ---
+    with tempfile.TemporaryDirectory() as td:
+        tmp_dir = Path(td)
+        pdf_path = _to_pdf(src, target_dir=tmp_dir)
+
+        try:
+            return _ocr_to_markdown(pdf_path, base_url=base_url, timeout=timeout, upload_rate=rate)
+        except (requests.exceptions.RequestException, IOError) as ocr_err:
+            is_network_error = isinstance(ocr_err, requests.exceptions.RequestException) or (
+                isinstance(ocr_err, IOError)
+                and any(
+                    kw in str(ocr_err)
+                    for kw in ("network", "unreachable", "timed out", "Connection")
+                )
+            )
+
+            if not (fallback and is_network_error):
+                raise
+
+            logger.warning("MonkeyOCR 不可达，降级到 pandoc 路径: %s", ocr_err)
+
+            if suffix == ".docx":
+                return _pandoc_to_markdown(src)
+
+            # .doc → LibreOffice → docx → pandoc
+            docx_path = tmp_dir / f"{src.stem}.docx"
+            soffice = shutil.which("libreoffice") or shutil.which("soffice")
+            if soffice is None:
+                raise IOError("libreoffice/soffice binary not found") from ocr_err
+
+            proc = subprocess.run(
+                [
+                    soffice,
+                    "--headless",
+                    "--convert-to",
+                    "docx",
+                    "--outdir",
+                    str(tmp_dir),
+                    str(src),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if proc.returncode != 0:
+                raise IOError(
+                    f"LibreOffice docx fallback conversion failed ({src}): {proc.stderr.strip()}"
+                ) from ocr_err
+            if not docx_path.is_file():
+                raise IOError(
+                    f"LibreOffice did not produce expected file: {docx_path}"
+                ) from ocr_err
+            return _pandoc_to_markdown(docx_path)

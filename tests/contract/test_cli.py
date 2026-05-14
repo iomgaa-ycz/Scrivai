@@ -139,8 +139,8 @@ def test_library_search_json_shape(populated_qmd: Path) -> None:
 # ── io group ──
 
 
-def test_cli_docx2md_writes_output(tmp_path: Path) -> None:
-    """CLI docx2md 写出 markdown 文件。"""
+def test_cli_convert_writes_output(tmp_path: Path) -> None:
+    """CLI convert 写出 markdown 文件（fallback 到 pandoc）。"""
     import shutil
 
     if not shutil.which("pandoc"):
@@ -155,7 +155,13 @@ def test_cli_docx2md_writes_output(tmp_path: Path) -> None:
     doc.save(src)
     out = tmp_path / "out.md"
 
-    code, stdout, err = _run(["io", "docx2md", "--input", str(src), "--output", str(out)])
+    code, stdout, err = _run([
+        "io", "convert",
+        "--input", str(src),
+        "--output", str(out),
+        "--ocr-base-url", "http://127.0.0.1:1",
+        "--timeout", "2",
+    ])
     assert code == 0, err
     payload = json.loads(stdout)
     assert payload["output"] == str(out)

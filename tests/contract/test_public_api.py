@@ -60,9 +60,7 @@ EXPECTED_PUBLIC_API = {
     "TrajectoryRecorderHook",
     "PhaseLogHook",
     # IO
-    "docx_to_markdown",
-    "doc_to_markdown",
-    "pdf_to_markdown",
+    "to_markdown",
     "DocxRenderer",
     # qmd re-export
     "ChunkRef",

@@ -26,20 +26,20 @@ default_skills:
 phases:
   plan:
     allowed_tools: [Bash, Read, Write]
-    max_turns: 6
+    max_turns: 16
     max_retries: 1
     permission_mode: default
     required_outputs: [plan.md, plan.json]
   execute:
     allowed_tools: [Bash, Read, Write]
-    max_turns: 30
+    max_turns: 32
     max_retries: 1
     permission_mode: default
     required_outputs:
       - {path: "findings/", min_files: 1, pattern: "*.json"}
   summarize:
     allowed_tools: [Bash, Read, Write]
-    max_turns: 4
+    max_turns: 16
     max_retries: 1
     permission_mode: default
     required_outputs: [output.json]

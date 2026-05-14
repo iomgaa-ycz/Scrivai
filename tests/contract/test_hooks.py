@@ -107,7 +107,7 @@ def test_nonblocking_dispatch_catches_exception(caplog) -> None:
     finally:
         logger.remove(handler_id)
 
-    assert "Hook 执行失败" in caplog.text
+    assert "Hook execution failed" in caplog.text
     assert "after_run" in caplog.text
 
 

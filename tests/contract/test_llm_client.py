@@ -329,7 +329,7 @@ async def test_no_result_message_raises() -> None:
         ),
     ]
     with patch("scrivai.pes.llm_client.query", return_value=_async_iter(messages)):
-        with pytest.raises(RuntimeError, match="未收到 ResultMessage"):
+        with pytest.raises(RuntimeError, match="No ResultMessage received"):
             await _client().execute_task(
                 prompt="x",
                 system_prompt="x",

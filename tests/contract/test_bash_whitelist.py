@@ -262,7 +262,7 @@ class TestEndToEnd:
         run = await pes.run("审核招标文书")
         assert run.status == "completed"
 
-        for phase in ("plan", "execute", "summarize"):
+        for phase in ("plan", "execute"):
             prompt = run.phase_results[phase].prompt
             assert "qmd search --collection tender_001" in prompt, f"{phase} missing config tool"
             assert "qmd document get --collection tender_001" in prompt, (

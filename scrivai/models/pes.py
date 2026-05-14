@@ -63,7 +63,7 @@ class PhaseConfig(BaseModel):
     )
     allowed_tools: list[str] = Field(..., description="SDK allowed_tools list.")
     max_turns: int = Field(
-        default=10, description="Maximum Agent interaction turns within a single query."
+        default=16, description="Maximum Agent interaction turns within a single query."
     )
     max_retries: int = Field(default=1, description="Phase-level retry count (L2 retry).")
     permission_mode: str = Field(default="default", description="SDK permission_mode.")
