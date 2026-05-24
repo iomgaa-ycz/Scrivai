@@ -60,7 +60,7 @@ def test_to_markdown_doc() -> None:
     if not SAMPLE_DOC.is_file():
         pytest.skip(f"测试文件不存在: {SAMPLE_DOC}")
 
-    md = to_markdown(SAMPLE_DOC, timeout=300)
+    md = to_markdown(SAMPLE_DOC, ocr_backend="monkey", timeout=300)
     assert isinstance(md, str)
     assert len(md) > 100
     assert "政府采购" in md
@@ -75,7 +75,7 @@ def test_to_markdown_docx() -> None:
     if not SAMPLE_DOCX.is_file():
         pytest.skip(f"测试文件不存在: {SAMPLE_DOCX}")
 
-    md = to_markdown(SAMPLE_DOCX, timeout=300)
+    md = to_markdown(SAMPLE_DOCX, ocr_backend="monkey", timeout=300)
     assert isinstance(md, str)
     assert len(md) > 100
 
@@ -88,7 +88,7 @@ def test_to_markdown_pdf() -> None:
     if not SAMPLE_PDF.is_file():
         pytest.skip(f"测试文件不存在: {SAMPLE_PDF}")
 
-    md = to_markdown(SAMPLE_PDF, timeout=300)
+    md = to_markdown(SAMPLE_PDF, ocr_backend="monkey", timeout=300)
     assert isinstance(md, str)
     assert len(md) > 100
 
@@ -142,6 +142,7 @@ def test_to_markdown_fallback_docx(tmp_path: Path) -> None:
 
     md = to_markdown(
         fixture,
+        ocr_backend="monkey",
         ocr_base_url="http://127.0.0.1:1",
         timeout=2,
         fallback=True,
