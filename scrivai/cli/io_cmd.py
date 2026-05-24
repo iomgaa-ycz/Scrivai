@@ -20,6 +20,10 @@ def cmd_convert(args: argparse.Namespace) -> dict[str, Any]:
 
     md = to_markdown(
         args.input,
+        ocr_backend=args.ocr_backend,
+        glm_api_key=args.glm_api_key,
+        start_page=args.start_page,
+        end_page=args.end_page,
         ocr_base_url=args.ocr_base_url,
         timeout=args.timeout,
         fallback=not args.no_fallback,
@@ -47,9 +51,19 @@ def cmd_render(args: argparse.Namespace) -> dict[str, Any]:
 def register(parser: argparse.ArgumentParser) -> None:
     sub = parser.add_subparsers(dest="action", required=True)
 
-    c = sub.add_parser("convert", help="doc/docx/pdf → markdown (MonkeyOCR pipeline)")
+    c = sub.add_parser("convert", help="doc/docx/pdf → markdown (pluggable OCR backend)")
     c.add_argument("--input", required=True)
     c.add_argument("--output", default=None)
+    c.add_argument(
+        "--ocr-backend",
+        default=None,
+        help="OCR backend: monkey | glm (default from SCRIVAI_OCR_BACKEND env or 'glm')",
+    )
+    c.add_argument("--glm-api-key", default=None, help="GLM-OCR API key override")
+    c.add_argument(
+        "--start-page", type=int, default=None, help="PDF start page, 1-based (GLM only)"
+    )
+    c.add_argument("--end-page", type=int, default=None, help="PDF end page, 1-based (GLM only)")
     c.add_argument("--ocr-base-url", default=None, help="MonkeyOCR service URL override")
     c.add_argument("--timeout", type=int, default=300)
     c.add_argument("--no-fallback", action="store_true", help="disable pandoc fallback")
@@ -57,7 +71,7 @@ def register(parser: argparse.ArgumentParser) -> None:
         "--upload-rate",
         type=int,
         default=None,
-        help="max upload speed in bytes/s (0=unlimited, default 500KB/s from env)",
+        help="MonkeyOCR max upload speed in bytes/s (0=unlimited, default 500KB/s from env)",
     )
     c.set_defaults(func=cmd_convert)
 
