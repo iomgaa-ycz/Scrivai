@@ -13,9 +13,7 @@ All failures raise IOError with an explicit message.
 
 from __future__ import annotations
 
-import base64  # noqa: F401 - reserved for the GLM backend added in Task 2.
 import io
-import json  # noqa: F401 - reserved for the GLM backend added in Task 2.
 import logging
 import os
 import shutil
