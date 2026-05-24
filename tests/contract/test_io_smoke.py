@@ -5,6 +5,7 @@ Uses real_data/ files for OCR pipeline smoke tests.
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
@@ -41,6 +42,10 @@ def _monkeyocr_reachable(base_url: str = "http://100.81.95.44:7861") -> bool:
 
 def _has_soffice() -> bool:
     return bool(shutil.which("libreoffice") or shutil.which("soffice"))
+
+
+def _glm_ocr_available() -> bool:
+    return bool(os.environ.get("SCRIVAI_GLM_API_KEY"))
 
 
 # ─── to_markdown: OCR 主路径 ──────────────────────────────────
@@ -86,6 +91,37 @@ def test_to_markdown_pdf() -> None:
     md = to_markdown(SAMPLE_PDF, timeout=300)
     assert isinstance(md, str)
     assert len(md) > 100
+
+
+# ─── to_markdown: GLM-OCR 主路径 ────────────────────────────────
+
+
+@pytest.mark.skipif(not _glm_ocr_available(), reason="SCRIVAI_GLM_API_KEY 未设置")
+def test_to_markdown_pdf_glm() -> None:
+    """真实 PDF 直接走 GLM-OCR 云端 API。"""
+    from scrivai.io import to_markdown
+
+    if not SAMPLE_PDF.is_file():
+        pytest.skip(f"测试文件不存在: {SAMPLE_PDF}")
+
+    md = to_markdown(SAMPLE_PDF, ocr_backend="glm", timeout=300)
+    assert isinstance(md, str)
+    assert len(md) > 100
+
+
+@pytest.mark.skipif(not _glm_ocr_available(), reason="SCRIVAI_GLM_API_KEY 未设置")
+@pytest.mark.skipif(not _has_soffice(), reason="需要 libreoffice 二进制")
+def test_to_markdown_doc_glm() -> None:
+    """真实 .doc 文件经 LibreOffice → PDF → GLM-OCR 输出 Markdown。"""
+    from scrivai.io import to_markdown
+
+    if not SAMPLE_DOC.is_file():
+        pytest.skip(f"测试文件不存在: {SAMPLE_DOC}")
+
+    md = to_markdown(SAMPLE_DOC, ocr_backend="glm", timeout=300)
+    assert isinstance(md, str)
+    assert len(md) > 100
+    assert "政府采购" in md
 
 
 # ─── to_markdown: fallback 路径 ───────────────────────────────
@@ -144,6 +180,19 @@ def test_to_markdown_invalid_backend(tmp_path: Path) -> None:
     fake.write_bytes(b"%PDF-1.4 fake")
     with pytest.raises(ValueError, match="Unknown OCR backend"):
         to_markdown(fake, ocr_backend="nonexistent")
+
+
+def test_to_markdown_glm_no_api_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """GLM 后端无 API key → ValueError。"""
+    from scrivai.io import to_markdown
+
+    monkeypatch.setenv("SCRIVAI_GLM_API_KEY", "")
+
+    fake = tmp_path / "data.pdf"
+    fake.write_bytes(b"%PDF-1.4 fake")
+
+    with pytest.raises(ValueError, match="GLM API key"):
+        to_markdown(fake, ocr_backend="glm", glm_api_key="")
 
 
 # ─── DocxRenderer ─────────────────────────────────────────────

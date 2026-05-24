@@ -13,7 +13,9 @@ All failures raise IOError with an explicit message.
 
 from __future__ import annotations
 
+import base64
 import io
+import json
 import logging
 import os
 import shutil
@@ -173,7 +175,61 @@ def _pandoc_to_markdown(docx_path: Path) -> str:
     return proc.stdout
 
 
-_BACKENDS: dict[str, Callable[..., str]] = {"monkey": _monkey_ocr}
+def _glm_ocr(
+    pdf_path: Path,
+    *,
+    api_key: str,
+    timeout: int = 300,
+    start_page: int | None = None,
+    end_page: int | None = None,
+) -> str:
+    """Send a PDF to ZhipuAI GLM-OCR cloud API and return Markdown.
+
+    Args:
+        pdf_path: Path to the PDF file.
+        api_key: ZhipuAI API key.
+        timeout: HTTP timeout in seconds.
+        start_page: PDF start page (1-based, optional).
+        end_page: PDF end page (1-based, optional).
+    Returns:
+        Markdown text.
+    Raises:
+        IOError: API error or unexpected response.
+    """
+    b64_data = base64.b64encode(pdf_path.read_bytes()).decode()
+
+    body: dict[str, Any] = {
+        "model": "glm-ocr",
+        "file": f"data:application/pdf;base64,{b64_data}",
+    }
+    if start_page is not None:
+        body["start_page_id"] = start_page
+    if end_page is not None:
+        body["end_page_id"] = end_page
+
+    session = requests.Session()
+    session.trust_env = False
+    resp = session.post(
+        _GLM_OCR_URL,
+        headers={"Authorization": api_key, "Content-Type": "application/json"},
+        data=json.dumps(body),
+        timeout=timeout,
+    )
+
+    if resp.status_code != 200:
+        raise IOError(f"GLM-OCR API returned {resp.status_code}: {resp.text[:300]}")
+
+    data = resp.json()
+    if "error" in data:
+        raise IOError(f"GLM-OCR API error: {data['error']}")
+
+    md_results = data.get("md_results")
+    if md_results is None:
+        raise IOError(f"GLM-OCR response missing md_results: {list(data.keys())}")
+    return md_results
+
+
+_BACKENDS: dict[str, Callable[..., str]] = {"monkey": _monkey_ocr, "glm": _glm_ocr}
 
 
 def to_markdown(
@@ -243,7 +299,7 @@ def to_markdown(
             upload_rate if upload_rate is not None else _DEFAULT_UPLOAD_RATE
         )
     elif backend == "glm":
-        key = glm_api_key or _DEFAULT_GLM_API_KEY
+        key = _DEFAULT_GLM_API_KEY if glm_api_key is None else glm_api_key
         if not key:
             raise ValueError(
                 "GLM API key 未配置: 设置 SCRIVAI_GLM_API_KEY env 或传入 glm_api_key 参数"
