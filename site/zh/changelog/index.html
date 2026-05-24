@@ -1020,6 +1020,84 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#019-2026-05-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.9] — 2026-05-24
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.9] — 2026-05-24">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-pluggable-ocr-backend-glm-ocr-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Pluggable OCR Backend &amp; GLM-OCR Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#018-2026-05-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.8] — 2026-05-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.8] — 2026-05-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed-unified-ocr-pipeline-issue-9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed — Unified OCR Pipeline (Issue #9)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#017-2026-04-20" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1043,7 +1121,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -1054,7 +1132,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -1143,7 +1221,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -1182,7 +1260,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_2" class="md-nav__link">
+  <a href="#changed_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -1193,7 +1271,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed_1" class="md-nav__link">
+  <a href="#removed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -1264,6 +1342,41 @@
 <h1 id="changelog">CHANGELOG</h1>
 <p>本项目遵循 <a href="https://semver.org/lang/zh-CN/">Semantic Versioning</a>。
 格式参考 <a href="https://keepachangelog.com/zh-CN/">Keep a Changelog</a>。</p>
+<h2 id="019-2026-05-24">[0.1.9] — 2026-05-24</h2>
+<h3 id="added-pluggable-ocr-backend-glm-ocr-integration">Added — Pluggable OCR Backend &amp; GLM-OCR Integration</h3>
+<ul>
+<li><strong>Pluggable OCR backend architecture</strong>: <code>to_markdown()</code> now accepts <code>ocr_backend</code> parameter to select between multiple OCR providers (<code>"monkey"</code> for self-hosted MonkeyOCR, <code>"glm"</code> for ZhipuAI GLM-OCR cloud API)</li>
+<li><strong>GLM-OCR cloud backend</strong> (<code>ocr_backend="glm"</code>): ZhipuAI's 0.9B OCR model via <code>layout_parsing</code> API — supports PDF / JPG / PNG, returns Markdown with table HTML</li>
+<li><strong>Auto-chunking for large PDFs</strong>: PDFs exceeding GLM-OCR limits (100 pages / 50 MB) are automatically split via <code>pypdf</code>, processed per chunk, and concatenated — users don't need to handle this manually</li>
+<li><strong>Page range selection</strong>: <code>start_page</code> / <code>end_page</code> parameters for GLM-OCR backend (1-based)</li>
+<li>CLI: <code>scrivai-cli io convert</code> gains <code>--ocr-backend</code>, <code>--glm-api-key</code>, <code>--start-page</code>, <code>--end-page</code></li>
+<li>Environment variables: <code>SCRIVAI_OCR_BACKEND</code>, <code>SCRIVAI_GLM_API_KEY</code></li>
+<li><code>pypdf&gt;=4.0</code> added to dependencies</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><strong>Breaking:</strong> MonkeyOCR no longer has a built-in default URL — you must set <code>SCRIVAI_OCR_BASE_URL</code> env or pass <code>ocr_base_url</code> parameter when using <code>ocr_backend="monkey"</code></li>
+<li><strong>Breaking:</strong> Default OCR backend changed from implicit MonkeyOCR to <code>"glm"</code> (configurable via <code>SCRIVAI_OCR_BACKEND</code> env)</li>
+<li>All OCR-related environment variables are now read at call time (not at module import time) — users can set <code>os.environ</code> in code before calling <code>to_markdown()</code></li>
+<li>Internal: <code>_ocr_to_markdown()</code> renamed to <code>_monkey_ocr()</code>, <code>_BACKENDS</code> registry dict for dispatch</li>
+</ul>
+<h2 id="018-2026-05-14">[0.1.8] — 2026-05-14</h2>
+<h3 id="changed-unified-ocr-pipeline-issue-9">Changed — Unified OCR Pipeline (Issue #9)</h3>
+<ul>
+<li><strong>Breaking:</strong> <code>docx_to_markdown()</code> / <code>doc_to_markdown()</code> / <code>pdf_to_markdown()</code> removed — replaced by single <code>to_markdown(path)</code> entry point</li>
+<li>All document formats (<code>.doc</code> / <code>.docx</code> / <code>.pdf</code>) now route through MonkeyOCR pipeline: doc/docx → LibreOffice headless → PDF → MonkeyOCR HTTP → Markdown</li>
+<li>Pandoc fallback for <code>.doc</code> / <code>.docx</code> when MonkeyOCR is unreachable (<code>fallback=True</code> by default)</li>
+<li>Upload rate limiting (default 500 KB/s) via <code>requests-toolbelt</code> streaming — prevents Tailscale / home-broadband upload stalls on large files</li>
+<li>OCR service URL configurable via <code>SCRIVAI_OCR_BASE_URL</code> env var or <code>ocr_base_url</code> parameter</li>
+<li>Upload rate configurable via <code>SCRIVAI_OCR_UPLOAD_RATE</code> env var or <code>upload_rate</code> parameter</li>
+<li>CLI: <code>scrivai-cli io docx2md</code> / <code>doc2md</code> / <code>pdf2md</code> merged into <code>scrivai-cli io convert</code></li>
+<li><code>PhaseConfig.max_turns</code> default raised from 10 to 16</li>
+</ul>
+<h3 id="removed">Removed</h3>
+<ul>
+<li><code>docx_to_markdown()</code>, <code>doc_to_markdown()</code>, <code>pdf_to_markdown()</code> — use <code>to_markdown()</code> instead</li>
+<li>CLI subcommands <code>docx2md</code>, <code>doc2md</code>, <code>pdf2md</code> — use <code>convert</code> instead</li>
+</ul>
 <h2 id="017-2026-04-20">[0.1.7] — 2026-04-20</h2>
 <h3 id="added-jinja2-prompt-management-issue-8-fix">Added — Jinja2 Prompt Management + Issue #8 Fix</h3>
 <ul>
@@ -1274,7 +1387,7 @@
 <li><code>PESConfig.external_cli_tools</code> — Bash command whitelist injected into Agent prompts</li>
 <li><code>jinja2&gt;=3.1</code> as explicit dependency</li>
 </ul>
-<h3 id="changed">Changed</h3>
+<h3 id="changed_1">Changed</h3>
 <ul>
 <li><code>BasePES.build_phase_prompt()</code> now delegates to <code>PromptManager</code> instead of <code>json.dumps(context)</code> — Agent only sees explicitly templated variables</li>
 <li><code>BasePES._call_sdk_query()</code> passes <code>extra_env</code> to <code>LLMClient.execute_task()</code> and uses only <code>config.prompt_text</code> as <code>system_prompt</code> (fixes duplication bug)</li>
@@ -1282,7 +1395,7 @@
 <li><code>_workspace_payload()</code> no longer exposes <code>output_dir</code> to Agent (fixes path ambiguity from issue #8)</li>
 <li><code>relaxed_json_loads</code> removed from public API (<code>__all__</code>)</li>
 </ul>
-<h3 id="removed">Removed</h3>
+<h3 id="removed_1">Removed</h3>
 <ul>
 <li><code>PhaseConfig.additional_system_prompt</code> — content migrated to Jinja2 templates</li>
 </ul>
@@ -1315,7 +1428,7 @@
 <li><code>PESConfig.strict_json</code> field — when True, skips repair and uses strict <code>json.loads</code></li>
 <li><code>ScrivaiJSONRepairError</code> exception with dual inheritance</li>
 </ul>
-<h3 id="changed_1">Changed</h3>
+<h3 id="changed_2">Changed</h3>
 <ul>
 <li><code>Proposer</code> JSON parsing switched to balanced-bracket scanning + Chinese quote normalization</li>
 <li>PES layer uses <code>relaxed_json_loads</code> for all JSON file reads</li>
@@ -1334,13 +1447,13 @@
 <li>3 个 examples:<code>01_audit_single_doc.py</code> / <code>02_generate_with_revision.py</code> / <code>03_evolve_skill_workflow.py</code></li>
 <li><code>scripts/verify_m3a_release.sh</code> — 发版前 deprecation 扫描一键 gate</li>
 </ul>
-<h3 id="changed_2">Changed</h3>
+<h3 id="changed_3">Changed</h3>
 <ul>
 <li><code>Proposer</code> JSON 解析改为平衡括号扫描 + 中文引号/尾逗号正规化 + 失败后一次严格化重试,修复 GLM 偶发非法 JSON 导致进化循环中断</li>
 <li><code>scrivai.__version__</code> 现在从 <code>importlib.metadata</code> 读取,与 pyproject <code>version</code> 字段单一真相</li>
 <li>README 完整重写,反映当前 PES 架构 + M2 进化系统(原 README 描述的是 M0 前原型,已完全不适用)</li>
 </ul>
-<h3 id="removed_1">Removed</h3>
+<h3 id="removed_2">Removed</h3>
 <ul>
 <li>M0 占位符 <code>FeedbackExample / EvolutionConfig / EvolutionRun / Evaluator / SkillsRootResolver</code> — 被 M2 实际类替代,MVP 原则不做向后兼容</li>
 </ul>

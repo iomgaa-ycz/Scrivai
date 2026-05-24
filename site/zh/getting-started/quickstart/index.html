@@ -1053,7 +1053,68 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        文档转换（OCR）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="文档转换（OCR）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#glm-ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLM-OCR（云端，默认）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monkeyocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MonkeyOCR（自建）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        支持格式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        命令行
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         下一步
@@ -1176,7 +1237,57 @@ asyncio.run(main())
 <li><strong>摘要（Summarize）</strong>：Agent 将发现结果合并为 <code>output.json</code>（由框架验证）。</li>
 </ul>
 <p>每个阶段以 <code>PhaseResult</code> 形式记录，包含所有轮次和该阶段的最终文本。</p>
-<h2 id="_4">下一步</h2>
+<h2 id="ocr">文档转换（OCR）</h2>
+<p>Scrivai 提供 <code>to_markdown()</code> 函数，通过可插拔的 OCR 后端将 PDF、DOC、DOCX 文件转为 Markdown。</p>
+<h3 id="glm-ocr">GLM-OCR（云端，默认）</h3>
+<pre><code class="language-python">from scrivai import to_markdown
+
+# 通过环境变量或参数设置 API Key
+# export SCRIVAI_GLM_API_KEY=your-key-here
+
+md = to_markdown(&quot;report.pdf&quot;)
+print(md)
+
+# 指定页范围（仅 GLM-OCR）
+md = to_markdown(&quot;long_report.pdf&quot;, start_page=10, end_page=20)
+</code></pre>
+<p>超过 100 页的 PDF 会自动分块处理，无需手动干预。</p>
+<h3 id="monkeyocr">MonkeyOCR（自建）</h3>
+<pre><code class="language-python">md = to_markdown(
+    &quot;report.pdf&quot;,
+    ocr_backend=&quot;monkey&quot;,
+    ocr_base_url=&quot;http://localhost:7861&quot;,
+)
+</code></pre>
+<h3 id="_4">支持格式</h3>
+<table>
+<thead>
+<tr>
+<th>输入格式</th>
+<th>处理流程</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.pdf</code></td>
+<td>直接 OCR</td>
+</tr>
+<tr>
+<td><code>.docx</code></td>
+<td>LibreOffice → PDF → OCR</td>
+</tr>
+<tr>
+<td><code>.doc</code></td>
+<td>LibreOffice → PDF → OCR</td>
+</tr>
+</tbody>
+</table>
+<p>当 OCR 后端不可达且 <code>fallback=True</code>（默认）时，<code>.doc</code>/<code>.docx</code> 文件降级为 pandoc 转换。</p>
+<h3 id="_5">命令行</h3>
+<pre><code class="language-bash">scrivai-cli io convert --input report.pdf --output report.md
+scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
+</code></pre>
+<h2 id="_6">下一步</h2>
 <ul>
 <li><a href="../../concepts/pes/">概念：PES 引擎</a> — 文件契约、提示词模板、自定义 PES</li>
 <li><a href="../../concepts/workspace/">概念：工作区</a> — 运行隔离与 <code>extra_env</code></li>

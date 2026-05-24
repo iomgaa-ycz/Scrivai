@@ -103,6 +103,54 @@ asyncio.run(main())
 
 每个阶段以 `PhaseResult` 形式记录，包含所有轮次和该阶段的最终文本。
 
+## 文档转换（OCR）
+
+Scrivai 提供 `to_markdown()` 函数，通过可插拔的 OCR 后端将 PDF、DOC、DOCX 文件转为 Markdown。
+
+### GLM-OCR（云端，默认）
+
+```python
+from scrivai import to_markdown
+
+# 通过环境变量或参数设置 API Key
+# export SCRIVAI_GLM_API_KEY=your-key-here
+
+md = to_markdown("report.pdf")
+print(md)
+
+# 指定页范围（仅 GLM-OCR）
+md = to_markdown("long_report.pdf", start_page=10, end_page=20)
+```
+
+超过 100 页的 PDF 会自动分块处理，无需手动干预。
+
+### MonkeyOCR（自建）
+
+```python
+md = to_markdown(
+    "report.pdf",
+    ocr_backend="monkey",
+    ocr_base_url="http://localhost:7861",
+)
+```
+
+### 支持格式
+
+| 输入格式 | 处理流程 |
+|---|---|
+| `.pdf` | 直接 OCR |
+| `.docx` | LibreOffice → PDF → OCR |
+| `.doc` | LibreOffice → PDF → OCR |
+
+当 OCR 后端不可达且 `fallback=True`（默认）时，`.doc`/`.docx` 文件降级为 pandoc 转换。
+
+### 命令行
+
+```bash
+scrivai-cli io convert --input report.pdf --output report.md
+scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
+```
+
 ## 下一步
 
 - [概念：PES 引擎](../concepts/pes.md) — 文件契约、提示词模板、自定义 PES

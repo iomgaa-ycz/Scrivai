@@ -561,6 +561,67 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#document-conversion-ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document Conversion (OCR)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Document Conversion (OCR)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#glm-ocr-cloud-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLM-OCR (Cloud, Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monkeyocr-self-hosted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MonkeyOCR (Self-Hosted)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1155,6 +1216,67 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#document-conversion-ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document Conversion (OCR)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Document Conversion (OCR)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#glm-ocr-cloud-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLM-OCR (Cloud, Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monkeyocr-self-hosted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MonkeyOCR (Self-Hosted)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1275,6 +1397,56 @@ asyncio.run(main())
 <li><strong>Summarize</strong>: The Agent merges findings into <code>output.json</code> (validated by the framework).</li>
 </ul>
 <p>Each phase is recorded as a <code>PhaseResult</code> containing all turns and the final text.</p>
+<h2 id="document-conversion-ocr">Document Conversion (OCR)</h2>
+<p>Scrivai includes a <code>to_markdown()</code> function that converts PDF, DOC, and DOCX files to Markdown using pluggable OCR backends.</p>
+<h3 id="glm-ocr-cloud-default">GLM-OCR (Cloud, Default)</h3>
+<pre><code class="language-python">from scrivai import to_markdown
+
+# Set your API key via env or parameter
+# export SCRIVAI_GLM_API_KEY=your-key-here
+
+md = to_markdown(&quot;report.pdf&quot;)
+print(md)
+
+# With page range (GLM-OCR only)
+md = to_markdown(&quot;long_report.pdf&quot;, start_page=10, end_page=20)
+</code></pre>
+<p>PDFs exceeding 100 pages are automatically split into chunks and processed sequentially — no manual handling needed.</p>
+<h3 id="monkeyocr-self-hosted">MonkeyOCR (Self-Hosted)</h3>
+<pre><code class="language-python">md = to_markdown(
+    &quot;report.pdf&quot;,
+    ocr_backend=&quot;monkey&quot;,
+    ocr_base_url=&quot;http://localhost:7861&quot;,
+)
+</code></pre>
+<h3 id="supported-formats">Supported Formats</h3>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Pipeline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.pdf</code></td>
+<td>Direct OCR</td>
+</tr>
+<tr>
+<td><code>.docx</code></td>
+<td>LibreOffice → PDF → OCR</td>
+</tr>
+<tr>
+<td><code>.doc</code></td>
+<td>LibreOffice → PDF → OCR</td>
+</tr>
+</tbody>
+</table>
+<p>When the OCR backend is unreachable and <code>fallback=True</code> (default), <code>.doc</code>/<code>.docx</code> files fall back to pandoc conversion.</p>
+<h3 id="cli">CLI</h3>
+<pre><code class="language-bash">scrivai-cli io convert --input report.pdf --output report.md
+scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
+</code></pre>
 <h2 id="next-steps">Next Steps</h2>
 <ul>
 <li><a href="../../concepts/pes/">Concepts: PES Engine</a> — file contracts, prompt templates, custom PES</li>

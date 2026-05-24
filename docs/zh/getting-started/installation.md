@@ -37,6 +37,17 @@ cp .env.example .env
 | `SCRIVAI_DEFAULT_MODEL` | 否 | `ModelConfig` 使用的默认模型 ID（如 `claude-sonnet-4-20250514`） |
 | `SCRIVAI_DEFAULT_PROVIDER` | 否 | 写入轨迹记录的供应商标签（如 `anthropic`） |
 
+### OCR 配置
+
+`to_markdown()` 函数支持可插拔的 OCR 后端。通过环境变量或函数参数配置（参数优先级更高）。
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `SCRIVAI_OCR_BACKEND` | `glm` | OCR 后端：`glm`（智谱云端）或 `monkey`（自建 MonkeyOCR） |
+| `SCRIVAI_GLM_API_KEY` | — | GLM-OCR API 密钥（使用 `glm` 后端时必填；从 [open.bigmodel.cn](https://open.bigmodel.cn) 获取） |
+| `SCRIVAI_OCR_BASE_URL` | — | MonkeyOCR 服务地址（使用 `monkey` 后端时必填） |
+| `SCRIVAI_OCR_UPLOAD_RATE` | `512000` | MonkeyOCR 上传限速（字节/秒，0 = 不限速） |
+
 ### 使用兼容网关
 
 如果你通过代理或私有 LLM 网关路由请求，将 `ANTHROPIC_BASE_URL` 设置为网关的基础 URL。Claude Agent SDK 会自动读取该变量，无需修改代码。

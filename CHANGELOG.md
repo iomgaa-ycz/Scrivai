@@ -3,6 +3,25 @@
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 
+## [0.1.9] — 2026-05-24
+
+### Added — Pluggable OCR Backend & GLM-OCR Integration
+
+- **Pluggable OCR backend architecture**: `to_markdown()` now accepts `ocr_backend` parameter to select between multiple OCR providers (`"monkey"` for self-hosted MonkeyOCR, `"glm"` for ZhipuAI GLM-OCR cloud API)
+- **GLM-OCR cloud backend** (`ocr_backend="glm"`): ZhipuAI's 0.9B OCR model via `layout_parsing` API — supports PDF / JPG / PNG, returns Markdown with table HTML
+- **Auto-chunking for large PDFs**: PDFs exceeding GLM-OCR limits (100 pages / 50 MB) are automatically split via `pypdf`, processed per chunk, and concatenated — users don't need to handle this manually
+- **Page range selection**: `start_page` / `end_page` parameters for GLM-OCR backend (1-based)
+- CLI: `scrivai-cli io convert` gains `--ocr-backend`, `--glm-api-key`, `--start-page`, `--end-page`
+- Environment variables: `SCRIVAI_OCR_BACKEND`, `SCRIVAI_GLM_API_KEY`
+- `pypdf>=4.0` added to dependencies
+
+### Changed
+
+- **Breaking:** MonkeyOCR no longer has a built-in default URL — you must set `SCRIVAI_OCR_BASE_URL` env or pass `ocr_base_url` parameter when using `ocr_backend="monkey"`
+- **Breaking:** Default OCR backend changed from implicit MonkeyOCR to `"glm"` (configurable via `SCRIVAI_OCR_BACKEND` env)
+- All OCR-related environment variables are now read at call time (not at module import time) — users can set `os.environ` in code before calling `to_markdown()`
+- Internal: `_ocr_to_markdown()` renamed to `_monkey_ocr()`, `_BACKENDS` registry dict for dispatch
+
 ## [0.1.8] — 2026-05-14
 
 ### Changed — Unified OCR Pipeline (Issue #9)

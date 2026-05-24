@@ -1065,6 +1065,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OCR 配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1160,6 +1171,39 @@ pip install -e &quot;.[dev]&quot;
 <td><code>SCRIVAI_DEFAULT_PROVIDER</code></td>
 <td>否</td>
 <td>写入轨迹记录的供应商标签（如 <code>anthropic</code>）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ocr">OCR 配置</h3>
+<p><code>to_markdown()</code> 函数支持可插拔的 OCR 后端。通过环境变量或函数参数配置（参数优先级更高）。</p>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SCRIVAI_OCR_BACKEND</code></td>
+<td><code>glm</code></td>
+<td>OCR 后端：<code>glm</code>（智谱云端）或 <code>monkey</code>（自建 MonkeyOCR）</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_GLM_API_KEY</code></td>
+<td>—</td>
+<td>GLM-OCR API 密钥（使用 <code>glm</code> 后端时必填；从 <a href="https://open.bigmodel.cn">open.bigmodel.cn</a> 获取）</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_OCR_BASE_URL</code></td>
+<td>—</td>
+<td>MonkeyOCR 服务地址（使用 <code>monkey</code> 后端时必填）</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_OCR_UPLOAD_RATE</code></td>
+<td><code>512000</code></td>
+<td>MonkeyOCR 上传限速（字节/秒，0 = 不限速）</td>
 </tr>
 </tbody>
 </table>

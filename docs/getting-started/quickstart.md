@@ -100,6 +100,54 @@ Every PES run goes through exactly three phases:
 
 Each phase is recorded as a `PhaseResult` containing all turns and the final text.
 
+## Document Conversion (OCR)
+
+Scrivai includes a `to_markdown()` function that converts PDF, DOC, and DOCX files to Markdown using pluggable OCR backends.
+
+### GLM-OCR (Cloud, Default)
+
+```python
+from scrivai import to_markdown
+
+# Set your API key via env or parameter
+# export SCRIVAI_GLM_API_KEY=your-key-here
+
+md = to_markdown("report.pdf")
+print(md)
+
+# With page range (GLM-OCR only)
+md = to_markdown("long_report.pdf", start_page=10, end_page=20)
+```
+
+PDFs exceeding 100 pages are automatically split into chunks and processed sequentially — no manual handling needed.
+
+### MonkeyOCR (Self-Hosted)
+
+```python
+md = to_markdown(
+    "report.pdf",
+    ocr_backend="monkey",
+    ocr_base_url="http://localhost:7861",
+)
+```
+
+### Supported Formats
+
+| Input | Pipeline |
+|---|---|
+| `.pdf` | Direct OCR |
+| `.docx` | LibreOffice → PDF → OCR |
+| `.doc` | LibreOffice → PDF → OCR |
+
+When the OCR backend is unreachable and `fallback=True` (default), `.doc`/`.docx` files fall back to pandoc conversion.
+
+### CLI
+
+```bash
+scrivai-cli io convert --input report.pdf --output report.md
+scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
+```
+
 ## Next Steps
 
 - [Concepts: PES Engine](../concepts/pes.md) — file contracts, prompt templates, custom PES

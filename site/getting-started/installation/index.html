@@ -545,6 +545,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#ocr-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OCR Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#using-a-private-gateway" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1195,6 +1206,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#ocr-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OCR Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#using-a-private-gateway" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1287,6 +1309,39 @@ pip install -e &quot;.[dev]&quot;
 <td><code>SCRIVAI_DEFAULT_PROVIDER</code></td>
 <td>No</td>
 <td>Provider label written to trajectory records (e.g. <code>anthropic</code>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ocr-configuration">OCR Configuration</h3>
+<p>The <code>to_markdown()</code> function supports pluggable OCR backends. Configure via environment variables or function parameters (parameters take precedence).</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SCRIVAI_OCR_BACKEND</code></td>
+<td><code>glm</code></td>
+<td>OCR backend: <code>glm</code> (ZhipuAI cloud) or <code>monkey</code> (self-hosted MonkeyOCR)</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_GLM_API_KEY</code></td>
+<td>—</td>
+<td>API key for GLM-OCR (required when using <code>glm</code> backend; get from <a href="https://open.bigmodel.cn">open.bigmodel.cn</a>)</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_OCR_BASE_URL</code></td>
+<td>—</td>
+<td>MonkeyOCR service URL (required when using <code>monkey</code> backend)</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_OCR_UPLOAD_RATE</code></td>
+<td><code>512000</code></td>
+<td>MonkeyOCR upload rate limit in bytes/s (0 = unlimited)</td>
 </tr>
 </tbody>
 </table>
