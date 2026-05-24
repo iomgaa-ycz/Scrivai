@@ -137,6 +137,7 @@ def test_to_markdown_file_not_found(tmp_path: Path) -> None:
 
 
 def test_to_markdown_invalid_backend(tmp_path: Path) -> None:
+    """非法后端名 → ValueError。"""
     from scrivai.io import to_markdown
 
     fake = tmp_path / "data.pdf"
