@@ -28,7 +28,13 @@ SAMPLE_PDF = (
 )
 
 
-def _monkeyocr_reachable(base_url: str = "http://100.81.95.44:7861") -> bool:
+_MONKEY_OCR_URL = os.environ.get("SCRIVAI_OCR_BASE_URL", "")
+
+
+def _monkeyocr_reachable(base_url: str = "") -> bool:
+    base_url = base_url or _MONKEY_OCR_URL
+    if not base_url:
+        return False
     import requests
 
     try:
@@ -60,7 +66,7 @@ def test_to_markdown_doc() -> None:
     if not SAMPLE_DOC.is_file():
         pytest.skip(f"测试文件不存在: {SAMPLE_DOC}")
 
-    md = to_markdown(SAMPLE_DOC, ocr_backend="monkey", timeout=300)
+    md = to_markdown(SAMPLE_DOC, ocr_backend="monkey", ocr_base_url=_MONKEY_OCR_URL, timeout=300)
     assert isinstance(md, str)
     assert len(md) > 100
     assert "政府采购" in md
@@ -75,7 +81,7 @@ def test_to_markdown_docx() -> None:
     if not SAMPLE_DOCX.is_file():
         pytest.skip(f"测试文件不存在: {SAMPLE_DOCX}")
 
-    md = to_markdown(SAMPLE_DOCX, ocr_backend="monkey", timeout=300)
+    md = to_markdown(SAMPLE_DOCX, ocr_backend="monkey", ocr_base_url=_MONKEY_OCR_URL, timeout=300)
     assert isinstance(md, str)
     assert len(md) > 100
 
@@ -88,7 +94,7 @@ def test_to_markdown_pdf() -> None:
     if not SAMPLE_PDF.is_file():
         pytest.skip(f"测试文件不存在: {SAMPLE_PDF}")
 
-    md = to_markdown(SAMPLE_PDF, ocr_backend="monkey", timeout=300)
+    md = to_markdown(SAMPLE_PDF, ocr_backend="monkey", ocr_base_url=_MONKEY_OCR_URL, timeout=300)
     assert isinstance(md, str)
     assert len(md) > 100
 

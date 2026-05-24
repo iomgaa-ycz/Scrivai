@@ -31,16 +31,8 @@ from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 logger = logging.getLogger(__name__)
 
-# --- MonkeyOCR defaults ---
-_DEFAULT_OCR_URL = os.environ.get("SCRIVAI_OCR_BASE_URL", "http://100.81.95.44:7861")
-_DEFAULT_UPLOAD_RATE = int(os.environ.get("SCRIVAI_OCR_UPLOAD_RATE", 500 * 1024))
-
-# --- GLM-OCR defaults ---
+# --- GLM-OCR fixed endpoint ---
 _GLM_OCR_URL = "https://open.bigmodel.cn/api/paas/v4/layout_parsing"
-_DEFAULT_GLM_API_KEY = os.environ.get("SCRIVAI_GLM_API_KEY", "")
-
-# --- Backend registry ---
-_DEFAULT_BACKEND = os.environ.get("SCRIVAI_OCR_BACKEND", "glm")
 
 _SUPPORTED_SUFFIXES = {".pdf", ".doc", ".docx"}
 
@@ -175,28 +167,32 @@ def _pandoc_to_markdown(docx_path: Path) -> str:
     return proc.stdout
 
 
-def _glm_ocr(
-    pdf_path: Path,
+_GLM_MAX_PAGES = 100
+_GLM_MAX_FILE_BYTES = 50 * 1024 * 1024
+
+
+def _glm_ocr_single(
+    pdf_bytes: bytes,
     *,
     api_key: str,
-    timeout: int = 300,
+    timeout: int,
     start_page: int | None = None,
     end_page: int | None = None,
 ) -> str:
-    """Send a PDF to ZhipuAI GLM-OCR cloud API and return Markdown.
+    """Call GLM-OCR API once for a single PDF payload.
 
     Args:
-        pdf_path: Path to the PDF file.
+        pdf_bytes: Raw PDF bytes (must be ≤ 100 pages and ≤ 50 MB).
         api_key: ZhipuAI API key.
         timeout: HTTP timeout in seconds.
-        start_page: PDF start page (1-based, optional).
-        end_page: PDF end page (1-based, optional).
+        start_page: API start_page_id (1-based, optional).
+        end_page: API end_page_id (1-based, optional).
     Returns:
         Markdown text.
     Raises:
         IOError: API error or unexpected response.
     """
-    b64_data = base64.b64encode(pdf_path.read_bytes()).decode()
+    b64_data = base64.b64encode(pdf_bytes).decode()
 
     body: dict[str, Any] = {
         "model": "glm-ocr",
@@ -227,6 +223,95 @@ def _glm_ocr(
     if md_results is None:
         raise IOError(f"GLM-OCR response missing md_results: {list(data.keys())}")
     return md_results
+
+
+def _glm_ocr(
+    pdf_path: Path,
+    *,
+    api_key: str,
+    timeout: int = 300,
+    start_page: int | None = None,
+    end_page: int | None = None,
+) -> str:
+    """Send a PDF to ZhipuAI GLM-OCR cloud API and return Markdown.
+
+    Automatically splits PDFs that exceed GLM-OCR limits (100 pages / 50 MB)
+    into chunks, processes each chunk, and concatenates the results.
+
+    Args:
+        pdf_path: Path to the PDF file.
+        api_key: ZhipuAI API key.
+        timeout: HTTP timeout in seconds.
+        start_page: PDF start page (1-based, optional).
+        end_page: PDF end page (1-based, optional).
+    Returns:
+        Markdown text.
+    Raises:
+        IOError: API error or unexpected response.
+    """
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(pdf_path)
+    total_pages = len(reader.pages)
+
+    # Phase 1: resolve user-specified page range (1-based → 0-based index)
+    first_idx = (start_page - 1) if start_page is not None else 0
+    last_idx = (end_page - 1) if end_page is not None else total_pages - 1
+    first_idx = max(0, first_idx)
+    last_idx = min(total_pages - 1, last_idx)
+    selected_count = last_idx - first_idx + 1
+
+    if selected_count <= 0:
+        return ""
+
+    # Phase 2: check if direct call is possible
+    file_size = pdf_path.stat().st_size
+    if selected_count <= _GLM_MAX_PAGES and file_size <= _GLM_MAX_FILE_BYTES:
+        return _glm_ocr_single(
+            pdf_path.read_bytes(),
+            api_key=api_key,
+            timeout=timeout,
+            start_page=start_page,
+            end_page=end_page,
+        )
+
+    # Phase 3: split into chunks and process each
+    logger.info(
+        "PDF 超出 GLM-OCR 限制 (%d 页 / %.1f MB)，自动分块处理",
+        selected_count,
+        file_size / 1024 / 1024,
+    )
+
+    chunks_md: list[str] = []
+    chunk_start = first_idx
+    while chunk_start <= last_idx:
+        chunk_end = min(chunk_start + _GLM_MAX_PAGES - 1, last_idx)
+
+        writer = PdfWriter()
+        for page_idx in range(chunk_start, chunk_end + 1):
+            writer.add_page(reader.pages[page_idx])
+
+        buf = io.BytesIO()
+        writer.write(buf)
+        chunk_bytes = buf.getvalue()
+
+        chunk_num = len(chunks_md) + 1
+        chunk_pages = chunk_end - chunk_start + 1
+        logger.info(
+            "处理分块 %d: 页 %d-%d (%d 页, %.1f KB)",
+            chunk_num,
+            chunk_start + 1,
+            chunk_end + 1,
+            chunk_pages,
+            len(chunk_bytes) / 1024,
+        )
+
+        md = _glm_ocr_single(chunk_bytes, api_key=api_key, timeout=timeout)
+        chunks_md.append(md)
+
+        chunk_start = chunk_end + 1
+
+    return "\n\n".join(chunks_md)
 
 
 _BACKENDS: dict[str, Callable[..., str]] = {"monkey": _monkey_ocr, "glm": _glm_ocr}
@@ -265,14 +350,15 @@ def to_markdown(
         glm_api_key: GLM-OCR API key override (default from SCRIVAI_GLM_API_KEY env).
         start_page: PDF start page (GLM-OCR only, 1-based).
         end_page: PDF end page (GLM-OCR only, 1-based).
-        ocr_base_url: MonkeyOCR service URL override.
+        ocr_base_url: MonkeyOCR service URL (default from SCRIVAI_OCR_BASE_URL env;
+            no built-in default — must be configured when using monkey backend).
         upload_rate: MonkeyOCR max upload speed in bytes/second (0 = unlimited).
         timeout: Per-request HTTP timeout in seconds.
         fallback: Enable pandoc fallback when OCR is unreachable.
     Returns:
         Markdown text.
     Raises:
-        ValueError: Unknown backend name or missing GLM API key.
+        ValueError: Unknown backend, missing GLM API key, or missing MonkeyOCR URL.
         IOError: Unsupported format / conversion failure / service unreachable.
     """
     src = Path(path)
@@ -285,21 +371,28 @@ def to_markdown(
             f"Unsupported format: {suffix} (supported: {', '.join(sorted(_SUPPORTED_SUFFIXES))})"
         )
 
-    backend = ocr_backend or _DEFAULT_BACKEND
+    backend = ocr_backend or os.environ.get("SCRIVAI_OCR_BACKEND", "glm")
     if backend not in _BACKENDS:
         raise ValueError(
             f"Unknown OCR backend: {backend!r} (available: {', '.join(sorted(_BACKENDS))})"
         )
 
-    # Phase 1: build backend-specific kwargs
+    # Phase 1: build backend-specific kwargs (env read deferred to call time)
     backend_kwargs: dict[str, Any] = {}
     if backend == "monkey":
-        backend_kwargs["base_url"] = ocr_base_url or _DEFAULT_OCR_URL
+        base_url = ocr_base_url or os.environ.get("SCRIVAI_OCR_BASE_URL", "")
+        if not base_url:
+            raise ValueError(
+                "MonkeyOCR URL 未配置: 设置 SCRIVAI_OCR_BASE_URL env 或传入 ocr_base_url 参数"
+            )
+        backend_kwargs["base_url"] = base_url
         backend_kwargs["upload_rate"] = (
-            upload_rate if upload_rate is not None else _DEFAULT_UPLOAD_RATE
+            upload_rate
+            if upload_rate is not None
+            else int(os.environ.get("SCRIVAI_OCR_UPLOAD_RATE", 500 * 1024))
         )
     elif backend == "glm":
-        key = _DEFAULT_GLM_API_KEY if glm_api_key is None else glm_api_key
+        key = glm_api_key if glm_api_key is not None else os.environ.get("SCRIVAI_GLM_API_KEY", "")
         if not key:
             raise ValueError(
                 "GLM API key 未配置: 设置 SCRIVAI_GLM_API_KEY env 或传入 glm_api_key 参数"
