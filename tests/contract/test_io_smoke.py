@@ -136,6 +136,15 @@ def test_to_markdown_file_not_found(tmp_path: Path) -> None:
         to_markdown(tmp_path / "no-such-file.pdf")
 
 
+def test_to_markdown_invalid_backend(tmp_path: Path) -> None:
+    from scrivai.io import to_markdown
+
+    fake = tmp_path / "data.pdf"
+    fake.write_bytes(b"%PDF-1.4 fake")
+    with pytest.raises(ValueError, match="Unknown OCR backend"):
+        to_markdown(fake, ocr_backend="nonexistent")
+
+
 # ─── DocxRenderer ─────────────────────────────────────────────
 
 

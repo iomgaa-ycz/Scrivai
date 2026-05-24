@@ -1,16 +1,21 @@
-"""Unified document → Markdown conversion via MonkeyOCR.
+"""Pluggable document → Markdown conversion with multiple OCR backends.
+
+Supported backends:
+- monkey: Self-hosted MonkeyOCR Docker service
+- glm: ZhipuAI GLM-OCR cloud API
 
 External dependencies:
 - libreoffice/soffice binary (doc/docx → PDF)
 - pandoc binary (fallback: docx → markdown)
-- MonkeyOCR HTTP service Docker container
 
 All failures raise IOError with an explicit message.
 """
 
 from __future__ import annotations
 
+import base64  # noqa: F401 - reserved for the GLM backend added in Task 2.
 import io
+import json  # noqa: F401 - reserved for the GLM backend added in Task 2.
 import logging
 import os
 import shutil
@@ -19,14 +24,23 @@ import tempfile
 import time
 import zipfile
 from pathlib import Path
+from typing import Any, Callable
 
 import requests
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 logger = logging.getLogger(__name__)
 
+# --- MonkeyOCR defaults ---
 _DEFAULT_OCR_URL = os.environ.get("SCRIVAI_OCR_BASE_URL", "http://100.81.95.44:7861")
 _DEFAULT_UPLOAD_RATE = int(os.environ.get("SCRIVAI_OCR_UPLOAD_RATE", 500 * 1024))
+
+# --- GLM-OCR defaults ---
+_GLM_OCR_URL = "https://open.bigmodel.cn/api/paas/v4/layout_parsing"
+_DEFAULT_GLM_API_KEY = os.environ.get("SCRIVAI_GLM_API_KEY", "")
+
+# --- Backend registry ---
+_DEFAULT_BACKEND = os.environ.get("SCRIVAI_OCR_BACKEND", "glm")
 
 _SUPPORTED_SUFFIXES = {".pdf", ".doc", ".docx"}
 
@@ -69,8 +83,8 @@ def _to_pdf(path: Path, *, target_dir: Path) -> Path:
     return converted
 
 
-def _ocr_to_markdown(pdf_path: Path, *, base_url: str, timeout: int, upload_rate: int) -> str:
-    """Send a PDF to MonkeyOCR HTTP service and return Markdown.
+def _monkey_ocr(pdf_path: Path, *, base_url: str, timeout: int, upload_rate: int) -> str:
+    """Send a PDF to self-hosted MonkeyOCR HTTP service and return Markdown.
 
     Args:
         pdf_path: Path to the PDF file.
@@ -161,39 +175,51 @@ def _pandoc_to_markdown(docx_path: Path) -> str:
     return proc.stdout
 
 
+_BACKENDS: dict[str, Callable[..., str]] = {"monkey": _monkey_ocr}
+
+
 def to_markdown(
     path: str | Path,
     *,
+    ocr_backend: str | None = None,
+    # --- GLM-OCR ---
+    glm_api_key: str | None = None,
+    start_page: int | None = None,
+    end_page: int | None = None,
+    # --- MonkeyOCR ---
     ocr_base_url: str | None = None,
+    upload_rate: int | None = None,
+    # --- common ---
     timeout: int = 300,
     fallback: bool = True,
-    upload_rate: int | None = None,
 ) -> str:
-    """Convert a document to Markdown.
+    """Convert a document to Markdown via pluggable OCR backend.
 
     Routing:
-      .pdf         → MonkeyOCR
-      .doc / .docx → LibreOffice headless → PDF → MonkeyOCR
+      .pdf         → OCR backend directly
+      .doc / .docx → LibreOffice headless → PDF → OCR backend
 
-    When fallback=True and MonkeyOCR is unreachable:
+    When fallback=True and OCR backend is unreachable:
       .docx → pandoc direct conversion
       .doc  → LibreOffice → docx → pandoc
       .pdf  → no fallback (raises)
 
-    Config priority (both ocr_base_url and upload_rate):
-      function param > environment variable > hardcoded default.
-
     Args:
-        path: Path to the source document (.pdf / .doc / .docx).
+        path: Source document (.pdf / .doc / .docx).
+        ocr_backend: Backend name ("monkey" or "glm"). Default from
+            SCRIVAI_OCR_BACKEND env or "glm".
+        glm_api_key: GLM-OCR API key override (default from SCRIVAI_GLM_API_KEY env).
+        start_page: PDF start page (GLM-OCR only, 1-based).
+        end_page: PDF end page (GLM-OCR only, 1-based).
         ocr_base_url: MonkeyOCR service URL override.
+        upload_rate: MonkeyOCR max upload speed in bytes/second (0 = unlimited).
         timeout: Per-request HTTP timeout in seconds.
-        fallback: Enable pandoc fallback for .doc/.docx when OCR is unreachable.
-        upload_rate: Max upload speed in bytes/second (0 = unlimited).
-            Default from SCRIVAI_OCR_UPLOAD_RATE env or 500 KB/s.
+        fallback: Enable pandoc fallback when OCR is unreachable.
     Returns:
         Markdown text.
     Raises:
-        IOError: Unsupported format / conversion failure / service unreachable without fallback.
+        ValueError: Unknown backend name or missing GLM API key.
+        IOError: Unsupported format / conversion failure / service unreachable.
     """
     src = Path(path)
     if not src.is_file():
@@ -205,20 +231,47 @@ def to_markdown(
             f"Unsupported format: {suffix} (supported: {', '.join(sorted(_SUPPORTED_SUFFIXES))})"
         )
 
-    base_url = ocr_base_url or _DEFAULT_OCR_URL
-    rate = upload_rate if upload_rate is not None else _DEFAULT_UPLOAD_RATE
+    backend = ocr_backend or _DEFAULT_BACKEND
+    if backend not in _BACKENDS:
+        raise ValueError(
+            f"Unknown OCR backend: {backend!r} (available: {', '.join(sorted(_BACKENDS))})"
+        )
 
-    # --- PDF: direct OCR ---
+    # Phase 1: build backend-specific kwargs
+    backend_kwargs: dict[str, Any] = {}
+    if backend == "monkey":
+        backend_kwargs["base_url"] = ocr_base_url or _DEFAULT_OCR_URL
+        backend_kwargs["upload_rate"] = (
+            upload_rate if upload_rate is not None else _DEFAULT_UPLOAD_RATE
+        )
+    elif backend == "glm":
+        key = glm_api_key or _DEFAULT_GLM_API_KEY
+        if not key:
+            raise ValueError(
+                "GLM API key 未配置: 设置 SCRIVAI_GLM_API_KEY env 或传入 glm_api_key 参数"
+            )
+        backend_kwargs["api_key"] = key
+        if start_page is not None:
+            backend_kwargs["start_page"] = start_page
+        if end_page is not None:
+            backend_kwargs["end_page"] = end_page
+
+    ocr_fn = _BACKENDS[backend]
+
+    # Phase 2: route by suffix
+    def _call_ocr(pdf: Path) -> str:
+        return ocr_fn(pdf, timeout=timeout, **backend_kwargs)
+
     if suffix == ".pdf":
-        return _ocr_to_markdown(src, base_url=base_url, timeout=timeout, upload_rate=rate)
+        return _call_ocr(src)
 
-    # --- DOC / DOCX: LibreOffice → PDF → OCR (with optional fallback) ---
+    # Phase 3: DOC / DOCX → PDF → OCR (with optional fallback)
     with tempfile.TemporaryDirectory() as td:
         tmp_dir = Path(td)
         pdf_path = _to_pdf(src, target_dir=tmp_dir)
 
         try:
-            return _ocr_to_markdown(pdf_path, base_url=base_url, timeout=timeout, upload_rate=rate)
+            return _call_ocr(pdf_path)
         except (requests.exceptions.RequestException, IOError) as ocr_err:
             is_network_error = isinstance(ocr_err, requests.exceptions.RequestException) or (
                 isinstance(ocr_err, IOError)
@@ -231,7 +284,7 @@ def to_markdown(
             if not (fallback and is_network_error):
                 raise
 
-            logger.warning("MonkeyOCR 不可达，降级到 pandoc 路径: %s", ocr_err)
+            logger.warning("OCR 后端 %s 不可达，降级到 pandoc 路径: %s", backend, ocr_err)
 
             if suffix == ".docx":
                 return _pandoc_to_markdown(src)
