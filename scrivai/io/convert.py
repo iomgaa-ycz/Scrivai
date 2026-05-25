@@ -250,6 +250,10 @@ def _merge_two(prev_md: str, next_md: str, overlap_pages: int, chunk_pages: int)
                     best_dist = dist
 
         next_trim = int(len(next_md) * overlap_ratio)
+        # Snap to next newline to avoid cutting mid-word
+        nl_pos = next_md.find("\n", next_trim)
+        if nl_pos != -1:
+            next_trim = nl_pos + 1
         return prev_md[:best_pos].rstrip() + "\n\n" + next_md[next_trim:]
 
     # Tier 3: direct concatenation
@@ -363,6 +367,9 @@ def _glm_ocr_chunked(
     Raises:
         IOError: Any chunk fails after retries.
     """
+    if overlap_pages >= chunk_pages:
+        raise ValueError(f"overlap_pages ({overlap_pages}) must be < chunk_pages ({chunk_pages})")
+
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     from pypdf import PdfReader, PdfWriter
@@ -400,16 +407,18 @@ def _glm_ocr_chunked(
         max_workers,
     )
 
-    def _make_chunk_bytes(start: int, end: int) -> bytes:
+    # Pre-build chunk bytes on main thread (pypdf PdfReader is not thread-safe)
+    chunk_bytes_list: list[bytes] = []
+    for start, end in ranges:
         writer = PdfWriter()
         for page_idx in range(start, end + 1):
             writer.add_page(reader.pages[page_idx])
         buf = io.BytesIO()
         writer.write(buf)
-        return buf.getvalue()
+        chunk_bytes_list.append(buf.getvalue())
 
     def _process_chunk(idx: int, start: int, end: int) -> tuple[int, str]:
-        chunk_bytes = _make_chunk_bytes(start, end)
+        chunk_bytes = chunk_bytes_list[idx]
         pages_in_chunk = end - start + 1
         logger.info(
             "Chunk %d/%d (页 %d-%d, %d 页, %.1f KB) 开始处理",
