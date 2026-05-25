@@ -331,6 +331,148 @@ def _glm_ocr_single(
     return md_results
 
 
+_CHUNK_RETRIES = 2
+
+
+def _glm_ocr_chunked(
+    pdf_path: Path,
+    *,
+    api_key: str,
+    timeout: int = 300,
+    start_page: int | None = None,
+    end_page: int | None = None,
+    chunk_pages: int = 30,
+    overlap_pages: int = 2,
+    max_workers: int = 12,
+) -> str:
+    """Split a PDF into overlapping chunks, OCR them in parallel, and merge.
+
+    Small PDFs (≤ chunk_pages) degrade to a single chunk with no overhead.
+
+    Args:
+        pdf_path: Path to the PDF file.
+        api_key: ZhipuAI API key.
+        timeout: HTTP timeout in seconds per chunk.
+        start_page: User-facing start page (1-based, optional).
+        end_page: User-facing end page (1-based, optional).
+        chunk_pages: Pages per chunk.
+        overlap_pages: Overlapping pages between adjacent chunks.
+        max_workers: Max parallel threads.
+    Returns:
+        Merged Markdown text.
+    Raises:
+        IOError: Any chunk fails after retries.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(pdf_path)
+    total_pages = len(reader.pages)
+
+    first_idx = (start_page - 1) if start_page is not None else 0
+    last_idx = (end_page - 1) if end_page is not None else total_pages - 1
+    first_idx = max(0, first_idx)
+    last_idx = min(total_pages - 1, last_idx)
+    selected_count = last_idx - first_idx + 1
+
+    if selected_count <= 0:
+        return ""
+
+    # Phase 1: build chunk ranges with overlap
+    stride = chunk_pages - overlap_pages
+    ranges: list[tuple[int, int]] = []
+    chunk_start = first_idx
+    while chunk_start <= last_idx:
+        chunk_end = min(chunk_start + chunk_pages - 1, last_idx)
+        ranges.append((chunk_start, chunk_end))
+        chunk_start += stride
+        if chunk_start <= last_idx and (last_idx - chunk_start + 1) <= overlap_pages:
+            ranges[-1] = (ranges[-1][0], last_idx)
+            break
+
+    logger.info(
+        "PDF 分块: %d 页 → %d chunks (chunk_pages=%d, overlap=%d, workers=%d)",
+        selected_count,
+        len(ranges),
+        chunk_pages,
+        overlap_pages,
+        max_workers,
+    )
+
+    def _make_chunk_bytes(start: int, end: int) -> bytes:
+        writer = PdfWriter()
+        for page_idx in range(start, end + 1):
+            writer.add_page(reader.pages[page_idx])
+        buf = io.BytesIO()
+        writer.write(buf)
+        return buf.getvalue()
+
+    def _process_chunk(idx: int, start: int, end: int) -> tuple[int, str]:
+        chunk_bytes = _make_chunk_bytes(start, end)
+        pages_in_chunk = end - start + 1
+        logger.info(
+            "Chunk %d/%d (页 %d-%d, %d 页, %.1f KB) 开始处理",
+            idx + 1,
+            len(ranges),
+            start + 1,
+            end + 1,
+            pages_in_chunk,
+            len(chunk_bytes) / 1024,
+        )
+
+        last_err: Exception | None = None
+        for attempt in range(1 + _CHUNK_RETRIES):
+            try:
+                t0 = time.time()
+                md = _glm_ocr_single(chunk_bytes, api_key=api_key, timeout=timeout)
+                logger.info("Chunk %d/%d 完成 (%.1fs)", idx + 1, len(ranges), time.time() - t0)
+                return (idx, md)
+            except (IOError, requests.exceptions.RequestException) as e:
+                last_err = e
+                if attempt < _CHUNK_RETRIES:
+                    wait = 2**attempt
+                    logger.warning(
+                        "Chunk %d/%d 失败, 重试 %d/%d: %s",
+                        idx + 1,
+                        len(ranges),
+                        attempt + 1,
+                        _CHUNK_RETRIES,
+                        e,
+                    )
+                    time.sleep(wait)
+
+        raise IOError(
+            f"Chunk {idx + 1} (页 {start + 1}-{end + 1}) 重试 {_CHUNK_RETRIES} 次后仍失败"
+        ) from last_err
+
+    # Phase 2: parallel execution
+    results: dict[int, str] = {}
+    with ThreadPoolExecutor(max_workers=min(max_workers, len(ranges))) as executor:
+        futures = {executor.submit(_process_chunk, i, s, e): i for i, (s, e) in enumerate(ranges)}
+        try:
+            for future in as_completed(futures):
+                idx, md = future.result()
+                results[idx] = md
+        except Exception:
+            for f in futures:
+                f.cancel()
+            raise
+
+    # Phase 3: merge in order
+    chunks_md = [results[i] for i in range(len(ranges))]
+
+    logger.info("全部 %d chunks 完成, 开始合并", len(ranges))
+
+    if len(chunks_md) == 1:
+        merged = chunks_md[0]
+    else:
+        merged = _merge_chunks(chunks_md, overlap_pages, chunk_pages)
+
+    logger.info("合并完成, 输出 Markdown 共 %d 字符", len(merged))
+    return merged
+
+
 def _glm_ocr(
     pdf_path: Path,
     *,
