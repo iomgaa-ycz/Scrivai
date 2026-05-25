@@ -489,11 +489,15 @@ def _glm_ocr(
     timeout: int = 300,
     start_page: int | None = None,
     end_page: int | None = None,
+    chunk_pages: int = 30,
+    overlap_pages: int = 2,
+    max_workers: int = 12,
 ) -> str:
     """Send a PDF to ZhipuAI GLM-OCR cloud API and return Markdown.
 
-    Automatically splits PDFs that exceed GLM-OCR limits (100 pages / 50 MB)
-    into chunks, processes each chunk, and concatenates the results.
+    Splits the PDF into overlapping chunks, processes them in parallel
+    via ThreadPoolExecutor, and merges with three-tier dedup. Small PDFs
+    (≤ chunk_pages) degrade to a single chunk with no overhead.
 
     Args:
         pdf_path: Path to the PDF file.
@@ -501,74 +505,24 @@ def _glm_ocr(
         timeout: HTTP timeout in seconds.
         start_page: PDF start page (1-based, optional).
         end_page: PDF end page (1-based, optional).
+        chunk_pages: Pages per chunk (default 30).
+        overlap_pages: Overlapping pages between adjacent chunks (default 2).
+        max_workers: Max parallel threads (default 12).
     Returns:
         Markdown text.
     Raises:
-        IOError: API error or unexpected response.
+        IOError: API error or chunk failure after retries.
     """
-    from pypdf import PdfReader, PdfWriter
-
-    reader = PdfReader(pdf_path)
-    total_pages = len(reader.pages)
-
-    # Phase 1: resolve user-specified page range (1-based → 0-based index)
-    first_idx = (start_page - 1) if start_page is not None else 0
-    last_idx = (end_page - 1) if end_page is not None else total_pages - 1
-    first_idx = max(0, first_idx)
-    last_idx = min(total_pages - 1, last_idx)
-    selected_count = last_idx - first_idx + 1
-
-    if selected_count <= 0:
-        return ""
-
-    # Phase 2: check if direct call is possible
-    file_size = pdf_path.stat().st_size
-    if selected_count <= _GLM_MAX_PAGES and file_size <= _GLM_MAX_FILE_BYTES:
-        return _glm_ocr_single(
-            pdf_path.read_bytes(),
-            api_key=api_key,
-            timeout=timeout,
-            start_page=start_page,
-            end_page=end_page,
-        )
-
-    # Phase 3: split into chunks and process each
-    logger.info(
-        "PDF 超出 GLM-OCR 限制 (%d 页 / %.1f MB)，自动分块处理",
-        selected_count,
-        file_size / 1024 / 1024,
+    return _glm_ocr_chunked(
+        pdf_path,
+        api_key=api_key,
+        timeout=timeout,
+        start_page=start_page,
+        end_page=end_page,
+        chunk_pages=chunk_pages,
+        overlap_pages=overlap_pages,
+        max_workers=max_workers,
     )
-
-    chunks_md: list[str] = []
-    chunk_start = first_idx
-    while chunk_start <= last_idx:
-        chunk_end = min(chunk_start + _GLM_MAX_PAGES - 1, last_idx)
-
-        writer = PdfWriter()
-        for page_idx in range(chunk_start, chunk_end + 1):
-            writer.add_page(reader.pages[page_idx])
-
-        buf = io.BytesIO()
-        writer.write(buf)
-        chunk_bytes = buf.getvalue()
-
-        chunk_num = len(chunks_md) + 1
-        chunk_pages = chunk_end - chunk_start + 1
-        logger.info(
-            "处理分块 %d: 页 %d-%d (%d 页, %.1f KB)",
-            chunk_num,
-            chunk_start + 1,
-            chunk_end + 1,
-            chunk_pages,
-            len(chunk_bytes) / 1024,
-        )
-
-        md = _glm_ocr_single(chunk_bytes, api_key=api_key, timeout=timeout)
-        chunks_md.append(md)
-
-        chunk_start = chunk_end + 1
-
-    return "\n\n".join(chunks_md)
 
 
 _BACKENDS: dict[str, Callable[..., str]] = {"monkey": _monkey_ocr, "glm": _glm_ocr}
@@ -588,6 +542,10 @@ def to_markdown(
     # --- common ---
     timeout: int = 300,
     fallback: bool = True,
+    # --- chunking (GLM only) ---
+    chunk_pages: int = 30,
+    overlap_pages: int = 2,
+    max_workers: int = 12,
 ) -> str:
     """Convert a document to Markdown via pluggable OCR backend.
 
@@ -612,6 +570,9 @@ def to_markdown(
         upload_rate: MonkeyOCR max upload speed in bytes/second (0 = unlimited).
         timeout: Per-request HTTP timeout in seconds.
         fallback: Enable pandoc fallback when OCR is unreachable.
+        chunk_pages: Pages per chunk for GLM-OCR parallel processing (default 30).
+        overlap_pages: Overlapping pages between chunks (default 2).
+        max_workers: Max parallel threads for GLM-OCR (default 12).
     Returns:
         Markdown text.
     Raises:
@@ -659,6 +620,9 @@ def to_markdown(
             backend_kwargs["start_page"] = start_page
         if end_page is not None:
             backend_kwargs["end_page"] = end_page
+        backend_kwargs["chunk_pages"] = chunk_pages
+        backend_kwargs["overlap_pages"] = overlap_pages
+        backend_kwargs["max_workers"] = max_workers
 
     ocr_fn = _BACKENDS[backend]
 
