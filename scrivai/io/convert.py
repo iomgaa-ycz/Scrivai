@@ -240,16 +240,17 @@ def _merge_two(prev_md: str, next_md: str, overlap_pages: int, chunk_pages: int)
         search_start = max(0, est_cut - 500)
         search_end = min(len(prev_md), est_cut + 500)
         best_pos = est_cut
-        best_dist = abs(0)
+        best_dist = float("inf")
 
         for i in range(search_start, search_end - 1):
             if prev_md[i] == "\n" and prev_md[i + 1] == "\n":
                 dist = abs(i - est_cut)
-                if best_dist == 0 or dist < best_dist:
+                if dist < best_dist:
                     best_pos = i
                     best_dist = dist
 
-        return prev_md[:best_pos].rstrip() + "\n\n" + next_md
+        next_trim = int(len(next_md) * overlap_ratio)
+        return prev_md[:best_pos].rstrip() + "\n\n" + next_md[next_trim:]
 
     # Tier 3: direct concatenation
     return prev_md + "\n\n" + next_md
