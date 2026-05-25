@@ -3,6 +3,21 @@
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 
+## [0.2.0] — 2026-05-25
+
+### Added — Parallel Chunked OCR
+
+- **Parallel chunk processing**: Large PDFs are now split into overlapping chunks and processed in parallel via `ThreadPoolExecutor`, reducing OCR time by 3-7x for 100-300+ page documents
+- **Page overlap dedup**: Adjacent chunks overlap by 2 pages (configurable) to preserve cross-page tables and figures; three-tier merge strategy (difflib matching → ratio estimation → direct concat) deduplicates the overlap region
+- **Configurable chunking parameters**: `chunk_pages` (default 30), `overlap_pages` (default 2), `max_workers` (default 12) — available as both function parameters and CLI flags
+- **Per-chunk retry**: Each chunk retries up to 2 times with exponential backoff on transient failures; all-retries-exhausted aborts the entire conversion
+- CLI: `scrivai-cli io convert` gains `--chunk-pages`, `--overlap-pages`, `--max-workers`
+
+### Changed
+
+- **Breaking:** The old serial chunking path (100-page / 50 MB threshold) is replaced by the unified parallel chunking path — all PDFs now go through `_glm_ocr_chunked()`, with small files (≤ 30 pages) degrading to a single chunk with zero overhead
+- Internal: `_glm_ocr()` now delegates entirely to `_glm_ocr_chunked()`; old `PdfReader`/`PdfWriter` serial loop removed
+
 ## [0.1.9] — 2026-05-24
 
 ### Added — Pluggable OCR Backend & GLM-OCR Integration

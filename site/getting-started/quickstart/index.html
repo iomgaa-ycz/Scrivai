@@ -1411,7 +1411,15 @@ print(md)
 # With page range (GLM-OCR only)
 md = to_markdown(&quot;long_report.pdf&quot;, start_page=10, end_page=20)
 </code></pre>
-<p>PDFs exceeding 100 pages are automatically split into chunks and processed sequentially — no manual handling needed.</p>
+<p>Large PDFs are automatically split into overlapping chunks and processed <strong>in parallel</strong> — a 300-page document that previously took 30+ minutes now completes in ~5 minutes.</p>
+<pre><code class="language-python"># Customize chunking (defaults shown)
+md = to_markdown(
+    &quot;large_report.pdf&quot;,
+    chunk_pages=30,       # pages per chunk
+    overlap_pages=2,      # overlap to preserve cross-page tables
+    max_workers=12,       # parallel threads
+)
+</code></pre>
 <h3 id="monkeyocr-self-hosted">MonkeyOCR (Self-Hosted)</h3>
 <pre><code class="language-python">md = to_markdown(
     &quot;report.pdf&quot;,
@@ -1446,6 +1454,9 @@ md = to_markdown(&quot;long_report.pdf&quot;, start_page=10, end_page=20)
 <h3 id="cli">CLI</h3>
 <pre><code class="language-bash">scrivai-cli io convert --input report.pdf --output report.md
 scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
+
+# Parallel chunking options
+scrivai-cli io convert --input large.pdf --chunk-pages 30 --overlap-pages 2 --max-workers 12
 </code></pre>
 <h2 id="next-steps">Next Steps</h2>
 <ul>

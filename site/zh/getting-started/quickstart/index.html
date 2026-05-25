@@ -1251,7 +1251,15 @@ print(md)
 # 指定页范围（仅 GLM-OCR）
 md = to_markdown(&quot;long_report.pdf&quot;, start_page=10, end_page=20)
 </code></pre>
-<p>超过 100 页的 PDF 会自动分块处理，无需手动干预。</p>
+<p>大型 PDF 会自动拆分为重叠分块并<strong>并行处理</strong> — 300 页文档从 30+ 分钟缩短至约 5 分钟。</p>
+<pre><code class="language-python"># 自定义分块参数（括号内为默认值）
+md = to_markdown(
+    &quot;large_report.pdf&quot;,
+    chunk_pages=30,       # 每块页数
+    overlap_pages=2,      # 重叠页数，保留跨页表格
+    max_workers=12,       # 并行线程数
+)
+</code></pre>
 <h3 id="monkeyocr">MonkeyOCR（自建）</h3>
 <pre><code class="language-python">md = to_markdown(
     &quot;report.pdf&quot;,
@@ -1286,6 +1294,9 @@ md = to_markdown(&quot;long_report.pdf&quot;, start_page=10, end_page=20)
 <h3 id="_5">命令行</h3>
 <pre><code class="language-bash">scrivai-cli io convert --input report.pdf --output report.md
 scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
+
+# 并行分块选项
+scrivai-cli io convert --input large.pdf --chunk-pages 30 --overlap-pages 2 --max-workers 12
 </code></pre>
 <h2 id="_6">下一步</h2>
 <ul>
