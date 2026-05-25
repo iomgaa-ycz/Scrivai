@@ -28,6 +28,9 @@ def cmd_convert(args: argparse.Namespace) -> dict[str, Any]:
         timeout=args.timeout,
         fallback=not args.no_fallback,
         upload_rate=args.upload_rate,
+        chunk_pages=args.chunk_pages,
+        overlap_pages=args.overlap_pages,
+        max_workers=args.max_workers,
     )
     return _write_or_echo(md, args.output)
 
@@ -72,6 +75,24 @@ def register(parser: argparse.ArgumentParser) -> None:
         type=int,
         default=None,
         help="MonkeyOCR max upload speed in bytes/s (0=unlimited, default 500KB/s from env)",
+    )
+    c.add_argument(
+        "--chunk-pages",
+        type=int,
+        default=30,
+        help="pages per chunk for GLM-OCR parallel processing (default 30)",
+    )
+    c.add_argument(
+        "--overlap-pages",
+        type=int,
+        default=2,
+        help="overlapping pages between chunks (default 2)",
+    )
+    c.add_argument(
+        "--max-workers",
+        type=int,
+        default=12,
+        help="max parallel threads for GLM-OCR (default 12)",
     )
     c.set_defaults(func=cmd_convert)
 
