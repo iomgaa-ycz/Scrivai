@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scrivai"
-version = "0.2.1"
+version = "0.2.2"
 description = "Configurable document generation & audit framework built on Claude Agent SDK"
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -31,6 +31,7 @@ dependencies = [
     "claude-agent-sdk>=0.1.61",
     "jinja2>=3.1",
     "pypdf>=4.0",
+    "markitdown[docx]>=0.1.5",
 ]
 
 [project.optional-dependencies]

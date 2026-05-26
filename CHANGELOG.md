@@ -3,6 +3,28 @@
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 
+## [0.2.2] — 2026-05-26
+
+### Changed
+
+- **Breaking:** Word files (.docx/.doc) now use markitdown for local conversion instead of routing through OCR pipeline — `.docx` → markitdown (local), `.doc` → LibreOffice → .docx → markitdown
+- **Breaking:** MinerU backend switched from in-process to HTTP via mineru-router
+- `fallback` parameter of `to_markdown()` is now unused (pandoc fallback removed)
+- Type annotations modernized across codebase: `Optional[X]` → `X | None`, `typing.Callable` → `collections.abc.Callable`
+
+### Fixed
+
+- MinerU HTTP backend: `lang_list` format correction, 409 status handling, timeout configuration
+
+### Added
+
+- `markitdown[docx]>=0.1.5` dependency for local Word→Markdown conversion
+- `SCRIVAI_MINERU_URL` environment variable for external MinerU router
+
+### Removed
+
+- Pandoc fallback path for `.doc`/`.docx` files
+
 ## [0.2.1] — 2026-05-25
 
 ### Added — MinerU Local OCR Backend

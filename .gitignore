@@ -26,3 +26,5 @@ tests/outputs/
 dist/
 build/
 *.egg-info/
+.claude/
+real_data/
