@@ -1,13 +1,14 @@
-"""Pluggable document → Markdown conversion with multiple OCR backends.
+"""Document → Markdown conversion.
 
-Supported backends:
+Word files (.doc/.docx) use markitdown (mammoth) for direct local conversion.
+PDF files use pluggable OCR backends:
 - mineru: MinerU local pipeline (default)
 - monkey: Self-hosted MonkeyOCR Docker service
 - glm: ZhipuAI GLM-OCR cloud API
 
 External dependencies:
-- libreoffice/soffice binary (doc/docx → PDF)
-- pandoc binary (fallback: docx → markdown)
+- libreoffice/soffice binary (.doc → .docx conversion)
+- markitdown[docx] (Word → Markdown)
 
 All failures raise IOError with an explicit message.
 """
@@ -43,14 +44,14 @@ _GLM_OCR_URL = "https://open.bigmodel.cn/api/paas/v4/layout_parsing"
 _SUPPORTED_SUFFIXES = {".pdf", ".doc", ".docx"}
 
 
-def _to_pdf(path: Path, *, target_dir: Path) -> Path:
-    """Convert a .doc/.docx file to PDF via LibreOffice headless.
+def _to_docx(path: Path, *, target_dir: Path) -> Path:
+    """Convert a .doc file to .docx via LibreOffice headless.
 
     Args:
-        path: Source document.
-        target_dir: Directory to write the output PDF.
+        path: Source .doc document.
+        target_dir: Directory to write the output .docx.
     Returns:
-        Path to the generated PDF.
+        Path to the generated .docx.
     Raises:
         IOError: LibreOffice unavailable or conversion failed.
     """
@@ -63,7 +64,7 @@ def _to_pdf(path: Path, *, target_dir: Path) -> Path:
             soffice,
             "--headless",
             "--convert-to",
-            "pdf",
+            "docx",
             "--outdir",
             str(target_dir),
             str(path),
@@ -73,12 +74,34 @@ def _to_pdf(path: Path, *, target_dir: Path) -> Path:
         timeout=120,
     )
     if proc.returncode != 0:
-        raise OSError(f"LibreOffice PDF conversion failed ({path}): {proc.stderr.strip()}")
+        raise OSError(f"LibreOffice docx conversion failed ({path}): {proc.stderr.strip()}")
 
-    converted = target_dir / f"{path.stem}.pdf"
+    converted = target_dir / f"{path.stem}.docx"
     if not converted.is_file():
         raise OSError(f"LibreOffice did not produce expected file: {converted}")
     return converted
+
+
+def _markitdown_convert(docx_path: Path) -> str:
+    """Convert a .docx to Markdown via markitdown (mammoth backend).
+
+    Args:
+        docx_path: Path to the .docx file.
+    Returns:
+        Markdown text.
+    Raises:
+        IOError: Conversion failed.
+    """
+    from markitdown import MarkItDown
+
+    try:
+        result = MarkItDown().convert(docx_path)
+    except Exception as e:
+        raise OSError(f"markitdown conversion failed ({docx_path}): {e}") from e
+
+    md = result.text_content or ""
+    logger.info("markitdown 完成, 输出 Markdown 共 %d 字符", len(md))
+    return md
 
 
 def _monkey_ocr(pdf_path: Path, *, base_url: str, timeout: int, upload_rate: int) -> str:
@@ -147,30 +170,6 @@ def _monkey_ocr(pdf_path: Path, *, base_url: str, timeout: int, upload_rate: int
             return zf.read(md_files[0]).decode("utf-8")
     except zipfile.BadZipFile as e:
         raise OSError(f"MonkeyOCR did not return a valid ZIP: {e}") from e
-
-
-def _pandoc_to_markdown(docx_path: Path) -> str:
-    """Convert a .docx to Markdown using pandoc (fallback path).
-
-    Args:
-        docx_path: Path to the .docx file.
-    Returns:
-        Markdown text.
-    Raises:
-        IOError: pandoc unavailable or conversion failed.
-    """
-    if shutil.which("pandoc") is None:
-        raise OSError("pandoc binary not found (run `apt install pandoc` or conda install)")
-
-    proc = subprocess.run(
-        ["pandoc", str(docx_path), "-t", "markdown"],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-    )
-    if proc.returncode != 0:
-        raise OSError(f"pandoc conversion failed ({docx_path}): {proc.stderr.strip()}")
-    return proc.stdout
 
 
 _GLM_MAX_PAGES = 100
@@ -745,31 +744,26 @@ def to_markdown(
     overlap_pages: int = 2,
     max_workers: int = 12,
 ) -> str:
-    """Convert a document to Markdown via pluggable OCR backend.
+    """Convert a document to Markdown.
 
     Routing:
-      .pdf         → OCR backend directly
-      .doc / .docx → LibreOffice headless → PDF → OCR backend
-
-    When fallback=True and OCR backend is unreachable:
-      .docx → pandoc direct conversion
-      .doc  → LibreOffice → docx → pandoc
-      .pdf  → no fallback (raises)
+      .pdf         → OCR backend (mineru / glm / monkey)
+      .docx        → markitdown (local, no OCR)
+      .doc         → LibreOffice → .docx → markitdown
 
     Args:
         path: Source document (.pdf / .doc / .docx).
-        ocr_backend: Backend name ("mineru", "monkey", or "glm"). Default from
-            SCRIVAI_OCR_BACKEND env or "mineru".
+        ocr_backend: OCR backend for PDF files ("mineru", "monkey", or "glm").
+            Default from SCRIVAI_OCR_BACKEND env or "mineru".
         glm_api_key: GLM-OCR API key override (default from SCRIVAI_GLM_API_KEY env).
         start_page: PDF start page (GLM/MinerU, 1-based).
         end_page: PDF end page (GLM/MinerU, 1-based).
-        ocr_base_url: MonkeyOCR service URL (default from SCRIVAI_OCR_BASE_URL env;
-            no built-in default — must be configured when using monkey backend).
+        ocr_base_url: MonkeyOCR service URL (default from SCRIVAI_OCR_BASE_URL env).
         upload_rate: MonkeyOCR max upload speed in bytes/second (0 = unlimited).
         mineru_url: MinerU router URL (default from SCRIVAI_MINERU_URL env;
             leave empty to auto-start a local mineru-router).
         timeout: Per-request HTTP timeout in seconds.
-        fallback: Enable pandoc fallback when OCR is unreachable.
+        fallback: Unused (kept for API compatibility).
         chunk_pages: Pages per chunk for GLM-OCR parallel processing (default 30).
         overlap_pages: Overlapping pages between chunks (default 2).
         max_workers: Max parallel threads for GLM-OCR (default 12).
@@ -789,13 +783,22 @@ def to_markdown(
             f"Unsupported format: {suffix} (supported: {', '.join(sorted(_SUPPORTED_SUFFIXES))})"
         )
 
+    # Phase 1: Word files → markitdown (local, no OCR)
+    if suffix == ".docx":
+        return _markitdown_convert(src)
+
+    if suffix == ".doc":
+        with tempfile.TemporaryDirectory() as td:
+            docx_path = _to_docx(src, target_dir=Path(td))
+            return _markitdown_convert(docx_path)
+
+    # Phase 2: PDF → OCR backend
     backend = ocr_backend or os.environ.get("SCRIVAI_OCR_BACKEND", "mineru")
     if backend not in _BACKENDS:
         raise ValueError(
             f"Unknown OCR backend: {backend!r} (available: {', '.join(sorted(_BACKENDS))})"
         )
 
-    # Phase 1: build backend-specific kwargs (env read deferred to call time)
     backend_kwargs: dict[str, Any] = {}
     if backend == "monkey":
         base_url = ocr_base_url or os.environ.get("SCRIVAI_OCR_BASE_URL", "")
@@ -832,64 +835,4 @@ def to_markdown(
             backend_kwargs["mineru_url"] = mineru_url
 
     ocr_fn = _BACKENDS[backend]
-
-    # Phase 2: route by suffix
-    def _call_ocr(pdf: Path) -> str:
-        return ocr_fn(pdf, timeout=timeout, **backend_kwargs)
-
-    if suffix == ".pdf":
-        return _call_ocr(src)
-
-    # Phase 3: DOC / DOCX → PDF → OCR (with optional fallback)
-    with tempfile.TemporaryDirectory() as td:
-        tmp_dir = Path(td)
-        pdf_path = _to_pdf(src, target_dir=tmp_dir)
-
-        try:
-            return _call_ocr(pdf_path)
-        except (OSError, requests.exceptions.RequestException) as ocr_err:
-            is_network_error = isinstance(ocr_err, requests.exceptions.RequestException) or (
-                isinstance(ocr_err, IOError)
-                and any(
-                    kw in str(ocr_err)
-                    for kw in ("network", "unreachable", "timed out", "Connection")
-                )
-            )
-
-            if not (fallback and is_network_error):
-                raise
-
-            logger.warning("OCR 后端 %s 不可达，降级到 pandoc 路径: %s", backend, ocr_err)
-
-            if suffix == ".docx":
-                return _pandoc_to_markdown(src)
-
-            # .doc → LibreOffice → docx → pandoc
-            docx_path = tmp_dir / f"{src.stem}.docx"
-            soffice = shutil.which("libreoffice") or shutil.which("soffice")
-            if soffice is None:
-                raise OSError("libreoffice/soffice binary not found") from ocr_err
-
-            proc = subprocess.run(
-                [
-                    soffice,
-                    "--headless",
-                    "--convert-to",
-                    "docx",
-                    "--outdir",
-                    str(tmp_dir),
-                    str(src),
-                ],
-                capture_output=True,
-                text=True,
-                timeout=120,
-            )
-            if proc.returncode != 0:
-                raise OSError(
-                    f"LibreOffice docx fallback conversion failed ({src}): {proc.stderr.strip()}"
-                ) from ocr_err
-            if not docx_path.is_file():
-                raise OSError(
-                    f"LibreOffice did not produce expected file: {docx_path}"
-                ) from ocr_err
-            return _pandoc_to_markdown(docx_path)
+    return ocr_fn(src, timeout=timeout, **backend_kwargs)
