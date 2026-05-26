@@ -56,8 +56,8 @@ class AuditorPES(BasePES):
     async def postprocess_phase_result(
         self,
         phase: str,
-        result: "PhaseResult",
-        run: "PESRun",
+        result: PhaseResult,
+        run: PESRun,
     ) -> None:
         """Summarize phase: schema validation + verdict/evidence rules."""
         if phase != "summarize":
@@ -148,9 +148,9 @@ class AuditorPES(BasePES):
     async def validate_phase_outputs(
         self,
         phase: str,
-        phase_cfg: "PhaseConfig",
-        result: "PhaseResult",
-        run: "PESRun",
+        phase_cfg: PhaseConfig,
+        result: PhaseResult,
+        run: PESRun,
     ) -> None:
         """Execute phase: verify that checkpoint IDs in data/checkpoints.json are covered by findings."""
         await super().validate_phase_outputs(phase, phase_cfg, result, run)

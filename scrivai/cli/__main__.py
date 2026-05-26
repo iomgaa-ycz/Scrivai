@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
         return _emit_err(str(e))
     except NotImplementedError as e:
         return _emit_err(f"not implemented: {e}")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return _emit_err(f"{type(e).__name__}: {e}")
     return _emit_ok(result)
 

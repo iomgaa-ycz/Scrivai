@@ -5,9 +5,10 @@ Reference: docs/superpowers/specs/2026-04-16-scrivai-m0.5-design.md §3.2.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable
+from datetime import UTC, datetime
+from typing import Any
 
 from scrivai.exceptions import PhaseError
 from scrivai.models.pes import (
@@ -26,7 +27,7 @@ from scrivai.trajectory.store import TrajectoryStore
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 @dataclass

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture
-def scrivai_workspace_manager(tmp_path: Path) -> "LocalWorkspaceManager":
+def scrivai_workspace_manager(tmp_path: Path) -> LocalWorkspaceManager:
     """LocalWorkspaceManager rooted at tmp_path."""
     from scrivai import build_workspace_manager
 
@@ -40,7 +40,7 @@ def scrivai_qmd_client(tmp_path: Path):
 @pytest.fixture
 def scrivai_libraries(
     scrivai_qmd_client,
-) -> "tuple[RuleLibrary, CaseLibrary, TemplateLibrary]":
+) -> tuple[RuleLibrary, CaseLibrary, TemplateLibrary]:
     """The three sibling Library instances (Rule, Case, Template)."""
     from scrivai.knowledge import build_libraries
 

@@ -18,10 +18,11 @@ import os
 import sqlite3
 import threading
 import time
+from collections.abc import Callable
 from contextlib import AbstractContextManager, nullcontext
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 from loguru import logger
 
@@ -35,7 +36,7 @@ T = TypeVar("T")
 
 
 def _utcnow_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _json_dumps(value: object | None) -> str | None:

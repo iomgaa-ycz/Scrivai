@@ -49,8 +49,8 @@ class ExtractorPES(BasePES):
     async def postprocess_phase_result(
         self,
         phase: str,
-        result: "PhaseResult",
-        run: "PESRun",
+        result: PhaseResult,
+        run: PESRun,
     ) -> None:
         """Summarize phase: read output.json and validate against output_schema. No-op for other phases."""
         if phase != "summarize":
@@ -91,9 +91,9 @@ class ExtractorPES(BasePES):
     async def validate_phase_outputs(
         self,
         phase: str,
-        phase_cfg: "PhaseConfig",
-        result: "PhaseResult",
-        run: "PESRun",
+        phase_cfg: PhaseConfig,
+        result: PhaseResult,
+        run: PESRun,
     ) -> None:
         """Execute phase: extend required_outputs validation with plan→findings coverage check."""
         await super().validate_phase_outputs(phase, phase_cfg, result, run)

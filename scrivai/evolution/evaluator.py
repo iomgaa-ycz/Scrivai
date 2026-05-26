@@ -8,9 +8,10 @@ from __future__ import annotations
 import json
 import shutil
 import tempfile
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from scrivai.evolution.budget import BudgetExceededError, LLMCallBudget
 from scrivai.models.evolution import EvolutionScore, FailureSample, SkillVersion
@@ -19,7 +20,7 @@ from scrivai.models.workspace import WorkspaceHandle, WorkspaceSpec
 
 def _utcnow() -> datetime:
     """Return the current UTC datetime."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _prepare_temp_project_root(

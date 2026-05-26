@@ -6,7 +6,7 @@ delete_document / hybrid_search; holds no in-memory state.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from scrivai.models.knowledge import LibraryEntry
 
@@ -20,7 +20,7 @@ class _BaseLibrary:
     Subclasses only need to pass collection_name in __init__.
     """
 
-    def __init__(self, qmd_client: "QmdClient", collection_name: str) -> None:
+    def __init__(self, qmd_client: QmdClient, collection_name: str) -> None:
         self._collection_name = collection_name
         self._coll: Collection = qmd_client.collection(collection_name)
 
@@ -41,7 +41,7 @@ class _BaseLibrary:
         self._coll.add_document(entry_id, markdown, metadata)
         return LibraryEntry(entry_id=entry_id, markdown=markdown, metadata=dict(metadata))
 
-    def get(self, entry_id: str) -> Optional[LibraryEntry]:
+    def get(self, entry_id: str) -> LibraryEntry | None:
         """Fetch by document_id; returns None if not found."""
         doc = self._coll.get_document(entry_id)
         if doc is None:
@@ -64,7 +64,7 @@ class _BaseLibrary:
         self,
         query: str,
         top_k: int = 5,
-        filters: Optional[dict[str, Any]] = None,
-    ) -> list["SearchResult"]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[SearchResult]:
         """Proxy to qmd hybrid_search."""
         return self._coll.hybrid_search(query, top_k=top_k, filters=filters)

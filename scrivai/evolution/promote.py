@@ -6,9 +6,8 @@ Reference: docs/superpowers/specs/2026-04-17-scrivai-m2-design.md §5.5
 from __future__ import annotations
 
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 from scrivai.evolution.store import SkillVersionStore
 
@@ -16,7 +15,7 @@ from scrivai.evolution.store import SkillVersionStore
 def promote(
     version_id: str,
     source_project_root: Path,
-    version_store: Optional[SkillVersionStore] = None,
+    version_store: SkillVersionStore | None = None,
     backup: bool = True,
 ) -> Path:
     """Atomically write a skill version's content back to the project.
@@ -35,9 +34,9 @@ def promote(
     version = store.get_version(version_id)
     skill_dir = source_project_root / "skills" / version.skill_name
 
-    backup_dir: Optional[Path] = None
+    backup_dir: Path | None = None
     if backup and skill_dir.exists():
-        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         backup_root = skill_dir / ".backup"
         backup_root.mkdir(parents=True, exist_ok=True)
         backup_dir = backup_root / f"evo-{ts}"

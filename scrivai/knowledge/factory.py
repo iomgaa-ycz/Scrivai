@@ -15,13 +15,13 @@ if TYPE_CHECKING:
     from qmd import QmdClient
 
 
-def build_qmd_client_from_config(db_path: str | Path) -> "QmdClient":
+def build_qmd_client_from_config(db_path: str | Path) -> QmdClient:
     """Wrap qmd.connect with a consistent ~ expansion."""
     return qmd.connect(str(Path(db_path).expanduser()))
 
 
 def build_libraries(
-    qmd_client: "QmdClient",
+    qmd_client: QmdClient,
 ) -> tuple[RuleLibrary, CaseLibrary, TemplateLibrary]:
     """Build all three libraries in one call."""
     return (

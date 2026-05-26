@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -46,13 +46,13 @@ class SkillVersion(BaseModel):
     version_id: str
     pes_name: str
     skill_name: str
-    parent_version_id: Optional[str]
+    parent_version_id: str | None
     content_snapshot: dict[str, str]
     content_diff: str
     change_summary: str
     status: SkillVersionStatus = "draft"
     created_at: datetime
-    promoted_at: Optional[datetime] = None
+    promoted_at: datetime | None = None
     created_by: str
 
 
@@ -89,16 +89,16 @@ class EvolutionRunRecord(BaseModel):
     skill_name: str
     config_snapshot: dict[str, Any]
     started_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     status: EvolutionRunStatus = "running"
     baseline_version_id: str
     baseline_score: float
-    best_version_id: Optional[str] = None
-    best_score: Optional[float] = None
+    best_version_id: str | None = None
+    best_score: float | None = None
     candidate_version_ids: list[str] = Field(default_factory=list)
     llm_calls_used: int = 0
     iterations_history: list[dict[str, Any]] = Field(default_factory=list)
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class EvolutionRunConfig(BaseModel):

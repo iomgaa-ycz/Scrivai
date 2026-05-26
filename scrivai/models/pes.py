@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -40,14 +40,14 @@ class ModelConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     model: str = Field(..., description="Model identifier, e.g. 'claude-sonnet-4-6'.")
-    base_url: Optional[str] = Field(
+    base_url: str | None = Field(
         default=None, description="API base URL; None uses the SDK default."
     )
-    api_key: Optional[str] = Field(default=None, description="API key; usually read from env.")
-    provider: Optional[str] = Field(
+    api_key: str | None = Field(default=None, description="API key; usually read from env.")
+    provider: str | None = Field(
         default=None, description="Provider tag, e.g. anthropic / glm / minimax."
     )
-    fallback_model: Optional[str] = Field(
+    fallback_model: str | None = Field(
         default=None, description="Fallback model identifier for degraded operation."
     )
 
@@ -67,7 +67,7 @@ class PhaseConfig(BaseModel):
     )
     max_retries: int = Field(default=1, description="Phase-level retry count (L2 retry).")
     permission_mode: str = Field(default="default", description="SDK permission_mode.")
-    required_outputs: list[Union[str, dict[str, Any]]] = Field(
+    required_outputs: list[str | dict[str, Any]] = Field(
         default_factory=list,
         description=(
             "Required output rules: a string path (file must exist) or a directory rule "
@@ -151,9 +151,9 @@ class PhaseResult(BaseModel):
     )
     usage: dict[str, Any] = Field(default_factory=dict, description="SDK token usage statistics.")
     started_at: datetime
-    ended_at: Optional[datetime] = None
-    error: Optional[str] = None
-    error_type: Optional[PhaseErrorType] = Field(
+    ended_at: datetime | None = None
+    error: str | None = None
+    error_type: PhaseErrorType | None = Field(
         default=None, description="Error category (see design §5.3.4)."
     )
     is_retryable: bool = Field(
@@ -179,17 +179,17 @@ class PESRun(BaseModel):
         default_factory=dict,
         description="Results indexed by phase name (multiple retries of the same phase keep only the last attempt).",
     )
-    final_output: Optional[dict[str, Any]] = Field(
+    final_output: dict[str, Any] | None = Field(
         default=None, description="Parsed content of output.json produced by the summarize phase."
     )
-    final_output_path: Optional[Path] = Field(
+    final_output_path: Path | None = Field(
         default=None, description="Absolute path to working/output.json."
     )
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Business-layer extension fields."
     )
-    skills_git_hash: Optional[str] = None
-    agents_git_hash: Optional[str] = None
+    skills_git_hash: str | None = None
+    agents_git_hash: str | None = None
     skills_is_dirty: bool = Field(
         default=False,
         description="True if the source git repo had uncommitted changes at snapshot time.",
@@ -198,9 +198,9 @@ class PESRun(BaseModel):
     provider: str = Field(default="", description="Provider tag, e.g. anthropic / glm / minimax.")
     sdk_version: str = Field(default="", description="claude-agent-sdk version string.")
     started_at: datetime
-    ended_at: Optional[datetime] = None
-    error: Optional[str] = None
-    error_type: Optional[PhaseErrorType] = Field(
+    ended_at: datetime | None = None
+    error: str | None = None
+    error_type: PhaseErrorType | None = Field(
         default=None, description="Error category on failure."
     )
 
@@ -236,7 +236,7 @@ class PhaseHookContext(HookContext):
 
     phase: Literal["plan", "execute", "summarize"]
     attempt_no: int = Field(..., description="Attempt number for this phase.")
-    phase_result: Optional[PhaseResult] = Field(
+    phase_result: PhaseResult | None = Field(
         default=None, description="Final phase result, present in after_phase."
     )
 

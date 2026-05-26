@@ -13,5 +13,5 @@ if TYPE_CHECKING:
 class RuleLibrary(_BaseLibrary):
     """Rule knowledge library (fixed collection: 'rules')."""
 
-    def __init__(self, qmd_client: "QmdClient") -> None:
+    def __init__(self, qmd_client: QmdClient) -> None:
         super().__init__(qmd_client, "rules")

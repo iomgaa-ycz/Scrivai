@@ -9,10 +9,11 @@ import difflib
 import hashlib
 import json
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 from scrivai.evolution.budget import BudgetExceededError, LLMCallBudget
 from scrivai.evolution.evaluator import CandidateEvaluator
@@ -30,10 +31,10 @@ from scrivai.models.workspace import WorkspaceHandle
 
 def _utcnow() -> datetime:
     """Return the current UTC datetime."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
-def _version_id(pes: str, skill: str, parent: Optional[str], snapshot: dict[str, str]) -> str:
+def _version_id(pes: str, skill: str, parent: str | None, snapshot: dict[str, str]) -> str:
     """Generate a deterministic version ID for a candidate.
 
     Args:
@@ -105,7 +106,7 @@ class Frontier:
             return True
         return False
 
-    def top(self) -> Optional[tuple[str, float]]:
+    def top(self) -> tuple[str, float] | None:
         """Return the best candidate in the frontier.
 
         Returns:
@@ -122,7 +123,7 @@ async def run_evolution(
     evaluator_fn: Callable[[str, str, str], float],
     source_project_root: Path,
     llm_client: Any,
-    version_store: Optional[SkillVersionStore] = None,
+    version_store: SkillVersionStore | None = None,
 ) -> EvolutionRunRecord:
     """Run a complete skill evolution cycle.
 

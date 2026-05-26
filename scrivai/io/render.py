@@ -57,7 +57,7 @@ class DocxRenderer:
         out = Path(output_path)
         # Ensure the parent directory exists; raise if it does not (test expectation)
         if not out.parent.is_dir():
-            raise IOError(f"output directory does not exist: {out.parent}")
+            raise OSError(f"output directory does not exist: {out.parent}")
 
         # Re-open the template (DocxTemplate rendering is stateful)
         tpl = DocxTemplate(str(self._template_path))

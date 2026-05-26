@@ -13,5 +13,5 @@ if TYPE_CHECKING:
 class TemplateLibrary(_BaseLibrary):
     """Template knowledge library (fixed collection: 'templates')."""
 
-    def __init__(self, qmd_client: "QmdClient") -> None:
+    def __init__(self, qmd_client: QmdClient) -> None:
         super().__init__(qmd_client, "templates")

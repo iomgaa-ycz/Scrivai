@@ -9,7 +9,7 @@ See docs/design.md §4.1 and §4.5.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -26,15 +26,15 @@ class PhaseRecord(BaseModel):
         default=0, description="Distinguishes multiple attempts of the same phase."
     )
     phase_order: int = Field(..., description="Phase order index: 0=plan, 1=execute, 2=summarize.")
-    prompt: Optional[str] = None
-    response_text: Optional[str] = None
+    prompt: str | None = None
+    response_text: str | None = None
     produced_files: list[str] = Field(default_factory=list)
     usage: dict[str, Any] = Field(default_factory=dict)
-    error: Optional[str] = None
-    error_type: Optional[str] = None
-    is_retryable: Optional[bool] = None
+    error: str | None = None
+    error_type: str | None = None
+    is_retryable: bool | None = None
     started_at: datetime
-    ended_at: Optional[datetime] = None
+    ended_at: datetime | None = None
 
 
 class TrajectoryRecord(BaseModel):
@@ -47,18 +47,18 @@ class TrajectoryRecord(BaseModel):
     model_name: str
     provider: str
     sdk_version: str
-    skills_git_hash: Optional[str] = None
-    agents_git_hash: Optional[str] = None
+    skills_git_hash: str | None = None
+    agents_git_hash: str | None = None
     skills_is_dirty: bool = False
     status: Literal["running", "completed", "failed", "cancelled"]
     task_prompt: str
-    runtime_context: Optional[dict[str, Any]] = None
-    workspace_archive_path: Optional[str] = None
-    final_output: Optional[dict[str, Any]] = None
-    error: Optional[str] = None
-    error_type: Optional[str] = None
+    runtime_context: dict[str, Any] | None = None
+    workspace_archive_path: str | None = None
+    final_output: dict[str, Any] | None = None
+    error: str | None = None
+    error_type: str | None = None
     started_at: datetime
-    ended_at: Optional[datetime] = None
+    ended_at: datetime | None = None
     phase_records: list[PhaseRecord] = Field(
         default_factory=list, description="Phase records from a sub-table join (optional)."
     )
@@ -76,14 +76,14 @@ class FeedbackRecord(BaseModel):
     )
     draft_output: dict[str, Any] = Field(..., description="Original output produced by the Agent.")
     final_output: dict[str, Any] = Field(..., description="Expert-approved final output.")
-    corrections: Optional[list[dict[str, Any]]] = Field(
+    corrections: list[dict[str, Any]] | None = Field(
         default=None, description="Optional structured diff between draft and final output."
     )
-    review_policy_version: Optional[str] = None
+    review_policy_version: str | None = None
     source: str = Field(
         default="human_expert",
         description="Feedback source: human_expert, second_review, or gold_set.",
     )
     confidence: float = Field(default=1.0, description="Feedback quality score in [0.0, 1.0].")
     submitted_at: datetime
-    submitted_by: Optional[str] = None
+    submitted_by: str | None = None

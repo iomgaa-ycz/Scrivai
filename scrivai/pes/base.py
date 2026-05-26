@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import shutil
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from scrivai.pes.llm_client import LLMClient
@@ -35,7 +36,7 @@ from scrivai.utils import relaxed_json_loads
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class _NullHookManager:
@@ -87,8 +88,8 @@ class BasePES:
         hooks: HookManager | None = None,
         trajectory_store: TrajectoryStore | None = None,
         runtime_context: dict[str, Any] | None = None,
-        llm_client: "LLMClient | None" = None,
-        prompt_manager: "PromptManager | None" = None,
+        llm_client: LLMClient | None = None,
+        prompt_manager: PromptManager | None = None,
     ) -> None:
         self.config = config
         self.model = model
@@ -106,7 +107,7 @@ class BasePES:
             prompt_manager = self._create_default_prompt_manager()
         self._prompt_manager = prompt_manager
 
-    def _create_default_prompt_manager(self) -> "PromptManager":
+    def _create_default_prompt_manager(self) -> PromptManager:
         """Create a PromptManager pointing to the built-in templates."""
         from scrivai.pes.prompts import PromptManager as _PromptManager
 

@@ -8,9 +8,9 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from scrivai.evolution.schema import ALL_SCHEMAS
 from scrivai.models.evolution import (
@@ -24,14 +24,14 @@ _SKIP_DIR_NAMES = {"__pycache__", ".git", ".mypy_cache", ".pytest_cache"}
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
-def _dt_to_str(dt: Optional[datetime]) -> Optional[str]:
+def _dt_to_str(dt: datetime | None) -> str | None:
     return dt.isoformat() if dt else None
 
 
-def _str_to_dt(s: Optional[str]) -> Optional[datetime]:
+def _str_to_dt(s: str | None) -> datetime | None:
     return datetime.fromisoformat(s) if s else None
 
 
@@ -83,7 +83,7 @@ class SkillVersionStore:
         return self._row_to_version(row)
 
     def list_versions(
-        self, pes_name: str, skill_name: str, status: Optional[SkillVersionStatus] = None
+        self, pes_name: str, skill_name: str, status: SkillVersionStatus | None = None
     ) -> list[SkillVersion]:
         q = "SELECT * FROM skill_versions WHERE pes_name=? AND skill_name=?"
         args: list[Any] = [pes_name, skill_name]
@@ -250,7 +250,7 @@ class SkillVersionStore:
             "promoted_at",
             "created_by",
         ]
-        d = dict(zip(cols, row))
+        d = dict(zip(cols, row, strict=False))
         return SkillVersion(
             version_id=d["version_id"],
             pes_name=d["pes_name"],
@@ -283,7 +283,7 @@ class SkillVersionStore:
             "iterations_history_json",
             "error",
         ]
-        d = dict(zip(cols, row))
+        d = dict(zip(cols, row, strict=False))
         return EvolutionRunRecord(
             evo_run_id=d["evo_run_id"],
             pes_name=d["pes_name"],
@@ -313,7 +313,7 @@ class SkillVersionStore:
             "llm_calls_consumed",
             "evaluated_at",
         ]
-        d = dict(zip(cols, row))
+        d = dict(zip(cols, row, strict=False))
         return EvolutionScore(
             version_id=d["version_id"],
             score=d["score"],

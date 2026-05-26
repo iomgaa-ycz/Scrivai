@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -62,10 +62,10 @@ class WorkspaceSnapshot(BaseModel):
 
     run_id: str
     project_root: Path
-    skills_git_hash: Optional[str] = Field(
+    skills_git_hash: str | None = Field(
         default=None, description="Git hash of skills at snapshot time."
     )
-    agents_git_hash: Optional[str] = None
+    agents_git_hash: str | None = None
     snapshot_at: datetime
     extra: dict[str, Any] = Field(default_factory=dict)
 

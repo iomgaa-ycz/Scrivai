@@ -58,7 +58,7 @@ class GeneratorPES(BasePES):
     async def build_execution_context(
         self,
         phase: str,
-        run: "PESRun",
+        run: PESRun,
     ) -> dict[str, Any]:
         """Plan phase: parse template_path placeholders and inject context['placeholders']."""
         if phase != "plan":
@@ -78,8 +78,8 @@ class GeneratorPES(BasePES):
     async def postprocess_phase_result(
         self,
         phase: str,
-        result: "PhaseResult",
-        run: "PESRun",
+        result: PhaseResult,
+        run: PESRun,
     ) -> None:
         """Summarize phase: validate context_schema; render docx if auto_render=True."""
         if phase != "summarize":
@@ -140,9 +140,9 @@ class GeneratorPES(BasePES):
     async def validate_phase_outputs(
         self,
         phase: str,
-        phase_cfg: "PhaseConfig",
-        result: "PhaseResult",
-        run: "PESRun",
+        phase_cfg: PhaseConfig,
+        result: PhaseResult,
+        run: PESRun,
     ) -> None:
         """Plan phase: verify plan.json covers all placeholders; execute phase: verify findings/ coverage."""
         await super().validate_phase_outputs(phase, phase_cfg, result, run)

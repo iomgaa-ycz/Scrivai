@@ -16,7 +16,7 @@ import shutil
 import subprocess
 import tarfile
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import IO
 
@@ -81,7 +81,7 @@ class LocalWorkspaceManager:
                 project_root=spec.project_root.resolve(),
                 skills_git_hash=self._git_hash(spec.project_root),
                 agents_git_hash=self._git_hash(spec.project_root),
-                snapshot_at=datetime.now(timezone.utc),
+                snapshot_at=datetime.now(UTC),
             )
             (root / "meta.json").write_text(
                 json.dumps(

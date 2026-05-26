@@ -8,10 +8,11 @@ References:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from claude_agent_sdk import (
     AssistantMessage,
@@ -174,7 +175,7 @@ class LLMClient:
                 "stop_reason": msg.stop_reason,
                 "usage": msg.usage,
             },
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
     def _parse_user_turn(
@@ -220,7 +221,7 @@ class LLMClient:
             role="user",
             content_type="tool_result",
             data={"tool_results": tool_results},
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
     async def execute_task(

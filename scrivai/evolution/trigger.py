@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import random
-from typing import Callable
+from collections.abc import Callable
 
 from scrivai.models.evolution import FailureSample
 from scrivai.models.trajectory import TrajectoryRecord

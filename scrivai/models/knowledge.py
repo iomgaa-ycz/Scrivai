@@ -5,8 +5,9 @@ See docs/design.md §4.1 and §4.7.
 
 from __future__ import annotations
 
+import builtins
 from datetime import datetime
-from typing import Any, List, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -35,8 +36,8 @@ class LibraryEntry(BaseModel):
         default_factory=dict,
         description="Passed through from qmd chunk metadata; no semantic interpretation.",
     )
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 @runtime_checkable
@@ -44,9 +45,9 @@ class Library(Protocol):
     """Unified Library Protocol implemented by RuleLibrary, CaseLibrary, and TemplateLibrary."""
 
     def add(self, entry_id: str, markdown: str, metadata: dict[str, Any]) -> LibraryEntry: ...
-    def get(self, entry_id: str) -> Optional[LibraryEntry]: ...
-    def list(self) -> List[str]: ...
+    def get(self, entry_id: str) -> LibraryEntry | None: ...
+    def list(self) -> builtins.list[str]: ...
     def delete(self, entry_id: str) -> None: ...
     def search(
-        self, query: str, top_k: int = 5, filters: Optional[dict[str, Any]] = None
-    ) -> List[SearchResult]: ...
+        self, query: str, top_k: int = 5, filters: dict[str, Any] | None = None
+    ) -> builtins.list[SearchResult]: ...

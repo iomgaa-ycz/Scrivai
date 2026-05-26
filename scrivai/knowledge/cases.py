@@ -13,5 +13,5 @@ if TYPE_CHECKING:
 class CaseLibrary(_BaseLibrary):
     """Case knowledge library (fixed collection: 'cases')."""
 
-    def __init__(self, qmd_client: "QmdClient") -> None:
+    def __init__(self, qmd_client: QmdClient) -> None:
         super().__init__(qmd_client, "cases")

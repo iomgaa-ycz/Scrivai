@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Optional
+from typing import Any
 
 from scrivai.evolution.budget import LLMCallBudget
 from scrivai.models.evolution import EvolutionProposal, FailureSample
@@ -182,7 +182,7 @@ class Proposer:
         failures: list[FailureSample],
         rejected_proposals: list[EvolutionProposal],
         n: int = 3,
-        budget: Optional[LLMCallBudget] = None,
+        budget: LLMCallBudget | None = None,
     ) -> list[EvolutionProposal]:
         """Generate N candidate SKILL.md revisions from failure samples.
 
@@ -201,7 +201,7 @@ class Proposer:
             BudgetExceededError: If the budget is exceeded.
         """
         base_prompt = _build_prompt(current_skill_snapshot, failures, rejected_proposals, n)
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
 
         for attempt in (0, 1):  # at most 2 attempts (initial + 1 retry)
             if budget is not None:
