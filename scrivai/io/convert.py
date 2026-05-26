@@ -572,7 +572,14 @@ class _MineruRouterManager:
     def _auto_start(self) -> str:
         cmd = shutil.which("mineru-router")
         if cmd is None:
-            raise OSError("mineru-router 未找到，请运行: pip install 'mineru[all]'")
+            # Fallback: look in the same bin dir as the running Python interpreter
+            import sys
+
+            candidate = Path(sys.executable).parent / "mineru-router"
+            if candidate.is_file():
+                cmd = str(candidate)
+            else:
+                raise OSError("mineru-router 未找到，请运行: pip install 'mineru[all]'")
 
         port = self._find_free_port()
         self._process = subprocess.Popen(
@@ -626,7 +633,7 @@ _router_manager: _MineruRouterManager | None = None
 def _mineru_ocr(
     pdf_path: Path,
     *,
-    timeout: int = 300,
+    timeout: int = 3600,
     start_page: int | None = None,
     end_page: int | None = None,
     mineru_url: str | None = None,
@@ -676,12 +683,7 @@ def _mineru_ocr(
                 "files": (pdf_path.name, f, "application/pdf"),
                 "backend": "pipeline",
                 "parse_method": "auto",
-                "lang_list": '["ch"]',
                 "return_md": "true",
-                "return_middle_json": "false",
-                "return_model_output": "false",
-                "return_content_list": "false",
-                "return_images": "false",
                 "start_page_id": start_id,
                 "end_page_id": end_id,
             }
@@ -693,8 +695,8 @@ def _mineru_ocr(
             timeout=timeout,
         )
 
-    # Phase 3: parse response
-    if resp.status_code != 200:
+    # Phase 3: parse response (200=completed, 409=failed with detail JSON)
+    if resp.status_code not in (200, 409):
         raise OSError(f"mineru-router /file_parse returned {resp.status_code}: {resp.text[:300]}")
 
     data = resp.json()
