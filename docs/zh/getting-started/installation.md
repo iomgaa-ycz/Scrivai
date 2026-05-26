@@ -43,7 +43,8 @@ cp .env.example .env
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `SCRIVAI_OCR_BACKEND` | `glm` | OCR 后端：`glm`（智谱云端）或 `monkey`（自建 MonkeyOCR） |
+| `SCRIVAI_OCR_BACKEND` | `mineru` | PDF 文件 OCR 后端：`mineru`（MinerU 本地流水线，默认）、`glm`（智谱云端）或 `monkey`（自建 MonkeyOCR） |
+| `SCRIVAI_MINERU_URL` | — | MinerU 路由 URL（留空则自动启动本地 mineru-router） |
 | `SCRIVAI_GLM_API_KEY` | — | GLM-OCR API 密钥（使用 `glm` 后端时必填；从 [open.bigmodel.cn](https://open.bigmodel.cn) 获取） |
 | `SCRIVAI_OCR_BASE_URL` | — | MonkeyOCR 服务地址（使用 `monkey` 后端时必填） |
 | `SCRIVAI_OCR_UPLOAD_RATE` | `512000` | MonkeyOCR 上传限速（字节/秒，0 = 不限速） |

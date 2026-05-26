@@ -163,11 +163,9 @@ md = to_markdown(
 
 | 输入格式 | 处理流程 |
 |---|---|
-| `.pdf` | 直接 OCR |
-| `.docx` | LibreOffice → PDF → OCR |
-| `.doc` | LibreOffice → PDF → OCR |
-
-当 OCR 后端不可达且 `fallback=True`（默认）时，`.doc`/`.docx` 文件降级为 pandoc 转换。
+| `.pdf` | OCR 后端（mineru / glm / monkey） |
+| `.docx` | markitdown（本地，无需 OCR） |
+| `.doc` | LibreOffice → .docx → markitdown |
 
 ### 命令行
 
@@ -175,8 +173,8 @@ md = to_markdown(
 scrivai-cli io convert --input report.pdf --output report.md
 scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
 
-# 并行分块选项
-scrivai-cli io convert --input large.pdf --chunk-pages 30 --overlap-pages 2 --max-workers 12
+# 并行分块选项（仅 PDF）
+scrivai-cli io convert --input large.pdf --chunk-pages 30 --overlap-pages 2 --max-workers 3
 ```
 
 ## 下一步

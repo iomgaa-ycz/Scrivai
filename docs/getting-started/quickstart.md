@@ -160,11 +160,9 @@ md = to_markdown(
 
 | Input | Pipeline |
 |---|---|
-| `.pdf` | Direct OCR |
-| `.docx` | LibreOffice → PDF → OCR |
-| `.doc` | LibreOffice → PDF → OCR |
-
-When the OCR backend is unreachable and `fallback=True` (default), `.doc`/`.docx` files fall back to pandoc conversion.
+| `.pdf` | OCR backend (mineru / glm / monkey) |
+| `.docx` | markitdown (local, no OCR) |
+| `.doc` | LibreOffice → .docx → markitdown |
 
 ### CLI
 
@@ -172,8 +170,8 @@ When the OCR backend is unreachable and `fallback=True` (default), `.doc`/`.docx
 scrivai-cli io convert --input report.pdf --output report.md
 scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
 
-# Parallel chunking options
-scrivai-cli io convert --input large.pdf --chunk-pages 30 --overlap-pages 2 --max-workers 12
+# Parallel chunking options (PDF only)
+scrivai-cli io convert --input large.pdf --chunk-pages 30 --overlap-pages 2 --max-workers 3
 ```
 
 ## Next Steps
