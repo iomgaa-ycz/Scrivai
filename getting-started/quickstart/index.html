@@ -573,10 +573,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#glm-ocr-cloud-default" class="md-nav__link">
+  <a href="#mineru-local-pipeline-default" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GLM-OCR (Cloud, Default)
+        MinerU (Local Pipeline, Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glm-ocr-cloud" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLM-OCR (Cloud)
       
     </span>
   </a>
@@ -1228,10 +1239,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#glm-ocr-cloud-default" class="md-nav__link">
+  <a href="#mineru-local-pipeline-default" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GLM-OCR (Cloud, Default)
+        MinerU (Local Pipeline, Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glm-ocr-cloud" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLM-OCR (Cloud)
       
     </span>
   </a>
@@ -1399,25 +1421,37 @@ asyncio.run(main())
 <p>Each phase is recorded as a <code>PhaseResult</code> containing all turns and the final text.</p>
 <h2 id="document-conversion-ocr">Document Conversion (OCR)</h2>
 <p>Scrivai includes a <code>to_markdown()</code> function that converts PDF, DOC, and DOCX files to Markdown using pluggable OCR backends.</p>
-<h3 id="glm-ocr-cloud-default">GLM-OCR (Cloud, Default)</h3>
+<h3 id="mineru-local-pipeline-default">MinerU (Local Pipeline, Default)</h3>
 <pre><code class="language-python">from scrivai import to_markdown
 
-# Set your API key via env or parameter
-# export SCRIVAI_GLM_API_KEY=your-key-here
-
+# MinerU runs locally — no API key needed
 md = to_markdown(&quot;report.pdf&quot;)
 print(md)
 
-# With page range (GLM-OCR only)
+# With page range
 md = to_markdown(&quot;long_report.pdf&quot;, start_page=10, end_page=20)
 </code></pre>
-<p>Large PDFs are automatically split into overlapping chunks and processed <strong>in parallel</strong> — a 300-page document that previously took 30+ minutes now completes in ~5 minutes.</p>
+<p>MinerU uses intelligent auto-routing: text-based pages are extracted directly, scanned pages go through OCR. Includes professional table recognition, layout analysis, and formula detection.</p>
+<blockquote>
+<p><strong>First run:</strong> MinerU downloads models automatically (~2-3 GB). Subsequent runs use cached models.</p>
+</blockquote>
+<h3 id="glm-ocr-cloud">GLM-OCR (Cloud)</h3>
+<pre><code class="language-python"># Set your API key via env or parameter
+# export SCRIVAI_GLM_API_KEY=your-key-here
+
+md = to_markdown(&quot;report.pdf&quot;, ocr_backend=&quot;glm&quot;)
+
+# With page range
+md = to_markdown(&quot;long_report.pdf&quot;, ocr_backend=&quot;glm&quot;, start_page=10, end_page=20)
+</code></pre>
+<p>Large PDFs are automatically split into overlapping chunks and processed <strong>in parallel</strong> (max 3 concurrent requests).</p>
 <pre><code class="language-python"># Customize chunking (defaults shown)
 md = to_markdown(
     &quot;large_report.pdf&quot;,
+    ocr_backend=&quot;glm&quot;,
     chunk_pages=30,       # pages per chunk
     overlap_pages=2,      # overlap to preserve cross-page tables
-    max_workers=12,       # parallel threads
+    max_workers=3,        # parallel threads (hard cap 3)
 )
 </code></pre>
 <h3 id="monkeyocr-self-hosted">MonkeyOCR (Self-Hosted)</h3>
@@ -1438,25 +1472,24 @@ md = to_markdown(
 <tbody>
 <tr>
 <td><code>.pdf</code></td>
-<td>Direct OCR</td>
+<td>OCR backend (mineru / glm / monkey)</td>
 </tr>
 <tr>
 <td><code>.docx</code></td>
-<td>LibreOffice → PDF → OCR</td>
+<td>markitdown (local, no OCR)</td>
 </tr>
 <tr>
 <td><code>.doc</code></td>
-<td>LibreOffice → PDF → OCR</td>
+<td>LibreOffice → .docx → markitdown</td>
 </tr>
 </tbody>
 </table>
-<p>When the OCR backend is unreachable and <code>fallback=True</code> (default), <code>.doc</code>/<code>.docx</code> files fall back to pandoc conversion.</p>
 <h3 id="cli">CLI</h3>
 <pre><code class="language-bash">scrivai-cli io convert --input report.pdf --output report.md
 scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
 
-# Parallel chunking options
-scrivai-cli io convert --input large.pdf --chunk-pages 30 --overlap-pages 2 --max-workers 12
+# Parallel chunking options (PDF only)
+scrivai-cli io convert --input large.pdf --chunk-pages 30 --overlap-pages 2 --max-workers 3
 </code></pre>
 <h2 id="next-steps">Next Steps</h2>
 <ul>

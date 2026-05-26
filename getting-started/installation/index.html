@@ -1325,8 +1325,13 @@ pip install -e &quot;.[dev]&quot;
 <tbody>
 <tr>
 <td><code>SCRIVAI_OCR_BACKEND</code></td>
-<td><code>glm</code></td>
-<td>OCR backend: <code>glm</code> (ZhipuAI cloud) or <code>monkey</code> (self-hosted MonkeyOCR)</td>
+<td><code>mineru</code></td>
+<td>OCR backend for PDF files: <code>mineru</code> (MinerU local pipeline, default), <code>glm</code> (ZhipuAI cloud), or <code>monkey</code> (self-hosted MonkeyOCR)</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_MINERU_URL</code></td>
+<td>—</td>
+<td>MinerU router URL (leave empty to auto-start a local mineru-router)</td>
 </tr>
 <tr>
 <td><code>SCRIVAI_GLM_API_KEY</code></td>

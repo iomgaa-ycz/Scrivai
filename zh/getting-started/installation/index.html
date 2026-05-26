@@ -1187,8 +1187,13 @@ pip install -e &quot;.[dev]&quot;
 <tbody>
 <tr>
 <td><code>SCRIVAI_OCR_BACKEND</code></td>
-<td><code>glm</code></td>
-<td>OCR 后端：<code>glm</code>（智谱云端）或 <code>monkey</code>（自建 MonkeyOCR）</td>
+<td><code>mineru</code></td>
+<td>PDF 文件 OCR 后端：<code>mineru</code>（MinerU 本地流水线，默认）、<code>glm</code>（智谱云端）或 <code>monkey</code>（自建 MonkeyOCR）</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_MINERU_URL</code></td>
+<td>—</td>
+<td>MinerU 路由 URL（留空则自动启动本地 mineru-router）</td>
 </tr>
 <tr>
 <td><code>SCRIVAI_GLM_API_KEY</code></td>

@@ -1195,18 +1195,15 @@
 <a id="scrivai.to_markdown"></a>
     <div class="doc doc-contents first">
 
-        <p>Convert a document to Markdown via pluggable OCR backend.</p>
+        <p>Convert a document to Markdown.</p>
 
 
 <details class="routing" open>
   <summary>Routing</summary>
-  <p>.pdf         → OCR backend directly
-.doc / .docx → LibreOffice headless → PDF → OCR backend</p>
-</details>        <p>When fallback=True and OCR backend is unreachable:
-  .docx → pandoc direct conversion
-  .doc  → LibreOffice → docx → pandoc
-  .pdf  → no fallback (raises)</p>
-
+  <p>.pdf         → OCR backend (mineru / glm / monkey)
+.docx        → markitdown (local, no OCR)
+.doc         → LibreOffice → .docx → markitdown</p>
+</details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
     <table>
@@ -1244,8 +1241,8 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Backend name ("monkey" or "glm"). Default from
-SCRIVAI_OCR_BACKEND env or "glm".</p>
+                <p>OCR backend for PDF files ("mineru", "monkey", or "glm").
+Default from SCRIVAI_OCR_BACKEND env or "mineru".</p>
               </div>
             </td>
             <td>
@@ -1277,7 +1274,7 @@ SCRIVAI_OCR_BACKEND env or "glm".</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>PDF start page (GLM-OCR only, 1-based).</p>
+                <p>PDF start page (GLM/MinerU, 1-based).</p>
               </div>
             </td>
             <td>
@@ -1293,7 +1290,7 @@ SCRIVAI_OCR_BACKEND env or "glm".</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>PDF end page (GLM-OCR only, 1-based).</p>
+                <p>PDF end page (GLM/MinerU, 1-based).</p>
               </div>
             </td>
             <td>
@@ -1309,8 +1306,7 @@ SCRIVAI_OCR_BACKEND env or "glm".</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>MonkeyOCR service URL (default from SCRIVAI_OCR_BASE_URL env;
-no built-in default — must be configured when using monkey backend).</p>
+                <p>MonkeyOCR service URL (default from SCRIVAI_OCR_BASE_URL env).</p>
               </div>
             </td>
             <td>
@@ -1327,6 +1323,23 @@ no built-in default — must be configured when using monkey backend).</p>
             <td>
               <div class="doc-md-description">
                 <p>MonkeyOCR max upload speed in bytes/second (0 = unlimited).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>mineru_url</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>MinerU router URL (default from SCRIVAI_MINERU_URL env;
+leave empty to auto-start a local mineru-router).</p>
               </div>
             </td>
             <td>
@@ -1358,7 +1371,7 @@ no built-in default — must be configured when using monkey backend).</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Enable pandoc fallback when OCR is unreachable.</p>
+                <p>Unused (kept for API compatibility).</p>
               </div>
             </td>
             <td>

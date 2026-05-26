@@ -1020,6 +1020,106 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#022-2026-05-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.2] — 2026-05-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.2] — 2026-05-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#021-2026-05-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.1] — 2026-05-25
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.1] — 2026-05-25">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-mineru-local-ocr-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — MinerU Local OCR Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#020-2026-05-25" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1043,7 +1143,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -1082,7 +1182,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
+  <a href="#changed_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -1121,7 +1221,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -1160,7 +1260,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_2" class="md-nav__link">
+  <a href="#changed_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -1171,7 +1271,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed_1" class="md-nav__link">
+  <a href="#removed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -1210,7 +1310,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
+  <a href="#fixed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -1221,7 +1321,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+  <a href="#added_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -1260,7 +1360,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_3" class="md-nav__link">
+  <a href="#changed_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -1299,7 +1399,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_4" class="md-nav__link">
+  <a href="#changed_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -1310,7 +1410,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed_2" class="md-nav__link">
+  <a href="#removed_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -1381,6 +1481,41 @@
 <h1 id="changelog">CHANGELOG</h1>
 <p>本项目遵循 <a href="https://semver.org/lang/zh-CN/">Semantic Versioning</a>。
 格式参考 <a href="https://keepachangelog.com/zh-CN/">Keep a Changelog</a>。</p>
+<h2 id="022-2026-05-26">[0.2.2] — 2026-05-26</h2>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><strong>Breaking:</strong> Word files (.docx/.doc) now use markitdown for local conversion instead of routing through OCR pipeline — <code>.docx</code> → markitdown (local), <code>.doc</code> → LibreOffice → .docx → markitdown</li>
+<li><strong>Breaking:</strong> MinerU backend switched from in-process to HTTP via mineru-router</li>
+<li><code>fallback</code> parameter of <code>to_markdown()</code> is now unused (pandoc fallback removed)</li>
+<li>Type annotations modernized across codebase: <code>Optional[X]</code> → <code>X | None</code>, <code>typing.Callable</code> → <code>collections.abc.Callable</code></li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li>MinerU HTTP backend: <code>lang_list</code> format correction, 409 status handling, timeout configuration</li>
+</ul>
+<h3 id="added">Added</h3>
+<ul>
+<li><code>markitdown[docx]&gt;=0.1.5</code> dependency for local Word→Markdown conversion</li>
+<li><code>SCRIVAI_MINERU_URL</code> environment variable for external MinerU router</li>
+</ul>
+<h3 id="removed">Removed</h3>
+<ul>
+<li>Pandoc fallback path for <code>.doc</code>/<code>.docx</code> files</li>
+</ul>
+<h2 id="021-2026-05-25">[0.2.1] — 2026-05-25</h2>
+<h3 id="added-mineru-local-ocr-backend">Added — MinerU Local OCR Backend</h3>
+<ul>
+<li><strong>MinerU backend</strong> (<code>ocr_backend="mineru"</code>): Local PDF→Markdown pipeline powered by MinerU v3.x — intelligent auto-routing (text extraction for text-based pages, OCR for scanned pages), professional table recognition (RapidTable), layout analysis (LayoutLMv3), and formula recognition</li>
+<li><strong>MinerU set as default backend</strong>: <code>SCRIVAI_OCR_BACKEND</code> env defaults to <code>"mineru"</code> (was <code>"glm"</code>)</li>
+<li><strong>Page range support for MinerU</strong>: <code>start_page</code> / <code>end_page</code> parameters now work with both GLM and MinerU backends</li>
+<li><strong>GLM-OCR concurrency hard cap</strong>: <code>max_workers</code> clamped to 3 with warning log to avoid API rate limiting (HTTP 429)</li>
+<li>Optional dependency group: <code>pip install scrivai[mineru]</code></li>
+</ul>
+<h3 id="changed_1">Changed</h3>
+<ul>
+<li><strong>Breaking:</strong> Default OCR backend changed from <code>"glm"</code> to <code>"mineru"</code> — set <code>SCRIVAI_OCR_BACKEND=glm</code> to restore previous behavior</li>
+<li>GLM-OCR <code>max_workers</code> is now capped at 3 regardless of user input (was uncapped at 12)</li>
+</ul>
 <h2 id="020-2026-05-25">[0.2.0] — 2026-05-25</h2>
 <h3 id="added-parallel-chunked-ocr">Added — Parallel Chunked OCR</h3>
 <ul>
@@ -1390,7 +1525,7 @@
 <li><strong>Per-chunk retry</strong>: Each chunk retries up to 2 times with exponential backoff on transient failures; all-retries-exhausted aborts the entire conversion</li>
 <li>CLI: <code>scrivai-cli io convert</code> gains <code>--chunk-pages</code>, <code>--overlap-pages</code>, <code>--max-workers</code></li>
 </ul>
-<h3 id="changed">Changed</h3>
+<h3 id="changed_2">Changed</h3>
 <ul>
 <li><strong>Breaking:</strong> The old serial chunking path (100-page / 50 MB threshold) is replaced by the unified parallel chunking path — all PDFs now go through <code>_glm_ocr_chunked()</code>, with small files (≤ 30 pages) degrading to a single chunk with zero overhead</li>
 <li>Internal: <code>_glm_ocr()</code> now delegates entirely to <code>_glm_ocr_chunked()</code>; old <code>PdfReader</code>/<code>PdfWriter</code> serial loop removed</li>
@@ -1406,7 +1541,7 @@
 <li>Environment variables: <code>SCRIVAI_OCR_BACKEND</code>, <code>SCRIVAI_GLM_API_KEY</code></li>
 <li><code>pypdf&gt;=4.0</code> added to dependencies</li>
 </ul>
-<h3 id="changed_1">Changed</h3>
+<h3 id="changed_3">Changed</h3>
 <ul>
 <li><strong>Breaking:</strong> MonkeyOCR no longer has a built-in default URL — you must set <code>SCRIVAI_OCR_BASE_URL</code> env or pass <code>ocr_base_url</code> parameter when using <code>ocr_backend="monkey"</code></li>
 <li><strong>Breaking:</strong> Default OCR backend changed from implicit MonkeyOCR to <code>"glm"</code> (configurable via <code>SCRIVAI_OCR_BACKEND</code> env)</li>
@@ -1425,7 +1560,7 @@
 <li>CLI: <code>scrivai-cli io docx2md</code> / <code>doc2md</code> / <code>pdf2md</code> merged into <code>scrivai-cli io convert</code></li>
 <li><code>PhaseConfig.max_turns</code> default raised from 10 to 16</li>
 </ul>
-<h3 id="removed">Removed</h3>
+<h3 id="removed_1">Removed</h3>
 <ul>
 <li><code>docx_to_markdown()</code>, <code>doc_to_markdown()</code>, <code>pdf_to_markdown()</code> — use <code>to_markdown()</code> instead</li>
 <li>CLI subcommands <code>docx2md</code>, <code>doc2md</code>, <code>pdf2md</code> — use <code>convert</code> instead</li>
@@ -1440,7 +1575,7 @@
 <li><code>PESConfig.external_cli_tools</code> — Bash command whitelist injected into Agent prompts</li>
 <li><code>jinja2&gt;=3.1</code> as explicit dependency</li>
 </ul>
-<h3 id="changed_2">Changed</h3>
+<h3 id="changed_4">Changed</h3>
 <ul>
 <li><code>BasePES.build_phase_prompt()</code> now delegates to <code>PromptManager</code> instead of <code>json.dumps(context)</code> — Agent only sees explicitly templated variables</li>
 <li><code>BasePES._call_sdk_query()</code> passes <code>extra_env</code> to <code>LLMClient.execute_task()</code> and uses only <code>config.prompt_text</code> as <code>system_prompt</code> (fixes duplication bug)</li>
@@ -1448,7 +1583,7 @@
 <li><code>_workspace_payload()</code> no longer exposes <code>output_dir</code> to Agent (fixes path ambiguity from issue #8)</li>
 <li><code>relaxed_json_loads</code> removed from public API (<code>__all__</code>)</li>
 </ul>
-<h3 id="removed_1">Removed</h3>
+<h3 id="removed_2">Removed</h3>
 <ul>
 <li><code>PhaseConfig.additional_system_prompt</code> — content migrated to Jinja2 templates</li>
 </ul>
@@ -1462,14 +1597,14 @@
 <li>License migrated from MIT to Apache 2.0</li>
 <li>Internal dev docs moved to <code>dev-docs/</code></li>
 </ul>
-<h3 id="fixed">Fixed</h3>
+<h3 id="fixed_1">Fixed</h3>
 <ul>
 <li>LLM client: manual assistant turn counting to prevent infinite loops</li>
 <li>Auditor: verdict dict compatibility + evidence multi-field tolerance</li>
 <li>Auditor: auto-repair malformed JSON in findings/</li>
 <li>IO: MonkeyOCR bypass system proxy + timeout 120→300s</li>
 </ul>
-<h3 id="added">Added</h3>
+<h3 id="added_1">Added</h3>
 <ul>
 <li><code>TrajectoryStore.delete_run()</code> — cascade delete for run cleanup</li>
 <li><code>CONTRIBUTING.md</code> with documentation standards</li>
@@ -1481,7 +1616,7 @@
 <li><code>PESConfig.strict_json</code> field — when True, skips repair and uses strict <code>json.loads</code></li>
 <li><code>ScrivaiJSONRepairError</code> exception with dual inheritance</li>
 </ul>
-<h3 id="changed_3">Changed</h3>
+<h3 id="changed_5">Changed</h3>
 <ul>
 <li><code>Proposer</code> JSON parsing switched to balanced-bracket scanning + Chinese quote normalization</li>
 <li>PES layer uses <code>relaxed_json_loads</code> for all JSON file reads</li>
@@ -1500,13 +1635,13 @@
 <li>3 个 examples:<code>01_audit_single_doc.py</code> / <code>02_generate_with_revision.py</code> / <code>03_evolve_skill_workflow.py</code></li>
 <li><code>scripts/verify_m3a_release.sh</code> — 发版前 deprecation 扫描一键 gate</li>
 </ul>
-<h3 id="changed_4">Changed</h3>
+<h3 id="changed_6">Changed</h3>
 <ul>
 <li><code>Proposer</code> JSON 解析改为平衡括号扫描 + 中文引号/尾逗号正规化 + 失败后一次严格化重试,修复 GLM 偶发非法 JSON 导致进化循环中断</li>
 <li><code>scrivai.__version__</code> 现在从 <code>importlib.metadata</code> 读取,与 pyproject <code>version</code> 字段单一真相</li>
 <li>README 完整重写,反映当前 PES 架构 + M2 进化系统(原 README 描述的是 M0 前原型,已完全不适用)</li>
 </ul>
-<h3 id="removed_2">Removed</h3>
+<h3 id="removed_3">Removed</h3>
 <ul>
 <li>M0 占位符 <code>FeedbackExample / EvolutionConfig / EvolutionRun / Evaluator / SkillsRootResolver</code> — 被 M2 实际类替代,MVP 原则不做向后兼容</li>
 </ul>
