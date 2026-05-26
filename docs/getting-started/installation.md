@@ -40,7 +40,7 @@ The `to_markdown()` function supports pluggable OCR backends. Configure via envi
 
 | Variable | Default | Description |
 |---|---|---|
-| `SCRIVAI_OCR_BACKEND` | `glm` | OCR backend: `glm` (ZhipuAI cloud) or `monkey` (self-hosted MonkeyOCR) |
+| `SCRIVAI_OCR_BACKEND` | `mineru` | OCR backend: `mineru` (MinerU local pipeline, default), `glm` (ZhipuAI cloud), or `monkey` (self-hosted MonkeyOCR) |
 | `SCRIVAI_GLM_API_KEY` | — | API key for GLM-OCR (required when using `glm` backend; get from [open.bigmodel.cn](https://open.bigmodel.cn)) |
 | `SCRIVAI_OCR_BASE_URL` | — | MonkeyOCR service URL (required when using `monkey` backend) |
 | `SCRIVAI_OCR_UPLOAD_RATE` | `512000` | MonkeyOCR upload rate limit in bytes/s (0 = unlimited) |

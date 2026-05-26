@@ -3,6 +3,21 @@
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 
+## [0.2.1] — 2026-05-25
+
+### Added — MinerU Local OCR Backend
+
+- **MinerU backend** (`ocr_backend="mineru"`): Local PDF→Markdown pipeline powered by MinerU v3.x — intelligent auto-routing (text extraction for text-based pages, OCR for scanned pages), professional table recognition (RapidTable), layout analysis (LayoutLMv3), and formula recognition
+- **MinerU set as default backend**: `SCRIVAI_OCR_BACKEND` env defaults to `"mineru"` (was `"glm"`)
+- **Page range support for MinerU**: `start_page` / `end_page` parameters now work with both GLM and MinerU backends
+- **GLM-OCR concurrency hard cap**: `max_workers` clamped to 3 with warning log to avoid API rate limiting (HTTP 429)
+- Optional dependency group: `pip install scrivai[mineru]`
+
+### Changed
+
+- **Breaking:** Default OCR backend changed from `"glm"` to `"mineru"` — set `SCRIVAI_OCR_BACKEND=glm` to restore previous behavior
+- GLM-OCR `max_workers` is now capped at 3 regardless of user input (was uncapped at 12)
+
 ## [0.2.0] — 2026-05-25
 
 ### Added — Parallel Chunked OCR

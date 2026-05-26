@@ -104,30 +104,45 @@ Each phase is recorded as a `PhaseResult` containing all turns and the final tex
 
 Scrivai includes a `to_markdown()` function that converts PDF, DOC, and DOCX files to Markdown using pluggable OCR backends.
 
-### GLM-OCR (Cloud, Default)
+### MinerU (Local Pipeline, Default)
 
 ```python
 from scrivai import to_markdown
 
-# Set your API key via env or parameter
-# export SCRIVAI_GLM_API_KEY=your-key-here
-
+# MinerU runs locally — no API key needed
 md = to_markdown("report.pdf")
 print(md)
 
-# With page range (GLM-OCR only)
+# With page range
 md = to_markdown("long_report.pdf", start_page=10, end_page=20)
 ```
 
-Large PDFs are automatically split into overlapping chunks and processed **in parallel** — a 300-page document that previously took 30+ minutes now completes in ~5 minutes.
+MinerU uses intelligent auto-routing: text-based pages are extracted directly, scanned pages go through OCR. Includes professional table recognition, layout analysis, and formula detection.
+
+> **First run:** MinerU downloads models automatically (~2-3 GB). Subsequent runs use cached models.
+
+### GLM-OCR (Cloud)
+
+```python
+# Set your API key via env or parameter
+# export SCRIVAI_GLM_API_KEY=your-key-here
+
+md = to_markdown("report.pdf", ocr_backend="glm")
+
+# With page range
+md = to_markdown("long_report.pdf", ocr_backend="glm", start_page=10, end_page=20)
+```
+
+Large PDFs are automatically split into overlapping chunks and processed **in parallel** (max 3 concurrent requests).
 
 ```python
 # Customize chunking (defaults shown)
 md = to_markdown(
     "large_report.pdf",
+    ocr_backend="glm",
     chunk_pages=30,       # pages per chunk
     overlap_pages=2,      # overlap to preserve cross-page tables
-    max_workers=12,       # parallel threads
+    max_workers=3,        # parallel threads (hard cap 3)
 )
 ```
 

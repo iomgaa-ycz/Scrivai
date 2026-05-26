@@ -60,13 +60,13 @@ def register(parser: argparse.ArgumentParser) -> None:
     c.add_argument(
         "--ocr-backend",
         default=None,
-        help="OCR backend: monkey | glm (default from SCRIVAI_OCR_BACKEND env or 'glm')",
+        help="OCR backend: monkey | glm | mineru (default: mineru)",
     )
     c.add_argument("--glm-api-key", default=None, help="GLM-OCR API key override")
     c.add_argument(
-        "--start-page", type=int, default=None, help="PDF start page, 1-based (GLM only)"
+        "--start-page", type=int, default=None, help="PDF start page, 1-based (GLM/MinerU)"
     )
-    c.add_argument("--end-page", type=int, default=None, help="PDF end page, 1-based (GLM only)")
+    c.add_argument("--end-page", type=int, default=None, help="PDF end page, 1-based (GLM/MinerU)")
     c.add_argument("--ocr-base-url", default=None, help="MonkeyOCR service URL override")
     c.add_argument("--timeout", type=int, default=300)
     c.add_argument("--no-fallback", action="store_true", help="disable pandoc fallback")
@@ -92,7 +92,7 @@ def register(parser: argparse.ArgumentParser) -> None:
         "--max-workers",
         type=int,
         default=12,
-        help="max parallel threads for GLM-OCR (default 12)",
+        help="max parallel threads for GLM-OCR (default 12, hard cap 3)",
     )
     c.set_defaults(func=cmd_convert)
 

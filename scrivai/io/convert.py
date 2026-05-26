@@ -1,6 +1,7 @@
 """Pluggable document → Markdown conversion with multiple OCR backends.
 
 Supported backends:
+- mineru: MinerU local pipeline (default)
 - monkey: Self-hosted MonkeyOCR Docker service
 - glm: ZhipuAI GLM-OCR cloud API
 
@@ -336,6 +337,7 @@ def _glm_ocr_single(
 
 
 _CHUNK_RETRIES = 2
+_GLM_MAX_WORKERS = 3
 
 
 def _glm_ocr_chunked(
@@ -369,6 +371,14 @@ def _glm_ocr_chunked(
     """
     if overlap_pages >= chunk_pages:
         raise ValueError(f"overlap_pages ({overlap_pages}) must be < chunk_pages ({chunk_pages})")
+
+    if max_workers > _GLM_MAX_WORKERS:
+        logger.warning(
+            "GLM-OCR max_workers %d 超过限制, 已降至 %d",
+            max_workers,
+            _GLM_MAX_WORKERS,
+        )
+        max_workers = _GLM_MAX_WORKERS
 
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -525,7 +535,106 @@ def _glm_ocr(
     )
 
 
-_BACKENDS: dict[str, Callable[..., str]] = {"monkey": _monkey_ocr, "glm": _glm_ocr}
+_do_parse: Callable[..., None] | None = None
+
+
+def _ensure_mineru() -> Callable[..., None]:
+    """Lazy-load mineru do_parse, auto-downloading models if needed."""
+    global _do_parse
+    if _do_parse is not None:
+        return _do_parse
+    try:
+        from mineru.cli.common import do_parse
+    except ImportError:
+        raise IOError("mineru 未安装，请运行: pip install 'mineru[all]' && mineru-models-download")
+    _do_parse = do_parse
+    return _do_parse
+
+
+def _mineru_ocr(
+    pdf_path: Path,
+    *,
+    timeout: int = 300,
+    start_page: int | None = None,
+    end_page: int | None = None,
+) -> str:
+    """Convert a PDF to Markdown via MinerU local pipeline.
+
+    Uses MinerU's auto mode to intelligently route text-based pages
+    through direct extraction and scanned pages through OCR.
+
+    Args:
+        pdf_path: Path to the PDF file.
+        timeout: Not used by MinerU (kept for backend interface consistency).
+        start_page: PDF start page (1-based, optional).
+        end_page: PDF end page (1-based, optional).
+    Returns:
+        Markdown text.
+    Raises:
+        IOError: MinerU not installed, model missing, or parse failure.
+    """
+    from pypdf import PdfReader, PdfWriter
+
+    # Phase 1: prepare PDF bytes (optional page slicing)
+    if start_page is not None or end_page is not None:
+        reader = PdfReader(pdf_path)
+        total = len(reader.pages)
+        first = max(0, (start_page - 1) if start_page else 0)
+        last = min(total - 1, (end_page - 1) if end_page else total - 1)
+        if first > last:
+            return ""
+        writer = PdfWriter()
+        for i in range(first, last + 1):
+            writer.add_page(reader.pages[i])
+        buf = io.BytesIO()
+        writer.write(buf)
+        pdf_bytes = buf.getvalue()
+        logger.info("MinerU: 切出页 %d-%d (%d 页)", first + 1, last + 1, last - first + 1)
+    else:
+        pdf_bytes = pdf_path.read_bytes()
+
+    stem = pdf_path.stem
+    parse_fn = _ensure_mineru()
+
+    # Phase 2: call MinerU
+    with tempfile.TemporaryDirectory() as td:
+        logger.info("MinerU 开始解析: %s (%d KB)", pdf_path.name, len(pdf_bytes) // 1024)
+        try:
+            parse_fn(
+                output_dir=td,
+                pdf_file_names=[stem],
+                pdf_bytes_list=[pdf_bytes],
+                p_lang_list=["ch"],
+                backend="pipeline",
+                parse_method="auto",
+                f_dump_md=True,
+                f_dump_middle_json=False,
+                f_dump_model_output=False,
+                f_draw_layout_bbox=False,
+                f_draw_span_bbox=False,
+                f_dump_orig_pdf=False,
+                f_dump_content_list=False,
+            )
+        except IOError:
+            raise
+        except Exception as e:
+            raise IOError(f"MinerU 解析失败: {e}") from e
+
+        # Phase 3: read output markdown
+        md_path = Path(td) / stem / "auto" / f"{stem}.md"
+        if not md_path.is_file():
+            raise IOError(f"MinerU 未生成预期输出文件: {md_path}")
+        md = md_path.read_text(encoding="utf-8")
+
+    logger.info("MinerU 完成, 输出 Markdown 共 %d 字符", len(md))
+    return md
+
+
+_BACKENDS: dict[str, Callable[..., str]] = {
+    "monkey": _monkey_ocr,
+    "glm": _glm_ocr,
+    "mineru": _mineru_ocr,
+}
 
 
 def to_markdown(
@@ -560,11 +669,11 @@ def to_markdown(
 
     Args:
         path: Source document (.pdf / .doc / .docx).
-        ocr_backend: Backend name ("monkey" or "glm"). Default from
-            SCRIVAI_OCR_BACKEND env or "glm".
+        ocr_backend: Backend name ("mineru", "monkey", or "glm"). Default from
+            SCRIVAI_OCR_BACKEND env or "mineru".
         glm_api_key: GLM-OCR API key override (default from SCRIVAI_GLM_API_KEY env).
-        start_page: PDF start page (GLM-OCR only, 1-based).
-        end_page: PDF end page (GLM-OCR only, 1-based).
+        start_page: PDF start page (GLM/MinerU, 1-based).
+        end_page: PDF end page (GLM/MinerU, 1-based).
         ocr_base_url: MonkeyOCR service URL (default from SCRIVAI_OCR_BASE_URL env;
             no built-in default — must be configured when using monkey backend).
         upload_rate: MonkeyOCR max upload speed in bytes/second (0 = unlimited).
@@ -589,7 +698,7 @@ def to_markdown(
             f"Unsupported format: {suffix} (supported: {', '.join(sorted(_SUPPORTED_SUFFIXES))})"
         )
 
-    backend = ocr_backend or os.environ.get("SCRIVAI_OCR_BACKEND", "glm")
+    backend = ocr_backend or os.environ.get("SCRIVAI_OCR_BACKEND", "mineru")
     if backend not in _BACKENDS:
         raise ValueError(
             f"Unknown OCR backend: {backend!r} (available: {', '.join(sorted(_BACKENDS))})"
@@ -623,6 +732,11 @@ def to_markdown(
         backend_kwargs["chunk_pages"] = chunk_pages
         backend_kwargs["overlap_pages"] = overlap_pages
         backend_kwargs["max_workers"] = max_workers
+    elif backend == "mineru":
+        if start_page is not None:
+            backend_kwargs["start_page"] = start_page
+        if end_page is not None:
+            backend_kwargs["end_page"] = end_page
 
     ocr_fn = _BACKENDS[backend]
 

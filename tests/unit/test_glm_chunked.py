@@ -171,3 +171,49 @@ def test_chunked_empty_range(tmp_path: Path) -> None:
     )
 
     assert result == ""
+
+
+def test_chunked_max_workers_clamped(tmp_path: Path) -> None:
+    """max_workers > _GLM_MAX_WORKERS → 被 clamp 至 3 并记录 warning。"""
+    from scrivai.io.convert import _GLM_MAX_WORKERS, _glm_ocr_chunked
+
+    pdf = _make_pdf(tmp_path, 10)
+
+    with patch("scrivai.io.convert._glm_ocr_single", return_value="ok") as mock:
+        with patch("scrivai.io.convert.logger") as mock_logger:
+            _glm_ocr_chunked(
+                pdf,
+                api_key="test",
+                timeout=10,
+                chunk_pages=30,
+                overlap_pages=2,
+                max_workers=12,
+            )
+
+    assert mock.call_count == 1
+    mock_logger.warning.assert_any_call(
+        "GLM-OCR max_workers %d 超过限制, 已降至 %d",
+        12,
+        _GLM_MAX_WORKERS,
+    )
+
+
+def test_chunked_max_workers_within_limit(tmp_path: Path) -> None:
+    """max_workers <= _GLM_MAX_WORKERS → 不 clamp，无 warning。"""
+    from scrivai.io.convert import _glm_ocr_chunked
+
+    pdf = _make_pdf(tmp_path, 10)
+
+    with patch("scrivai.io.convert._glm_ocr_single", return_value="ok"):
+        with patch("scrivai.io.convert.logger") as mock_logger:
+            _glm_ocr_chunked(
+                pdf,
+                api_key="test",
+                timeout=10,
+                chunk_pages=30,
+                overlap_pages=2,
+                max_workers=2,
+            )
+
+    for call in mock_logger.warning.call_args_list:
+        assert "超过限制" not in str(call)

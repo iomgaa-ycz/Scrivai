@@ -107,30 +107,45 @@ asyncio.run(main())
 
 Scrivai 提供 `to_markdown()` 函数，通过可插拔的 OCR 后端将 PDF、DOC、DOCX 文件转为 Markdown。
 
-### GLM-OCR（云端，默认）
+### MinerU（本地流水线，默认）
 
 ```python
 from scrivai import to_markdown
 
-# 通过环境变量或参数设置 API Key
-# export SCRIVAI_GLM_API_KEY=your-key-here
-
+# MinerU 本地运行，无需 API Key
 md = to_markdown("report.pdf")
 print(md)
 
-# 指定页范围（仅 GLM-OCR）
+# 指定页范围
 md = to_markdown("long_report.pdf", start_page=10, end_page=20)
 ```
 
-大型 PDF 会自动拆分为重叠分块并**并行处理** — 300 页文档从 30+ 分钟缩短至约 5 分钟。
+MinerU 使用智能分流：文字型页面直接提取，扫描件页面走 OCR。内置专业表格识别、版面分析和公式检测。
+
+> **首次运行**：MinerU 会自动下载模型（约 2-3 GB），后续使用缓存模型。
+
+### GLM-OCR（云端）
+
+```python
+# 通过环境变量或参数设置 API Key
+# export SCRIVAI_GLM_API_KEY=your-key-here
+
+md = to_markdown("report.pdf", ocr_backend="glm")
+
+# 指定页范围
+md = to_markdown("long_report.pdf", ocr_backend="glm", start_page=10, end_page=20)
+```
+
+大型 PDF 会自动拆分为重叠分块并**并行处理**（最大 3 并发）。
 
 ```python
 # 自定义分块参数（括号内为默认值）
 md = to_markdown(
     "large_report.pdf",
+    ocr_backend="glm",
     chunk_pages=30,       # 每块页数
     overlap_pages=2,      # 重叠页数，保留跨页表格
-    max_workers=12,       # 并行线程数
+    max_workers=3,        # 并行线程数（硬限 3）
 )
 ```
 
