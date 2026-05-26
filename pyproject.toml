@@ -71,11 +71,19 @@ target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W"]
+select = ["E", "F", "I", "W", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "RUF022",  # unsorted __all__ — 我们按语义分组
+    "RUF001",  # ambiguous unicode — 中文项目，误报
+    "RUF003",  # ambiguous unicode comment — 同上
+]
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
 python_version = "3.11"
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_configs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

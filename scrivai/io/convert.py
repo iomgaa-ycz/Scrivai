@@ -14,6 +14,7 @@ All failures raise IOError with an explicit message.
 
 from __future__ import annotations
 
+import atexit
 import base64
 import difflib
 import io
@@ -21,12 +22,15 @@ import json
 import logging
 import os
 import shutil
+import socket
 import subprocess
 import tempfile
+import threading
 import time
 import zipfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import requests
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
@@ -52,7 +56,7 @@ def _to_pdf(path: Path, *, target_dir: Path) -> Path:
     """
     soffice = shutil.which("libreoffice") or shutil.which("soffice")
     if soffice is None:
-        raise IOError("libreoffice/soffice binary not found")
+        raise OSError("libreoffice/soffice binary not found")
 
     proc = subprocess.run(
         [
@@ -69,11 +73,11 @@ def _to_pdf(path: Path, *, target_dir: Path) -> Path:
         timeout=120,
     )
     if proc.returncode != 0:
-        raise IOError(f"LibreOffice PDF conversion failed ({path}): {proc.stderr.strip()}")
+        raise OSError(f"LibreOffice PDF conversion failed ({path}): {proc.stderr.strip()}")
 
     converted = target_dir / f"{path.stem}.pdf"
     if not converted.is_file():
-        raise IOError(f"LibreOffice did not produce expected file: {converted}")
+        raise OSError(f"LibreOffice did not produce expected file: {converted}")
     return converted
 
 
@@ -119,30 +123,30 @@ def _monkey_ocr(pdf_path: Path, *, base_url: str, timeout: int, upload_rate: int
         )
 
     if resp.status_code != 200:
-        raise IOError(f"MonkeyOCR /parse returned {resp.status_code}: {resp.text[:200]}")
+        raise OSError(f"MonkeyOCR /parse returned {resp.status_code}: {resp.text[:200]}")
 
     data = resp.json()
     if not data.get("success"):
-        raise IOError(f"MonkeyOCR processing failed: {data.get('message')}")
+        raise OSError(f"MonkeyOCR processing failed: {data.get('message')}")
     download_url = data.get("download_url")
     if not download_url:
-        raise IOError(f"MonkeyOCR response missing download_url: {data}")
+        raise OSError(f"MonkeyOCR response missing download_url: {data}")
 
     full_url = f"{base}{download_url}" if download_url.startswith("/") else download_url
 
     zip_resp = session.get(full_url, timeout=timeout)
 
     if zip_resp.status_code != 200:
-        raise IOError(f"MonkeyOCR ZIP download returned {zip_resp.status_code}")
+        raise OSError(f"MonkeyOCR ZIP download returned {zip_resp.status_code}")
 
     try:
         with zipfile.ZipFile(io.BytesIO(zip_resp.content)) as zf:
             md_files = [n for n in zf.namelist() if n.endswith(".md")]
             if not md_files:
-                raise IOError("No .md file found in MonkeyOCR ZIP")
+                raise OSError("No .md file found in MonkeyOCR ZIP")
             return zf.read(md_files[0]).decode("utf-8")
     except zipfile.BadZipFile as e:
-        raise IOError(f"MonkeyOCR did not return a valid ZIP: {e}") from e
+        raise OSError(f"MonkeyOCR did not return a valid ZIP: {e}") from e
 
 
 def _pandoc_to_markdown(docx_path: Path) -> str:
@@ -156,7 +160,7 @@ def _pandoc_to_markdown(docx_path: Path) -> str:
         IOError: pandoc unavailable or conversion failed.
     """
     if shutil.which("pandoc") is None:
-        raise IOError("pandoc binary not found (run `apt install pandoc` or conda install)")
+        raise OSError("pandoc binary not found (run `apt install pandoc` or conda install)")
 
     proc = subprocess.run(
         ["pandoc", str(docx_path), "-t", "markdown"],
@@ -165,7 +169,7 @@ def _pandoc_to_markdown(docx_path: Path) -> str:
         encoding="utf-8",
     )
     if proc.returncode != 0:
-        raise IOError(f"pandoc conversion failed ({docx_path}): {proc.stderr.strip()}")
+        raise OSError(f"pandoc conversion failed ({docx_path}): {proc.stderr.strip()}")
     return proc.stdout
 
 
@@ -324,15 +328,15 @@ def _glm_ocr_single(
     )
 
     if resp.status_code != 200:
-        raise IOError(f"GLM-OCR API returned {resp.status_code}: {resp.text[:300]}")
+        raise OSError(f"GLM-OCR API returned {resp.status_code}: {resp.text[:300]}")
 
     data = resp.json()
     if "error" in data:
-        raise IOError(f"GLM-OCR API error: {data['error']}")
+        raise OSError(f"GLM-OCR API error: {data['error']}")
 
     md_results = data.get("md_results")
     if md_results is None:
-        raise IOError(f"GLM-OCR response missing md_results: {list(data.keys())}")
+        raise OSError(f"GLM-OCR response missing md_results: {list(data.keys())}")
     return md_results
 
 
@@ -447,7 +451,7 @@ def _glm_ocr_chunked(
                 md = _glm_ocr_single(chunk_bytes, api_key=api_key, timeout=timeout)
                 logger.info("Chunk %d/%d 完成 (%.1fs)", idx + 1, len(ranges), time.time() - t0)
                 return (idx, md)
-            except (IOError, requests.exceptions.RequestException) as e:
+            except (OSError, requests.exceptions.RequestException) as e:
                 last_err = e
                 if attempt < _CHUNK_RETRIES:
                     wait = 2**attempt
@@ -461,7 +465,7 @@ def _glm_ocr_chunked(
                     )
                     time.sleep(wait)
 
-        raise IOError(
+        raise OSError(
             f"Chunk {idx + 1} (页 {start + 1}-{end + 1}) 重试 {_CHUNK_RETRIES} 次后仍失败"
         ) from last_err
 
@@ -535,20 +539,88 @@ def _glm_ocr(
     )
 
 
-_do_parse: Callable[..., None] | None = None
+class _MineruRouterManager:
+    """Manage a mineru-router subprocess lifecycle.
+
+    Auto-starts the router on first get_url() call. Registers atexit
+    cleanup to terminate the subprocess on program exit.
+    """
+
+    _lock = threading.Lock()
+
+    def __init__(self) -> None:
+        self._process: subprocess.Popen | None = None
+        self._url: str = ""
+        self._started = False
+
+    @staticmethod
+    def _find_free_port() -> int:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", 0))
+            return s.getsockname()[1]
+
+    def get_url(self) -> str:
+        if self._started:
+            return self._url
+        with self._lock:
+            if self._started:
+                return self._url
+            self._url = self._auto_start()
+            self._started = True
+            return self._url
+
+    def _auto_start(self) -> str:
+        cmd = shutil.which("mineru-router")
+        if cmd is None:
+            raise OSError("mineru-router 未找到，请运行: pip install 'mineru[all]'")
+
+        port = self._find_free_port()
+        self._process = subprocess.Popen(
+            [cmd, "--host", "127.0.0.1", "--port", str(port), "--local-gpus", "auto"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        atexit.register(self.shutdown)
+
+        base = f"http://127.0.0.1:{port}"
+        self._wait_healthy(base, timeout=300)
+        logger.info("mineru-router 已启动: %s (pid=%d)", base, self._process.pid)
+        return base
+
+    def _wait_healthy(self, base: str, timeout: int) -> None:
+        deadline = time.monotonic() + timeout
+        interval = 1.0
+        session = requests.Session()
+        session.trust_env = False
+        while time.monotonic() < deadline:
+            if self._process and self._process.poll() is not None:
+                raise OSError(f"mineru-router 进程意外退出 (returncode={self._process.returncode})")
+            try:
+                r = session.get(f"{base}/health", timeout=5)
+                if r.status_code == 200:
+                    data = r.json()
+                    if data.get("status") == "healthy":
+                        return
+            except requests.exceptions.RequestException:
+                pass
+            time.sleep(interval)
+            interval = min(interval * 1.5, 10.0)
+        raise OSError(f"mineru-router 在 {timeout}s 内未就绪")
+
+    def shutdown(self) -> None:
+        if self._process is None:
+            return
+        try:
+            self._process.terminate()
+            self._process.wait(timeout=10)
+        except Exception:
+            self._process.kill()
+        finally:
+            self._process = None
+            self._started = False
 
 
-def _ensure_mineru() -> Callable[..., None]:
-    """Lazy-load mineru do_parse, auto-downloading models if needed."""
-    global _do_parse
-    if _do_parse is not None:
-        return _do_parse
-    try:
-        from mineru.cli.common import do_parse
-    except ImportError:
-        raise IOError("mineru 未安装，请运行: pip install 'mineru[all]' && mineru-models-download")
-    _do_parse = do_parse
-    return _do_parse
+_router_manager: _MineruRouterManager | None = None
 
 
 def _mineru_ocr(
@@ -557,76 +629,89 @@ def _mineru_ocr(
     timeout: int = 300,
     start_page: int | None = None,
     end_page: int | None = None,
+    mineru_url: str | None = None,
 ) -> str:
-    """Convert a PDF to Markdown via MinerU local pipeline.
+    """Convert a PDF to Markdown via MinerU HTTP API (mineru-router).
 
-    Uses MinerU's auto mode to intelligently route text-based pages
-    through direct extraction and scanned pages through OCR.
+    Calls a mineru-router process via POST /file_parse. The router is
+    auto-started on first call if no URL is provided.
 
     Args:
         pdf_path: Path to the PDF file.
-        timeout: Not used by MinerU (kept for backend interface consistency).
+        timeout: HTTP timeout in seconds.
         start_page: PDF start page (1-based, optional).
         end_page: PDF end page (1-based, optional).
+        mineru_url: Explicit mineru-router URL (default from
+            SCRIVAI_MINERU_URL env, or auto-start).
     Returns:
         Markdown text.
     Raises:
-        IOError: MinerU not installed, model missing, or parse failure.
+        IOError: Router unavailable or parse failure.
     """
-    from pypdf import PdfReader, PdfWriter
+    if start_page is not None and end_page is not None and start_page > end_page:
+        return ""
 
-    # Phase 1: prepare PDF bytes (optional page slicing)
-    if start_page is not None or end_page is not None:
-        reader = PdfReader(pdf_path)
-        total = len(reader.pages)
-        first = max(0, (start_page - 1) if start_page else 0)
-        last = min(total - 1, (end_page - 1) if end_page else total - 1)
-        if first > last:
-            return ""
-        writer = PdfWriter()
-        for i in range(first, last + 1):
-            writer.add_page(reader.pages[i])
-        buf = io.BytesIO()
-        writer.write(buf)
-        pdf_bytes = buf.getvalue()
-        logger.info("MinerU: 切出页 %d-%d (%d 页)", first + 1, last + 1, last - first + 1)
+    # Phase 1: resolve router URL
+    url = mineru_url or os.environ.get("SCRIVAI_MINERU_URL", "")
+    if url:
+        base = url.rstrip("/")
     else:
-        pdf_bytes = pdf_path.read_bytes()
+        global _router_manager
+        if _router_manager is None:
+            _router_manager = _MineruRouterManager()
+        base = _router_manager.get_url()
 
+    # Phase 2: POST /file_parse with multipart/form-data
+    session = requests.Session()
+    session.trust_env = False
+
+    start_id = str((start_page - 1) if start_page is not None else 0)
+    end_id = str((end_page - 1) if end_page is not None else 99999)
+
+    logger.info("MinerU (HTTP) 开始解析: %s", pdf_path.name)
+
+    with pdf_path.open("rb") as f:
+        encoder = MultipartEncoder(
+            fields={
+                "files": (pdf_path.name, f, "application/pdf"),
+                "backend": "pipeline",
+                "parse_method": "auto",
+                "lang_list": '["ch"]',
+                "return_md": "true",
+                "return_middle_json": "false",
+                "return_model_output": "false",
+                "return_content_list": "false",
+                "return_images": "false",
+                "start_page_id": start_id,
+                "end_page_id": end_id,
+            }
+        )
+        resp = session.post(
+            f"{base}/file_parse",
+            data=encoder,
+            headers={"Content-Type": encoder.content_type},
+            timeout=timeout,
+        )
+
+    # Phase 3: parse response
+    if resp.status_code != 200:
+        raise OSError(f"mineru-router /file_parse returned {resp.status_code}: {resp.text[:300]}")
+
+    data = resp.json()
+    if data.get("status") != "completed":
+        err = data.get("error", data.get("status", "unknown"))
+        raise OSError(f"mineru-router 任务失败: {err}")
+
+    results = data.get("results", {})
     stem = pdf_path.stem
-    parse_fn = _ensure_mineru()
+    entry = results.get(stem)
+    if entry is None and results:
+        entry = next(iter(results.values()))
+    if entry is None:
+        raise OSError(f"mineru-router 响应无结果: {list(data.keys())}")
 
-    # Phase 2: call MinerU
-    with tempfile.TemporaryDirectory() as td:
-        logger.info("MinerU 开始解析: %s (%d KB)", pdf_path.name, len(pdf_bytes) // 1024)
-        try:
-            parse_fn(
-                output_dir=td,
-                pdf_file_names=[stem],
-                pdf_bytes_list=[pdf_bytes],
-                p_lang_list=["ch"],
-                backend="pipeline",
-                parse_method="auto",
-                f_dump_md=True,
-                f_dump_middle_json=False,
-                f_dump_model_output=False,
-                f_draw_layout_bbox=False,
-                f_draw_span_bbox=False,
-                f_dump_orig_pdf=False,
-                f_dump_content_list=False,
-            )
-        except IOError:
-            raise
-        except Exception as e:
-            raise IOError(f"MinerU 解析失败: {e}") from e
-
-        # Phase 3: read output markdown
-        md_path = Path(td) / stem / "auto" / f"{stem}.md"
-        if not md_path.is_file():
-            raise IOError(f"MinerU 未生成预期输出文件: {md_path}")
-        md = md_path.read_text(encoding="utf-8")
-
-    logger.info("MinerU 完成, 输出 Markdown 共 %d 字符", len(md))
+    md = entry.get("md_content", "")
+    logger.info("MinerU (HTTP) 完成, 输出 Markdown 共 %d 字符", len(md))
     return md
 
 
@@ -648,6 +733,8 @@ def to_markdown(
     # --- MonkeyOCR ---
     ocr_base_url: str | None = None,
     upload_rate: int | None = None,
+    # --- MinerU ---
+    mineru_url: str | None = None,
     # --- common ---
     timeout: int = 300,
     fallback: bool = True,
@@ -677,6 +764,8 @@ def to_markdown(
         ocr_base_url: MonkeyOCR service URL (default from SCRIVAI_OCR_BASE_URL env;
             no built-in default — must be configured when using monkey backend).
         upload_rate: MonkeyOCR max upload speed in bytes/second (0 = unlimited).
+        mineru_url: MinerU router URL (default from SCRIVAI_MINERU_URL env;
+            leave empty to auto-start a local mineru-router).
         timeout: Per-request HTTP timeout in seconds.
         fallback: Enable pandoc fallback when OCR is unreachable.
         chunk_pages: Pages per chunk for GLM-OCR parallel processing (default 30).
@@ -690,11 +779,11 @@ def to_markdown(
     """
     src = Path(path)
     if not src.is_file():
-        raise IOError(f"File not found: {src}")
+        raise OSError(f"File not found: {src}")
 
     suffix = src.suffix.lower()
     if suffix not in _SUPPORTED_SUFFIXES:
-        raise IOError(
+        raise OSError(
             f"Unsupported format: {suffix} (supported: {', '.join(sorted(_SUPPORTED_SUFFIXES))})"
         )
 
@@ -737,6 +826,8 @@ def to_markdown(
             backend_kwargs["start_page"] = start_page
         if end_page is not None:
             backend_kwargs["end_page"] = end_page
+        if mineru_url is not None:
+            backend_kwargs["mineru_url"] = mineru_url
 
     ocr_fn = _BACKENDS[backend]
 
@@ -754,7 +845,7 @@ def to_markdown(
 
         try:
             return _call_ocr(pdf_path)
-        except (requests.exceptions.RequestException, IOError) as ocr_err:
+        except (OSError, requests.exceptions.RequestException) as ocr_err:
             is_network_error = isinstance(ocr_err, requests.exceptions.RequestException) or (
                 isinstance(ocr_err, IOError)
                 and any(
@@ -775,7 +866,7 @@ def to_markdown(
             docx_path = tmp_dir / f"{src.stem}.docx"
             soffice = shutil.which("libreoffice") or shutil.which("soffice")
             if soffice is None:
-                raise IOError("libreoffice/soffice binary not found") from ocr_err
+                raise OSError("libreoffice/soffice binary not found") from ocr_err
 
             proc = subprocess.run(
                 [
@@ -792,11 +883,11 @@ def to_markdown(
                 timeout=120,
             )
             if proc.returncode != 0:
-                raise IOError(
+                raise OSError(
                     f"LibreOffice docx fallback conversion failed ({src}): {proc.stderr.strip()}"
                 ) from ocr_err
             if not docx_path.is_file():
-                raise IOError(
+                raise OSError(
                     f"LibreOffice did not produce expected file: {docx_path}"
                 ) from ocr_err
             return _pandoc_to_markdown(docx_path)

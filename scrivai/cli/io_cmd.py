@@ -25,6 +25,7 @@ def cmd_convert(args: argparse.Namespace) -> dict[str, Any]:
         start_page=args.start_page,
         end_page=args.end_page,
         ocr_base_url=args.ocr_base_url,
+        mineru_url=args.mineru_url,
         timeout=args.timeout,
         fallback=not args.no_fallback,
         upload_rate=args.upload_rate,
@@ -68,6 +69,7 @@ def register(parser: argparse.ArgumentParser) -> None:
     )
     c.add_argument("--end-page", type=int, default=None, help="PDF end page, 1-based (GLM/MinerU)")
     c.add_argument("--ocr-base-url", default=None, help="MonkeyOCR service URL override")
+    c.add_argument("--mineru-url", default=None, help="MinerU router URL (auto-start if omitted)")
     c.add_argument("--timeout", type=int, default=300)
     c.add_argument("--no-fallback", action="store_true", help="disable pandoc fallback")
     c.add_argument(
