@@ -1,0 +1,2544 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Configurable document generation & audit framework built on Claude Agent SDK">
+      
+      
+      
+        <link rel="canonical" href="https://iomgaa-ycz.github.io/Scrivai/concepts/io/">
+      
+      
+        <link rel="prev" href="../knowledge/">
+      
+      
+        <link rel="next" href="../../api/pes/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>IO - Scrivai</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#io-document-conversion" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Scrivai" class="md-header__button md-logo" aria-label="Scrivai" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Scrivai
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              IO
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/iomgaa-ycz/Scrivai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../pes/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/pes/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Scrivai" class="md-nav__button md-logo" aria-label="Scrivai" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Scrivai
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/iomgaa-ycz/Scrivai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PES Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workspace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trajectory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trajectory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../knowledge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Knowledge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IO
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#to_markdown-vs-markdownconverter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_markdown() vs MarkdownConverter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two Modes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Two Modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-mode-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Mode (Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpu-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPU Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ocr-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OCR Backends
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OCR Backends">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#monkeyocr-self-hosted-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MonkeyOCR (Self-Hosted Docker)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glm-ocr-zhipuai-cloud" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLM-OCR (ZhipuAI Cloud)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mineru-local-gpu-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MinerU (Local GPU Pipeline)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#converterconfig-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConverterConfig Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ConverterConfig Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-mode-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Mode Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpu-mode-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPU Mode Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failure-handling-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failure Handling Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credential-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Credential Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-group-concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Group Concurrency
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dispatch-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dispatch Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dispatch Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overflow-strategy-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overflow Strategy (Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fallback-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fallback Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pdf-chunking-merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PDF Chunking &amp; Merge
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PDF Chunking &amp; Merge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fault-tolerance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fault Tolerance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fault Tolerance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#layer-1-per-request-retry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 1 — Per-Request Retry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layer-2-per-group-cooldown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 2 — Per-Group Cooldown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layer-3-backend-dispatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 3 — Backend Dispatch
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batch-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch Processing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Batch Processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#file_first-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        file_first (Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interleave" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        interleave
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#completion-callback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Completion Callback
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#html-table-post-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTML Table Post-Processing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#word-file-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word File Conversion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PES
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workspace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/knowledge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Knowledge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#to_markdown-vs-markdownconverter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_markdown() vs MarkdownConverter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two Modes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Two Modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-mode-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Mode (Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpu-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPU Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ocr-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OCR Backends
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OCR Backends">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#monkeyocr-self-hosted-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MonkeyOCR (Self-Hosted Docker)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glm-ocr-zhipuai-cloud" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLM-OCR (ZhipuAI Cloud)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mineru-local-gpu-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MinerU (Local GPU Pipeline)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#converterconfig-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConverterConfig Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ConverterConfig Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-mode-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Mode Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpu-mode-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPU Mode Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failure-handling-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failure Handling Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credential-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Credential Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-group-concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Group Concurrency
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dispatch-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dispatch Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dispatch Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overflow-strategy-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overflow Strategy (Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fallback-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fallback Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pdf-chunking-merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PDF Chunking &amp; Merge
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PDF Chunking &amp; Merge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fault-tolerance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fault Tolerance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fault Tolerance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#layer-1-per-request-retry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 1 — Per-Request Retry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layer-2-per-group-cooldown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 2 — Per-Group Cooldown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layer-3-backend-dispatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 3 — Backend Dispatch
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batch-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch Processing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Batch Processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#file_first-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        file_first (Default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interleave" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        interleave
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#completion-callback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Completion Callback
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#html-table-post-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTML Table Post-Processing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#word-file-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word File Conversion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="io-document-conversion">IO — Document Conversion</h1>
+<p>Scrivai's IO module converts PDF, DOC, and DOCX files to Markdown, and renders Markdown back to DOCX. The PDF conversion pipeline supports multiple OCR backends with concurrent processing, automatic fault tolerance, and batch operations.</p>
+<h2 id="architecture-overview">Architecture Overview</h2>
+<pre><code>                        ┌─────────────────────┐
+                        │   to_markdown(path)  │  ← zero-config shorthand
+                        └─────────┬───────────┘
+                                  │
+                        ┌─────────▼───────────┐
+                        │  MarkdownConverter   │  ← full-featured entry point
+                        │  (ConverterConfig)   │
+                        └─────────┬───────────┘
+                                  │
+                  ┌───────────────┼───────────────┐
+                  │               │               │
+            ┌─────▼─────┐  ┌─────▼─────┐  ┌──────▼──────┐
+            │ .doc/.docx │  │   .pdf    │  │   .pdf      │
+            │ markitdown │  │ API mode  │  │  GPU mode   │
+            │  (local)   │  │           │  │  (MinerU)   │
+            └───────────┘  └─────┬─────┘  └─────────────┘
+                                 │
+                    ┌────────────┼────────────┐
+                    │            │            │
+              ┌─────▼────┐ ┌────▼────┐ ┌─────▼────┐
+              │MonkeyOCR │ │GLM-OCR  │ │ MinerU   │
+              │(Docker)  │ │(Cloud)  │ │(HTTP API)│
+              └──────────┘ └─────────┘ └──────────┘
+</code></pre>
+<h2 id="to_markdown-vs-markdownconverter"><code>to_markdown()</code> vs <code>MarkdownConverter</code></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>to_markdown()</code></th>
+<th><code>MarkdownConverter</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Use case</strong></td>
+<td>Quick one-off conversion</td>
+<td>Production pipelines</td>
+</tr>
+<tr>
+<td><strong>Configuration</strong></td>
+<td>Zero-config (reads env vars)</td>
+<td>Full <code>ConverterConfig</code> control</td>
+</tr>
+<tr>
+<td><strong>Multi-backend</strong></td>
+<td>Default backends from env</td>
+<td>Custom backend priority, dispatch strategy</td>
+</tr>
+<tr>
+<td><strong>Batch processing</strong></td>
+<td>Single file only</td>
+<td><code>convert_batch()</code> with callbacks</td>
+</tr>
+<tr>
+<td><strong>Lifecycle</strong></td>
+<td>Creates &amp; destroys converter per call</td>
+<td>Reuse across multiple calls</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"># Simple: zero-config, reads SCRIVAI_GLM_API_KEY / SCRIVAI_OCR_BASE_URL from env
+from scrivai import to_markdown
+md = to_markdown(&quot;report.pdf&quot;)
+
+# Advanced: full control
+from scrivai import MarkdownConverter
+with MarkdownConverter(
+    mode=&quot;api&quot;,
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;, &quot;http://gpu7:7867&quot;],
+    glm_api_keys=[&quot;key1&quot;, &quot;key2&quot;],
+) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<h2 id="two-modes">Two Modes</h2>
+<h3 id="api-mode-default">API Mode (Default)</h3>
+<p>Uses remote OCR services (MonkeyOCR and/or GLM-OCR). PDFs are split into chunks and dispatched concurrently across backend groups.</p>
+<pre><code class="language-python">with MarkdownConverter(mode=&quot;api&quot;, monkey_endpoints=[&quot;http://localhost:7866&quot;]) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<h3 id="gpu-mode">GPU Mode</h3>
+<p>Uses a local MinerU instance via HTTP API. Suitable when you have GPU hardware available and want to avoid external API dependencies.</p>
+<pre><code class="language-python">with MarkdownConverter(mode=&quot;gpu&quot;) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<p>MinerU auto-starts a <code>mineru-router</code> process if no URL is provided. First run downloads models (~2-3 GB).</p>
+<h2 id="ocr-backends">OCR Backends</h2>
+<h3 id="monkeyocr-self-hosted-docker">MonkeyOCR (Self-Hosted Docker)</h3>
+<p>A self-hosted OCR service running in Docker with GPU acceleration. Each instance binds to one GPU.</p>
+<ul>
+<li><strong>Concurrency</strong>: 4 concurrent requests per instance (default)</li>
+<li><strong>Input</strong>: PDF files uploaded via HTTP multipart</li>
+<li><strong>Output</strong>: ZIP containing Markdown file</li>
+<li><strong>Rate limit</strong>: Optional upload throttle via <code>upload_rate</code> (bytes/sec)</li>
+</ul>
+<pre><code class="language-python">with MarkdownConverter(
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;, &quot;http://gpu7:7867&quot;],
+    upload_rate=512000,  # 500 KB/s upload throttle
+) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<h3 id="glm-ocr-zhipuai-cloud">GLM-OCR (ZhipuAI Cloud)</h3>
+<p>ZhipuAI's cloud OCR API. Requires an API key from <a href="https://open.bigmodel.cn">open.bigmodel.cn</a>.</p>
+<ul>
+<li><strong>Concurrency</strong>: 3 concurrent requests per key (default)</li>
+<li><strong>Input</strong>: Base64-encoded PDF (≤ 100 pages, ≤ 50 MB per chunk)</li>
+<li><strong>Output</strong>: Markdown text (supports both legacy and ChatCompletion response formats)</li>
+<li><strong>Chunking</strong>: Large PDFs are automatically split into chunks before sending</li>
+</ul>
+<pre><code class="language-python">with MarkdownConverter(
+    glm_api_keys=[&quot;key1&quot;],
+) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<h3 id="mineru-local-gpu-pipeline">MinerU (Local GPU Pipeline)</h3>
+<p>Local OCR pipeline powered by MinerU. Uses intelligent auto-routing: text-based pages are extracted directly, scanned pages go through OCR. Includes table recognition, layout analysis, and formula detection.</p>
+<ul>
+<li><strong>Concurrency</strong>: 2 files per group (default)</li>
+<li><strong>Groups</strong>: Multiple MinerU instances via <code>mineru_urls</code></li>
+<li><strong>Auto-start</strong>: If no URL is provided, starts a local <code>mineru-router</code> automatically</li>
+</ul>
+<pre><code class="language-python">with MarkdownConverter(
+    mode=&quot;gpu&quot;,
+    mineru_urls=[&quot;http://gpu1:8000&quot;, &quot;http://gpu2:8000&quot;],
+    gpu_groups=2,
+) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<h2 id="converterconfig-reference">ConverterConfig Reference</h2>
+<p><code>ConverterConfig</code> is a dataclass that controls all converter behavior. All fields have sensible defaults.</p>
+<h3 id="api-mode-fields">API Mode Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mode</code></td>
+<td><code>"api"</code> | <code>"gpu"</code></td>
+<td><code>"api"</code></td>
+<td>Processing mode</td>
+</tr>
+<tr>
+<td><code>dispatch</code></td>
+<td><code>"overflow"</code> | <code>"fallback"</code></td>
+<td><code>"overflow"</code></td>
+<td>Multi-backend dispatch strategy</td>
+</tr>
+<tr>
+<td><code>api_backends</code></td>
+<td><code>list[str]</code></td>
+<td><code>["monkey", "glm"]</code></td>
+<td>Backend priority order</td>
+</tr>
+<tr>
+<td><code>concurrency_per_group</code></td>
+<td><code>dict[str, int]</code></td>
+<td><code>{"monkey": 4, "glm": 3}</code></td>
+<td>Per-backend per-group concurrency</td>
+</tr>
+<tr>
+<td><code>max_failures</code></td>
+<td><code>dict[str, int]</code></td>
+<td><code>{}</code></td>
+<td>Per-backend max failures before fallback (required for non-terminal backends in fallback mode)</td>
+</tr>
+<tr>
+<td><code>chunk_pages</code></td>
+<td><code>int</code></td>
+<td><code>50</code></td>
+<td>Pages per PDF chunk</td>
+</tr>
+<tr>
+<td><code>overlap_pages</code></td>
+<td><code>int</code></td>
+<td><code>2</code></td>
+<td>Overlapping pages between adjacent chunks</td>
+</tr>
+<tr>
+<td><code>chunk_strategy</code></td>
+<td><code>"file_first"</code> | <code>"interleave"</code></td>
+<td><code>"file_first"</code></td>
+<td>Batch chunk dispatch strategy</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gpu-mode-fields">GPU Mode Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpu_backend</code></td>
+<td><code>str</code></td>
+<td><code>"mineru"</code></td>
+<td>GPU backend name</td>
+</tr>
+<tr>
+<td><code>gpu_concurrency_per_group</code></td>
+<td><code>int</code></td>
+<td><code>2</code></td>
+<td>Concurrent files per GPU group</td>
+</tr>
+<tr>
+<td><code>gpu_groups</code></td>
+<td><code>int</code></td>
+<td><code>1</code></td>
+<td>Number of GPU groups</td>
+</tr>
+</tbody>
+</table>
+<h3 id="common-fields">Common Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>html_table</code></td>
+<td><code>"keep"</code> | <code>"to_markdown"</code></td>
+<td><code>"keep"</code></td>
+<td>HTML table post-processing</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>int</code></td>
+<td><code>300</code></td>
+<td>Per-request HTTP timeout (seconds)</td>
+</tr>
+<tr>
+<td><code>retries</code></td>
+<td><code>int</code></td>
+<td><code>3</code></td>
+<td>Max retry count per request</td>
+</tr>
+<tr>
+<td><code>retry_base_delay</code></td>
+<td><code>float</code></td>
+<td><code>10.0</code></td>
+<td>First retry delay (seconds)</td>
+</tr>
+<tr>
+<td><code>retry_multiplier</code></td>
+<td><code>float</code></td>
+<td><code>2.0</code></td>
+<td>Exponential backoff multiplier</td>
+</tr>
+</tbody>
+</table>
+<h3 id="failure-handling-fields">Failure Handling Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>failure_threshold</code></td>
+<td><code>int</code></td>
+<td><code>2</code></td>
+<td>Consecutive failures per group before cooldown</td>
+</tr>
+<tr>
+<td><code>failure_cooldown_max</code></td>
+<td><code>float</code></td>
+<td><code>300.0</code></td>
+<td>Maximum cooldown duration (seconds)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="credential-fields">Credential Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>glm_api_keys</code></td>
+<td><code>list[str]</code></td>
+<td><code>[]</code></td>
+<td>GLM API keys (one per group); falls back to <code>SCRIVAI_GLM_API_KEY</code> env</td>
+</tr>
+<tr>
+<td><code>monkey_endpoints</code></td>
+<td><code>list[str]</code></td>
+<td><code>[]</code></td>
+<td>MonkeyOCR endpoint URLs; falls back to <code>SCRIVAI_OCR_BASE_URL</code> env</td>
+</tr>
+<tr>
+<td><code>upload_rate</code></td>
+<td><code>int \| None</code></td>
+<td><code>None</code></td>
+<td>MonkeyOCR upload throttle (bytes/sec)</td>
+</tr>
+<tr>
+<td><code>mineru_urls</code></td>
+<td><code>list[str]</code></td>
+<td><code>[]</code></td>
+<td>MinerU instance URLs</td>
+</tr>
+</tbody>
+</table>
+<h2 id="multi-group-concurrency">Multi-Group Concurrency</h2>
+<p>Each backend can have multiple <strong>groups</strong> — one group per credential (API key or endpoint). Groups are load-balanced with round-robin dispatch, and each group has independent concurrency semaphores and failure tracking.</p>
+<pre><code class="language-python"># 2 MonkeyOCR instances + 3 GLM keys = 5 groups total
+# MonkeyOCR: 4 concurrent/group × 2 groups = 8 slots
+# GLM: 3 concurrent/group × 3 groups = 9 slots
+# Total: 17 concurrent chunk requests
+with MarkdownConverter(
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;, &quot;http://gpu7:7867&quot;],
+    glm_api_keys=[&quot;key1&quot;, &quot;key2&quot;, &quot;key3&quot;],
+) as conv:
+    results = conv.convert_batch(pdf_files)
+</code></pre>
+<h2 id="dispatch-strategies">Dispatch Strategies</h2>
+<p>When multiple backends are configured, the dispatch strategy controls how chunks are assigned.</p>
+<h3 id="overflow-strategy-default">Overflow Strategy (Default)</h3>
+<p>Fills the primary backend first. When all primary groups are busy or in cooldown, spills to the next backend in <code>api_backends</code> order.</p>
+<pre><code>Chunk arrives → try monkey[0] → monkey[1] → glm[0] → glm[1] → wait → retry
+</code></pre>
+<p>Best for: maximizing throughput when primary backend is preferred but capacity is limited.</p>
+<pre><code class="language-python">MarkdownConverter(
+    dispatch=&quot;overflow&quot;,
+    api_backends=[&quot;monkey&quot;, &quot;glm&quot;],
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;],
+    glm_api_keys=[&quot;key1&quot;],
+)
+</code></pre>
+<h3 id="fallback-strategy">Fallback Strategy</h3>
+<p>Always tries the primary backend first. After <code>max_failures</code> consecutive failures on a backend, degrades to the next. Each chunk gets a fresh failure counter.</p>
+<pre><code>Chunk arrives → try monkey (up to max_failures) → degrade to glm → try glm
+</code></pre>
+<p>Best for: preferring one backend with automatic degradation on sustained errors.</p>
+<pre><code class="language-python">MarkdownConverter(
+    dispatch=&quot;fallback&quot;,
+    api_backends=[&quot;monkey&quot;, &quot;glm&quot;],
+    max_failures={&quot;monkey&quot;: 3},  # required for non-terminal backends
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;],
+    glm_api_keys=[&quot;key1&quot;],
+)
+</code></pre>
+<h2 id="pdf-chunking-merge">PDF Chunking &amp; Merge</h2>
+<p>Large PDFs are split into overlapping chunks for parallel OCR processing.</p>
+<h3 id="how-it-works">How It Works</h3>
+<ol>
+<li><strong>Split</strong>: PDF is divided into chunks of <code>chunk_pages</code> pages with <code>overlap_pages</code> overlap between adjacent chunks</li>
+<li><strong>Dispatch</strong>: Chunks are dispatched concurrently to backend groups</li>
+<li><strong>Merge</strong>: Results are reassembled with three-tier deduplication:</li>
+<li><strong>Tier 1 — Difflib matching</strong> (~90%): Finds the longest matching block in the overlap region and cuts at the midpoint</li>
+<li><strong>Tier 2 — Ratio estimation</strong> (~9%): When difflib fails, estimates the cut point by overlap ratio and snaps to the nearest paragraph boundary</li>
+<li><strong>Tier 3 — Direct concatenation</strong> (&lt;1%): Defensive fallback when no overlap is detected</li>
+</ol>
+<h3 id="configuration">Configuration</h3>
+<pre><code class="language-python">MarkdownConverter(
+    chunk_pages=50,      # pages per chunk (default)
+    overlap_pages=2,     # overlap between chunks (default)
+)
+</code></pre>
+<p>Small PDFs (≤ <code>chunk_pages</code>) degrade to a single chunk with zero overhead.</p>
+<h2 id="fault-tolerance">Fault Tolerance</h2>
+<p>The converter implements three layers of fault tolerance:</p>
+<h3 id="layer-1-per-request-retry">Layer 1 — Per-Request Retry</h3>
+<p>Each backend call retries up to <code>retries</code> times with exponential backoff (<code>retry_base_delay × retry_multiplier^n</code>). Rate-limit responses (HTTP 429) trigger immediate cooldown instead of counting as a retry.</p>
+<h3 id="layer-2-per-group-cooldown">Layer 2 — Per-Group Cooldown</h3>
+<p>After <code>failure_threshold</code> consecutive failures on a single group, that group enters exponential backoff cooldown (up to <code>failure_cooldown_max</code> seconds). Other groups in the same backend remain available.</p>
+<h3 id="layer-3-backend-dispatch">Layer 3 — Backend Dispatch</h3>
+<ul>
+<li><strong>Overflow mode</strong>: When all groups of a backend are in cooldown, chunks automatically spill to the next backend. If all backends are dead for longer than <code>failure_cooldown_max</code>, an <code>OcrBackendError</code> is raised.</li>
+<li><strong>Fallback mode</strong>: After <code>max_failures</code> on a backend, the chunk degrades to the next backend in priority order.</li>
+</ul>
+<h2 id="batch-processing">Batch Processing</h2>
+<p><code>convert_batch()</code> processes multiple files with two strategies:</p>
+<h3 id="file_first-default"><code>file_first</code> (Default)</h3>
+<p>Files are processed sequentially; chunks within each file are dispatched in parallel. Failed files don't block subsequent files.</p>
+<pre><code class="language-python">with MarkdownConverter(monkey_endpoints=[&quot;http://gpu6:7866&quot;]) as conv:
+    results = conv.convert_batch([&quot;a.pdf&quot;, &quot;b.pdf&quot;, &quot;c.pdf&quot;])
+    # results: {&quot;a.pdf&quot;: &quot;...&quot;, &quot;b.pdf&quot;: &quot;...&quot;, &quot;c.pdf&quot;: &quot;...&quot;}
+</code></pre>
+<h3 id="interleave"><code>interleave</code></h3>
+<p>All files' chunks go into a single dispatch pool, maximizing backend utilization across files.</p>
+<pre><code class="language-python">with MarkdownConverter(
+    chunk_strategy=&quot;interleave&quot;,
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;],
+) as conv:
+    results = conv.convert_batch(pdf_files)
+</code></pre>
+<h3 id="completion-callback">Completion Callback</h3>
+<p>Track per-file progress with <code>on_complete</code>:</p>
+<pre><code class="language-python">def on_file_done(path: str, result: str | Exception) -&gt; None:
+    if isinstance(result, Exception):
+        print(f&quot;FAILED: {path} — {result}&quot;)
+    else:
+        print(f&quot;OK: {path} ({len(result)} chars)&quot;)
+
+with MarkdownConverter(monkey_endpoints=[&quot;http://gpu6:7866&quot;]) as conv:
+    results = conv.convert_batch(pdf_files, on_complete=on_file_done)
+</code></pre>
+<p>When <code>on_complete</code> is provided, failed files are silently omitted from the result dict. Without it, any failure raises <code>OcrBackendError</code>.</p>
+<h2 id="error-handling">Error Handling</h2>
+<p>The IO module exports two typed exceptions:</p>
+<pre><code class="language-python">from scrivai.io import OcrBackendError, RateLimitError
+
+try:
+    md = conv.convert(&quot;report.pdf&quot;)
+except RateLimitError as e:
+    print(f&quot;Rate limited by {e.backend} (HTTP {e.status_code})&quot;)
+except OcrBackendError as e:
+    print(f&quot;Backend error: {e.backend}[{e.group}] — HTTP {e.status_code}&quot;)
+</code></pre>
+<ul>
+<li><strong><code>OcrBackendError</code></strong> — Base class for OCR backend errors. Attributes: <code>status_code</code>, <code>backend</code>, <code>group</code>.</li>
+<li><strong><code>RateLimitError</code></strong> — HTTP 429 rate-limit error (subclass of <code>OcrBackendError</code>).</li>
+</ul>
+<h2 id="html-table-post-processing">HTML Table Post-Processing</h2>
+<p>OCR backends often return tables as HTML. The <code>html_table</code> config controls post-processing:</p>
+<ul>
+<li><code>"keep"</code> (default): Preserve raw HTML tables in the Markdown output</li>
+<li><code>"to_markdown"</code>: Convert simple HTML tables to Markdown format; tables with <code>rowspan</code>/<code>colspan</code> are kept as HTML (Markdown cannot represent merged cells)</li>
+</ul>
+<pre><code class="language-python">MarkdownConverter(html_table=&quot;to_markdown&quot;)  # requires markdownify package
+</code></pre>
+<h2 id="word-file-conversion">Word File Conversion</h2>
+<p>Word files bypass the OCR pipeline entirely:</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Pipeline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.docx</code></td>
+<td>markitdown (local, instant)</td>
+</tr>
+<tr>
+<td><code>.doc</code></td>
+<td>LibreOffice headless → <code>.docx</code> → markitdown</td>
+</tr>
+<tr>
+<td><code>.pdf</code></td>
+<td>OCR backend (API or GPU mode)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="environment-variables">Environment Variables</h2>
+<p>For simple setups, configure backends via environment variables instead of <code>ConverterConfig</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SCRIVAI_GLM_API_KEY</code></td>
+<td>GLM-OCR API key (single key; for multiple keys use <code>ConverterConfig.glm_api_keys</code>)</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_OCR_BASE_URL</code></td>
+<td>MonkeyOCR endpoint URL (single endpoint; for multiple use <code>ConverterConfig.monkey_endpoints</code>)</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_MINERU_URL</code></td>
+<td>MinerU router URL (leave empty to auto-start local router)</td>
+</tr>
+</tbody>
+</table>
+<p>Environment variables are read at <code>ConverterConfig.__post_init__()</code> time. Explicit config fields always take precedence.</p>
+<h2 id="cli">CLI</h2>
+<pre><code class="language-bash"># Basic conversion (API mode, default)
+scrivai-cli io convert --input report.pdf --output report.md
+
+# GPU mode (local MinerU)
+scrivai-cli io convert --input report.pdf --output report.md --mode gpu
+</code></pre>
+<p>The CLI uses default <code>ConverterConfig</code> with env-based credentials. For advanced configuration (multi-backend, dispatch strategy, batch), use the Python API.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -573,10 +573,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mineru-local-pipeline-default" class="md-nav__link">
+  <a href="#quick-conversion" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MinerU (Local Pipeline, Default)
+        Quick Conversion
       
     </span>
   </a>
@@ -584,10 +584,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#glm-ocr-cloud" class="md-nav__link">
+  <a href="#markdownconverter-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GLM-OCR (Cloud)
+        MarkdownConverter (Recommended)
       
     </span>
   </a>
@@ -595,10 +595,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#monkeyocr-self-hosted" class="md-nav__link">
+  <a href="#batch-processing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MonkeyOCR (Self-Hosted)
+        Batch Processing
       
     </span>
   </a>
@@ -838,6 +838,34 @@
     
   
     Knowledge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IO
   
 
     
@@ -1239,10 +1267,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mineru-local-pipeline-default" class="md-nav__link">
+  <a href="#quick-conversion" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MinerU (Local Pipeline, Default)
+        Quick Conversion
       
     </span>
   </a>
@@ -1250,10 +1278,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#glm-ocr-cloud" class="md-nav__link">
+  <a href="#markdownconverter-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GLM-OCR (Cloud)
+        MarkdownConverter (Recommended)
       
     </span>
   </a>
@@ -1261,10 +1289,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#monkeyocr-self-hosted" class="md-nav__link">
+  <a href="#batch-processing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MonkeyOCR (Self-Hosted)
+        Batch Processing
       
     </span>
   </a>
@@ -1420,46 +1448,37 @@ asyncio.run(main())
 </ul>
 <p>Each phase is recorded as a <code>PhaseResult</code> containing all turns and the final text.</p>
 <h2 id="document-conversion-ocr">Document Conversion (OCR)</h2>
-<p>Scrivai includes a <code>to_markdown()</code> function that converts PDF, DOC, and DOCX files to Markdown using pluggable OCR backends.</p>
-<h3 id="mineru-local-pipeline-default">MinerU (Local Pipeline, Default)</h3>
+<p>Scrivai provides <code>to_markdown()</code> for quick one-off conversion and <code>MarkdownConverter</code> for production pipelines with multi-backend dispatch, concurrent processing, and fault tolerance.</p>
+<h3 id="quick-conversion">Quick Conversion</h3>
 <pre><code class="language-python">from scrivai import to_markdown
 
-# MinerU runs locally — no API key needed
+# Zero-config: reads SCRIVAI_GLM_API_KEY / SCRIVAI_OCR_BASE_URL from env
 md = to_markdown(&quot;report.pdf&quot;)
 print(md)
-
-# With page range
-md = to_markdown(&quot;long_report.pdf&quot;, start_page=10, end_page=20)
 </code></pre>
-<p>MinerU uses intelligent auto-routing: text-based pages are extracted directly, scanned pages go through OCR. Includes professional table recognition, layout analysis, and formula detection.</p>
-<blockquote>
-<p><strong>First run:</strong> MinerU downloads models automatically (~2-3 GB). Subsequent runs use cached models.</p>
-</blockquote>
-<h3 id="glm-ocr-cloud">GLM-OCR (Cloud)</h3>
-<pre><code class="language-python"># Set your API key via env or parameter
-# export SCRIVAI_GLM_API_KEY=your-key-here
+<h3 id="markdownconverter-recommended">MarkdownConverter (Recommended)</h3>
+<p>For full control over backends, concurrency, and error handling:</p>
+<pre><code class="language-python">from scrivai import MarkdownConverter
 
-md = to_markdown(&quot;report.pdf&quot;, ocr_backend=&quot;glm&quot;)
+# Single backend
+with MarkdownConverter(monkey_endpoints=[&quot;http://gpu6:7866&quot;]) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
 
-# With page range
-md = to_markdown(&quot;long_report.pdf&quot;, ocr_backend=&quot;glm&quot;, start_page=10, end_page=20)
+# Multi-backend with overflow dispatch
+with MarkdownConverter(
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;, &quot;http://gpu7:7867&quot;],
+    glm_api_keys=[&quot;key1&quot;],
+) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+
+# GPU mode (local MinerU)
+with MarkdownConverter(mode=&quot;gpu&quot;) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
 </code></pre>
-<p>Large PDFs are automatically split into overlapping chunks and processed <strong>in parallel</strong> (max 3 concurrent requests).</p>
-<pre><code class="language-python"># Customize chunking (defaults shown)
-md = to_markdown(
-    &quot;large_report.pdf&quot;,
-    ocr_backend=&quot;glm&quot;,
-    chunk_pages=30,       # pages per chunk
-    overlap_pages=2,      # overlap to preserve cross-page tables
-    max_workers=3,        # parallel threads (hard cap 3)
-)
-</code></pre>
-<h3 id="monkeyocr-self-hosted">MonkeyOCR (Self-Hosted)</h3>
-<pre><code class="language-python">md = to_markdown(
-    &quot;report.pdf&quot;,
-    ocr_backend=&quot;monkey&quot;,
-    ocr_base_url=&quot;http://localhost:7861&quot;,
-)
+<h3 id="batch-processing">Batch Processing</h3>
+<pre><code class="language-python">with MarkdownConverter(monkey_endpoints=[&quot;http://gpu6:7866&quot;]) as conv:
+    results = conv.convert_batch([&quot;a.pdf&quot;, &quot;b.pdf&quot;, &quot;c.pdf&quot;])
+    # results: {&quot;a.pdf&quot;: &quot;...&quot;, &quot;b.pdf&quot;: &quot;...&quot;, &quot;c.pdf&quot;: &quot;...&quot;}
 </code></pre>
 <h3 id="supported-formats">Supported Formats</h3>
 <table>
@@ -1472,7 +1491,7 @@ md = to_markdown(
 <tbody>
 <tr>
 <td><code>.pdf</code></td>
-<td>OCR backend (mineru / glm / monkey)</td>
+<td>OCR backend (MonkeyOCR / GLM-OCR / MinerU)</td>
 </tr>
 <tr>
 <td><code>.docx</code></td>
@@ -1485,12 +1504,15 @@ md = to_markdown(
 </tbody>
 </table>
 <h3 id="cli">CLI</h3>
-<pre><code class="language-bash">scrivai-cli io convert --input report.pdf --output report.md
-scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
+<pre><code class="language-bash"># API mode (default)
+scrivai-cli io convert --input report.pdf --output report.md
 
-# Parallel chunking options (PDF only)
-scrivai-cli io convert --input large.pdf --chunk-pages 30 --overlap-pages 2 --max-workers 3
+# GPU mode (local MinerU)
+scrivai-cli io convert --input report.pdf --output report.md --mode gpu
 </code></pre>
+<blockquote>
+<p>For the full architecture guide — dispatch strategies, fault tolerance, chunking, and configuration reference — see <a href="../../concepts/io/">Concepts: IO</a>.</p>
+</blockquote>
 <h2 id="next-steps">Next Steps</h2>
 <ul>
 <li><a href="../../concepts/pes/">Concepts: PES Engine</a> — file contracts, prompt templates, custom PES</li>

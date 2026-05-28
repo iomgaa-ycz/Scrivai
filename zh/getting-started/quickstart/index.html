@@ -677,6 +677,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concepts/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1065,40 +1093,40 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mineru" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MinerU（本地流水线，默认）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#glm-ocr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GLM-OCR（云端）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#monkeyocr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MonkeyOCR（自建）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        快速转换
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#markdownconverter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MarkdownConverter（推荐）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        批量处理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         支持格式
@@ -1109,7 +1137,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
+  <a href="#_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         命令行
@@ -1125,7 +1153,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_6" class="md-nav__link">
+  <a href="#_8" class="md-nav__link">
     <span class="md-ellipsis">
       
         下一步
@@ -1249,48 +1277,39 @@ asyncio.run(main())
 </ul>
 <p>每个阶段以 <code>PhaseResult</code> 形式记录，包含所有轮次和该阶段的最终文本。</p>
 <h2 id="ocr">文档转换（OCR）</h2>
-<p>Scrivai 提供 <code>to_markdown()</code> 函数，通过可插拔的 OCR 后端将 PDF、DOC、DOCX 文件转为 Markdown。</p>
-<h3 id="mineru">MinerU（本地流水线，默认）</h3>
+<p>Scrivai 提供 <code>to_markdown()</code> 快速转换和 <code>MarkdownConverter</code> 生产级流水线，支持多后端调度、并发处理和自动容错。</p>
+<h3 id="_4">快速转换</h3>
 <pre><code class="language-python">from scrivai import to_markdown
 
-# MinerU 本地运行，无需 API Key
+# 零配置：从 env 读取 SCRIVAI_GLM_API_KEY / SCRIVAI_OCR_BASE_URL
 md = to_markdown(&quot;report.pdf&quot;)
 print(md)
+</code></pre>
+<h3 id="markdownconverter">MarkdownConverter（推荐）</h3>
+<p>完全控制后端、并发和错误处理：</p>
+<pre><code class="language-python">from scrivai import MarkdownConverter
 
-# 指定页范围
-md = to_markdown(&quot;long_report.pdf&quot;, start_page=10, end_page=20)
-</code></pre>
-<p>MinerU 使用智能分流：文字型页面直接提取，扫描件页面走 OCR。内置专业表格识别、版面分析和公式检测。</p>
-<blockquote>
-<p><strong>首次运行</strong>：MinerU 会自动下载模型（约 2-3 GB），后续使用缓存模型。</p>
-</blockquote>
-<h3 id="glm-ocr">GLM-OCR（云端）</h3>
-<pre><code class="language-python"># 通过环境变量或参数设置 API Key
-# export SCRIVAI_GLM_API_KEY=your-key-here
+# 单后端
+with MarkdownConverter(monkey_endpoints=[&quot;http://gpu6:7866&quot;]) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
 
-md = to_markdown(&quot;report.pdf&quot;, ocr_backend=&quot;glm&quot;)
+# 多后端 + 溢出调度
+with MarkdownConverter(
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;, &quot;http://gpu7:7867&quot;],
+    glm_api_keys=[&quot;key1&quot;],
+) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
 
-# 指定页范围
-md = to_markdown(&quot;long_report.pdf&quot;, ocr_backend=&quot;glm&quot;, start_page=10, end_page=20)
+# GPU 模式（本地 MinerU）
+with MarkdownConverter(mode=&quot;gpu&quot;) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
 </code></pre>
-<p>大型 PDF 会自动拆分为重叠分块并<strong>并行处理</strong>（最大 3 并发）。</p>
-<pre><code class="language-python"># 自定义分块参数（括号内为默认值）
-md = to_markdown(
-    &quot;large_report.pdf&quot;,
-    ocr_backend=&quot;glm&quot;,
-    chunk_pages=30,       # 每块页数
-    overlap_pages=2,      # 重叠页数，保留跨页表格
-    max_workers=3,        # 并行线程数（硬限 3）
-)
+<h3 id="_5">批量处理</h3>
+<pre><code class="language-python">with MarkdownConverter(monkey_endpoints=[&quot;http://gpu6:7866&quot;]) as conv:
+    results = conv.convert_batch([&quot;a.pdf&quot;, &quot;b.pdf&quot;, &quot;c.pdf&quot;])
+    # results: {&quot;a.pdf&quot;: &quot;...&quot;, &quot;b.pdf&quot;: &quot;...&quot;, &quot;c.pdf&quot;: &quot;...&quot;}
 </code></pre>
-<h3 id="monkeyocr">MonkeyOCR（自建）</h3>
-<pre><code class="language-python">md = to_markdown(
-    &quot;report.pdf&quot;,
-    ocr_backend=&quot;monkey&quot;,
-    ocr_base_url=&quot;http://localhost:7861&quot;,
-)
-</code></pre>
-<h3 id="_4">支持格式</h3>
+<h3 id="_6">支持格式</h3>
 <table>
 <thead>
 <tr>
@@ -1301,7 +1320,7 @@ md = to_markdown(
 <tbody>
 <tr>
 <td><code>.pdf</code></td>
-<td>OCR 后端（mineru / glm / monkey）</td>
+<td>OCR 后端（MonkeyOCR / GLM-OCR / MinerU）</td>
 </tr>
 <tr>
 <td><code>.docx</code></td>
@@ -1313,14 +1332,17 @@ md = to_markdown(
 </tr>
 </tbody>
 </table>
-<h3 id="_5">命令行</h3>
-<pre><code class="language-bash">scrivai-cli io convert --input report.pdf --output report.md
-scrivai-cli io convert --input report.pdf --ocr-backend monkey --ocr-base-url http://localhost:7861
+<h3 id="_7">命令行</h3>
+<pre><code class="language-bash"># API 模式（默认）
+scrivai-cli io convert --input report.pdf --output report.md
 
-# 并行分块选项（仅 PDF）
-scrivai-cli io convert --input large.pdf --chunk-pages 30 --overlap-pages 2 --max-workers 3
+# GPU 模式（本地 MinerU）
+scrivai-cli io convert --input report.pdf --output report.md --mode gpu
 </code></pre>
-<h2 id="_6">下一步</h2>
+<blockquote>
+<p>完整架构指南（调度策略、容错机制、分块配置、参数参考）详见 <a href="../../concepts/io/">概念：IO</a>。</p>
+</blockquote>
+<h2 id="_8">下一步</h2>
 <ul>
 <li><a href="../../concepts/pes/">概念：PES 引擎</a> — 文件契约、提示词模板、自定义 PES</li>
 <li><a href="../../concepts/workspace/">概念：工作区</a> — 运行隔离与 <code>extra_env</code></li>

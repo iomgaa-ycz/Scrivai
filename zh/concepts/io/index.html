@@ -1,0 +1,2062 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Configurable document generation & audit framework built on Claude Agent SDK">
+      
+      
+      
+        <link rel="canonical" href="https://iomgaa-ycz.github.io/Scrivai/zh/concepts/io/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Io - Scrivai</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#io" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Scrivai" class="md-header__button md-logo" aria-label="Scrivai" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Scrivai
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Io
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/iomgaa-ycz/Scrivai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../concepts/pes/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../api/pes/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Scrivai" class="md-nav__button md-logo" aria-label="Scrivai" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Scrivai
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/iomgaa-ycz/Scrivai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concepts/pes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PES Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concepts/workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workspace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concepts/trajectory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trajectory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concepts/evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concepts/knowledge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Knowledge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../concepts/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/pes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PES
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workspace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/knowledge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Knowledge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        架构概览
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#to_markdown-vs-markdownconverter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_markdown() vs MarkdownConverter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        两种模式
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="两种模式">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API 模式（默认）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPU 模式
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OCR 后端
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OCR 后端">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#monkeyocr-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MonkeyOCR（自建 Docker 服务）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#glm-ocr-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GLM-OCR（智谱云端 API）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mineru-gpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MinerU（本地 GPU 流水线）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#converterconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConverterConfig 参数参考
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ConverterConfig 参数参考">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API 模式字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpu_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPU 模式字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        通用字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        故障处理字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        凭证字段
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        多组并发
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        调度策略
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="调度策略">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        溢出策略 Overflow（默认）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        降级策略 Fallback
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pdf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PDF 分块与合并
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PDF 分块与合并">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        工作流程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三层容错
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="三层容错">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第一层 — 单次请求重试
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第二层 — 单组冷却
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第三层 — 后端调度
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        批量处理
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="批量处理">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#file_first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        file_first（默认）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interleave" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        interleave
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        完成回调
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        错误处理
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#html" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTML 表格后处理
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#word" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word 文件转换
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        环境变量
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        命令行
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- This is a Chinese translation of docs/concepts/io.md. -->
+<!-- Keep in sync. When English changes, update this file or open an issue tagged docs:zh-sync. -->
+
+<h1 id="io">IO — 文档转换</h1>
+<p>Scrivai 的 IO 模块负责将 PDF、DOC、DOCX 文件转换为 Markdown，以及将 Markdown 渲染回 DOCX。PDF 转换流水线支持多 OCR 后端、并发处理、自动容错和批量操作。</p>
+<h2 id="_1">架构概览</h2>
+<pre><code>                        ┌─────────────────────┐
+                        │   to_markdown(path)  │  ← 零配置快捷入口
+                        └─────────┬───────────┘
+                                  │
+                        ┌─────────▼───────────┐
+                        │  MarkdownConverter   │  ← 完整功能入口
+                        │  (ConverterConfig)   │
+                        └─────────┬───────────┘
+                                  │
+                  ┌───────────────┼───────────────┐
+                  │               │               │
+            ┌─────▼─────┐  ┌─────▼─────┐  ┌──────▼──────┐
+            │ .doc/.docx │  │   .pdf    │  │   .pdf      │
+            │ markitdown │  │ API 模式  │  │  GPU 模式   │
+            │  (本地)    │  │           │  │  (MinerU)   │
+            └───────────┘  └─────┬─────┘  └─────────────┘
+                                 │
+                    ┌────────────┼────────────┐
+                    │            │            │
+              ┌─────▼────┐ ┌────▼────┐ ┌─────▼────┐
+              │MonkeyOCR │ │GLM-OCR  │ │ MinerU   │
+              │(Docker)  │ │(云端)   │ │(HTTP API)│
+              └──────────┘ └─────────┘ └──────────┘
+</code></pre>
+<h2 id="to_markdown-vs-markdownconverter"><code>to_markdown()</code> vs <code>MarkdownConverter</code></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>to_markdown()</code></th>
+<th><code>MarkdownConverter</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>适用场景</strong></td>
+<td>快速单次转换</td>
+<td>生产流水线</td>
+</tr>
+<tr>
+<td><strong>配置方式</strong></td>
+<td>零配置（读取环境变量）</td>
+<td>完整 <code>ConverterConfig</code> 控制</td>
+</tr>
+<tr>
+<td><strong>多后端</strong></td>
+<td>从 env 读取默认后端</td>
+<td>自定义后端优先级、调度策略</td>
+</tr>
+<tr>
+<td><strong>批量处理</strong></td>
+<td>仅单文件</td>
+<td><code>convert_batch()</code> + 回调</td>
+</tr>
+<tr>
+<td><strong>生命周期</strong></td>
+<td>每次调用创建/销毁转换器</td>
+<td>跨多次调用复用</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"># 简单用法：零配置，从 env 读取 SCRIVAI_GLM_API_KEY / SCRIVAI_OCR_BASE_URL
+from scrivai import to_markdown
+md = to_markdown(&quot;report.pdf&quot;)
+
+# 高级用法：完全控制
+from scrivai import MarkdownConverter
+with MarkdownConverter(
+    mode=&quot;api&quot;,
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;, &quot;http://gpu7:7867&quot;],
+    glm_api_keys=[&quot;key1&quot;, &quot;key2&quot;],
+) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<h2 id="_2">两种模式</h2>
+<h3 id="api">API 模式（默认）</h3>
+<p>使用远程 OCR 服务（MonkeyOCR 和/或 GLM-OCR）。PDF 被拆分为块并并发分派到各后端组。</p>
+<pre><code class="language-python">with MarkdownConverter(mode=&quot;api&quot;, monkey_endpoints=[&quot;http://localhost:7866&quot;]) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<h3 id="gpu">GPU 模式</h3>
+<p>使用本地 MinerU 实例。适用于有 GPU 硬件且希望避免外部 API 依赖的场景。</p>
+<pre><code class="language-python">with MarkdownConverter(mode=&quot;gpu&quot;) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<p>MinerU 在未提供 URL 时会自动启动 <code>mineru-router</code> 进程。首次运行需下载模型（约 2-3 GB）。</p>
+<h2 id="ocr">OCR 后端</h2>
+<h3 id="monkeyocr-docker">MonkeyOCR（自建 Docker 服务）</h3>
+<p>部署在 Docker 中的自建 OCR 服务，每个实例绑定一块 GPU。</p>
+<ul>
+<li><strong>并发</strong>: 每实例 4 个并发请求（默认）</li>
+<li><strong>输入</strong>: PDF 文件通过 HTTP multipart 上传</li>
+<li><strong>输出</strong>: 包含 Markdown 文件的 ZIP</li>
+<li><strong>限速</strong>: 可选上传限速 <code>upload_rate</code>（字节/秒）</li>
+</ul>
+<pre><code class="language-python">with MarkdownConverter(
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;, &quot;http://gpu7:7867&quot;],
+    upload_rate=512000,  # 500 KB/s 上传限速
+) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<h3 id="glm-ocr-api">GLM-OCR（智谱云端 API）</h3>
+<p>智谱 AI 的云端 OCR API。需要 <a href="https://open.bigmodel.cn">open.bigmodel.cn</a> 的 API key。</p>
+<ul>
+<li><strong>并发</strong>: 每 key 3 个并发请求（默认）</li>
+<li><strong>输入</strong>: Base64 编码的 PDF（每块 ≤ 100 页、≤ 50 MB）</li>
+<li><strong>输出</strong>: Markdown 文本（兼容旧版和 ChatCompletion 两种响应格式）</li>
+<li><strong>分块</strong>: 大型 PDF 发送前自动拆分</li>
+</ul>
+<pre><code class="language-python">with MarkdownConverter(
+    glm_api_keys=[&quot;key1&quot;],
+) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<h3 id="mineru-gpu">MinerU（本地 GPU 流水线）</h3>
+<p>本地 OCR 流水线。智能分流：文字型页面直接提取，扫描件页面走 OCR。内置表格识别、版面分析和公式检测。</p>
+<ul>
+<li><strong>并发</strong>: 每组 2 个文件（默认）</li>
+<li><strong>多组</strong>: 通过 <code>mineru_urls</code> 配置多个 MinerU 实例</li>
+<li><strong>自动启动</strong>: 未提供 URL 时自动启动本地 <code>mineru-router</code></li>
+</ul>
+<pre><code class="language-python">with MarkdownConverter(
+    mode=&quot;gpu&quot;,
+    mineru_urls=[&quot;http://gpu1:8000&quot;, &quot;http://gpu2:8000&quot;],
+    gpu_groups=2,
+) as conv:
+    md = conv.convert(&quot;report.pdf&quot;)
+</code></pre>
+<h2 id="converterconfig">ConverterConfig 参数参考</h2>
+<p><code>ConverterConfig</code> 是控制转换器所有行为的 dataclass。所有字段均有合理默认值。</p>
+<h3 id="api_1">API 模式字段</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mode</code></td>
+<td><code>"api"</code> | <code>"gpu"</code></td>
+<td><code>"api"</code></td>
+<td>处理模式</td>
+</tr>
+<tr>
+<td><code>dispatch</code></td>
+<td><code>"overflow"</code> | <code>"fallback"</code></td>
+<td><code>"overflow"</code></td>
+<td>多后端调度策略</td>
+</tr>
+<tr>
+<td><code>api_backends</code></td>
+<td><code>list[str]</code></td>
+<td><code>["monkey", "glm"]</code></td>
+<td>后端优先级列表</td>
+</tr>
+<tr>
+<td><code>concurrency_per_group</code></td>
+<td><code>dict[str, int]</code></td>
+<td><code>{"monkey": 4, "glm": 3}</code></td>
+<td>每后端每组并发数</td>
+</tr>
+<tr>
+<td><code>max_failures</code></td>
+<td><code>dict[str, int]</code></td>
+<td><code>{}</code></td>
+<td>每后端最大失败次数（fallback 模式下非末尾后端必填）</td>
+</tr>
+<tr>
+<td><code>chunk_pages</code></td>
+<td><code>int</code></td>
+<td><code>50</code></td>
+<td>每块页数</td>
+</tr>
+<tr>
+<td><code>overlap_pages</code></td>
+<td><code>int</code></td>
+<td><code>2</code></td>
+<td>相邻块重叠页数</td>
+</tr>
+<tr>
+<td><code>chunk_strategy</code></td>
+<td><code>"file_first"</code> | <code>"interleave"</code></td>
+<td><code>"file_first"</code></td>
+<td>批量分块调度策略</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gpu_1">GPU 模式字段</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gpu_backend</code></td>
+<td><code>str</code></td>
+<td><code>"mineru"</code></td>
+<td>GPU 后端名称</td>
+</tr>
+<tr>
+<td><code>gpu_concurrency_per_group</code></td>
+<td><code>int</code></td>
+<td><code>2</code></td>
+<td>每 GPU 组并发文件数</td>
+</tr>
+<tr>
+<td><code>gpu_groups</code></td>
+<td><code>int</code></td>
+<td><code>1</code></td>
+<td>GPU 组数量</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_3">通用字段</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>html_table</code></td>
+<td><code>"keep"</code> | <code>"to_markdown"</code></td>
+<td><code>"keep"</code></td>
+<td>HTML 表格后处理</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>int</code></td>
+<td><code>300</code></td>
+<td>单次请求超时（秒）</td>
+</tr>
+<tr>
+<td><code>retries</code></td>
+<td><code>int</code></td>
+<td><code>3</code></td>
+<td>最大重试次数</td>
+</tr>
+<tr>
+<td><code>retry_base_delay</code></td>
+<td><code>float</code></td>
+<td><code>10.0</code></td>
+<td>首次重试延迟（秒）</td>
+</tr>
+<tr>
+<td><code>retry_multiplier</code></td>
+<td><code>float</code></td>
+<td><code>2.0</code></td>
+<td>指数退避乘数</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_4">故障处理字段</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>failure_threshold</code></td>
+<td><code>int</code></td>
+<td><code>2</code></td>
+<td>每组连续失败触发冷却的阈值</td>
+</tr>
+<tr>
+<td><code>failure_cooldown_max</code></td>
+<td><code>float</code></td>
+<td><code>300.0</code></td>
+<td>最大冷却时间（秒）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_5">凭证字段</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>glm_api_keys</code></td>
+<td><code>list[str]</code></td>
+<td><code>[]</code></td>
+<td>GLM API key 列表（每 key 一组）；为空时从 <code>SCRIVAI_GLM_API_KEY</code> 读取</td>
+</tr>
+<tr>
+<td><code>monkey_endpoints</code></td>
+<td><code>list[str]</code></td>
+<td><code>[]</code></td>
+<td>MonkeyOCR 端点 URL 列表；为空时从 <code>SCRIVAI_OCR_BASE_URL</code> 读取</td>
+</tr>
+<tr>
+<td><code>upload_rate</code></td>
+<td><code>int \| None</code></td>
+<td><code>None</code></td>
+<td>MonkeyOCR 上传限速（字节/秒）</td>
+</tr>
+<tr>
+<td><code>mineru_urls</code></td>
+<td><code>list[str]</code></td>
+<td><code>[]</code></td>
+<td>MinerU 实例 URL 列表</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_6">多组并发</h2>
+<p>每个后端可以有多个<strong>组</strong>——每个凭证（API key 或 endpoint）对应一个组。组之间通过 round-robin 负载均衡，每个组有独立的并发信号量和故障追踪。</p>
+<pre><code class="language-python"># 2 个 MonkeyOCR 实例 + 3 个 GLM key = 共 5 个组
+# MonkeyOCR: 4 并发/组 × 2 组 = 8 槽位
+# GLM: 3 并发/组 × 3 组 = 9 槽位
+# 合计: 17 个并发块请求
+with MarkdownConverter(
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;, &quot;http://gpu7:7867&quot;],
+    glm_api_keys=[&quot;key1&quot;, &quot;key2&quot;, &quot;key3&quot;],
+) as conv:
+    results = conv.convert_batch(pdf_files)
+</code></pre>
+<h2 id="_7">调度策略</h2>
+<p>配置多后端时，调度策略控制块如何分配到后端。</p>
+<h3 id="overflow">溢出策略 Overflow（默认）</h3>
+<p>优先填充主后端。当主后端所有组都繁忙或冷却中时，溢出到 <code>api_backends</code> 中的下一个后端。</p>
+<pre><code>块到达 → 尝试 monkey[0] → monkey[1] → glm[0] → glm[1] → 等待 → 重试
+</code></pre>
+<p>适用于：主后端优先但容量有限时最大化吞吐量。</p>
+<pre><code class="language-python">MarkdownConverter(
+    dispatch=&quot;overflow&quot;,
+    api_backends=[&quot;monkey&quot;, &quot;glm&quot;],
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;],
+    glm_api_keys=[&quot;key1&quot;],
+)
+</code></pre>
+<h3 id="fallback">降级策略 Fallback</h3>
+<p>始终先尝试主后端。在某后端连续失败 <code>max_failures</code> 次后，降级到下一个后端。每个块有独立的失败计数器。</p>
+<pre><code>块到达 → 尝试 monkey（最多 max_failures 次） → 降级到 glm → 尝试 glm
+</code></pre>
+<p>适用于：偏好某一后端，但在持续错误时自动降级。</p>
+<pre><code class="language-python">MarkdownConverter(
+    dispatch=&quot;fallback&quot;,
+    api_backends=[&quot;monkey&quot;, &quot;glm&quot;],
+    max_failures={&quot;monkey&quot;: 3},  # 非末尾后端必填
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;],
+    glm_api_keys=[&quot;key1&quot;],
+)
+</code></pre>
+<h2 id="pdf">PDF 分块与合并</h2>
+<p>大型 PDF 被拆分为重叠块以并行 OCR 处理。</p>
+<h3 id="_8">工作流程</h3>
+<ol>
+<li><strong>拆分</strong>: PDF 按 <code>chunk_pages</code> 页拆分，相邻块重叠 <code>overlap_pages</code> 页</li>
+<li><strong>分派</strong>: 块并发分派到后端组</li>
+<li><strong>合并</strong>: 结果通过三层去重重组：</li>
+<li><strong>第一层 — Difflib 匹配</strong>（~90%）：在重叠区域找到最长匹配块，在中点处切分</li>
+<li><strong>第二层 — 比率估算</strong>（~9%）：Difflib 失败时，按重叠比率估算切分点并对齐到最近的段落边界</li>
+<li><strong>第三层 — 直接拼接</strong>（&lt;1%）：未检测到重叠时的防御性回退</li>
+</ol>
+<h3 id="_9">配置</h3>
+<pre><code class="language-python">MarkdownConverter(
+    chunk_pages=50,      # 每块页数（默认）
+    overlap_pages=2,     # 块间重叠（默认）
+)
+</code></pre>
+<p>小型 PDF（≤ <code>chunk_pages</code> 页）退化为单块处理，零额外开销。</p>
+<h2 id="_10">三层容错</h2>
+<p>转换器实现了三层容错机制：</p>
+<h3 id="_11">第一层 — 单次请求重试</h3>
+<p>每次后端调用最多重试 <code>retries</code> 次，指数退避（<code>retry_base_delay × retry_multiplier^n</code>）。HTTP 429 限流响应触发立即冷却，而非计入重试次数。</p>
+<h3 id="_12">第二层 — 单组冷却</h3>
+<p>单个组连续失败 <code>failure_threshold</code> 次后，该组进入指数退避冷却（最长 <code>failure_cooldown_max</code> 秒）。同后端的其他组仍然可用。</p>
+<h3 id="_13">第三层 — 后端调度</h3>
+<ul>
+<li><strong>溢出模式</strong>: 某后端所有组都冷却中时，块自动溢出到下一个后端。若所有后端不可用超过 <code>failure_cooldown_max</code> 秒，抛出 <code>OcrBackendError</code>。</li>
+<li><strong>降级模式</strong>: 某后端失败 <code>max_failures</code> 次后，块按优先级降级到下一个后端。</li>
+</ul>
+<h2 id="_14">批量处理</h2>
+<p><code>convert_batch()</code> 支持两种策略处理多个文件：</p>
+<h3 id="file_first"><code>file_first</code>（默认）</h3>
+<p>文件按顺序处理；每个文件内的块并发分派。失败的文件不阻塞后续文件。</p>
+<pre><code class="language-python">with MarkdownConverter(monkey_endpoints=[&quot;http://gpu6:7866&quot;]) as conv:
+    results = conv.convert_batch([&quot;a.pdf&quot;, &quot;b.pdf&quot;, &quot;c.pdf&quot;])
+    # results: {&quot;a.pdf&quot;: &quot;...&quot;, &quot;b.pdf&quot;: &quot;...&quot;, &quot;c.pdf&quot;: &quot;...&quot;}
+</code></pre>
+<h3 id="interleave"><code>interleave</code></h3>
+<p>所有文件的块进入同一个分派池，最大化跨文件的后端利用率。</p>
+<pre><code class="language-python">with MarkdownConverter(
+    chunk_strategy=&quot;interleave&quot;,
+    monkey_endpoints=[&quot;http://gpu6:7866&quot;],
+) as conv:
+    results = conv.convert_batch(pdf_files)
+</code></pre>
+<h3 id="_15">完成回调</h3>
+<p>通过 <code>on_complete</code> 追踪每个文件的进度：</p>
+<pre><code class="language-python">def on_file_done(path: str, result: str | Exception) -&gt; None:
+    if isinstance(result, Exception):
+        print(f&quot;失败: {path} — {result}&quot;)
+    else:
+        print(f&quot;完成: {path} ({len(result)} 字符)&quot;)
+
+with MarkdownConverter(monkey_endpoints=[&quot;http://gpu6:7866&quot;]) as conv:
+    results = conv.convert_batch(pdf_files, on_complete=on_file_done)
+</code></pre>
+<p>提供 <code>on_complete</code> 时，失败的文件静默从结果 dict 中省略。未提供时，任何失败都会抛出 <code>OcrBackendError</code>。</p>
+<h2 id="_16">错误处理</h2>
+<p>IO 模块导出两个类型化异常：</p>
+<pre><code class="language-python">from scrivai.io import OcrBackendError, RateLimitError
+
+try:
+    md = conv.convert(&quot;report.pdf&quot;)
+except RateLimitError as e:
+    print(f&quot;被 {e.backend} 限流 (HTTP {e.status_code})&quot;)
+except OcrBackendError as e:
+    print(f&quot;后端错误: {e.backend}[{e.group}] — HTTP {e.status_code}&quot;)
+</code></pre>
+<ul>
+<li><strong><code>OcrBackendError</code></strong> — OCR 后端错误基类。属性：<code>status_code</code>、<code>backend</code>、<code>group</code>。</li>
+<li><strong><code>RateLimitError</code></strong> — HTTP 429 限流错误（<code>OcrBackendError</code> 子类）。</li>
+</ul>
+<h2 id="html">HTML 表格后处理</h2>
+<p>OCR 后端通常以 HTML 格式返回表格。<code>html_table</code> 配置控制后处理行为：</p>
+<ul>
+<li><code>"keep"</code>（默认）：保留原始 HTML 表格</li>
+<li><code>"to_markdown"</code>：将简单 HTML 表格转为 Markdown 格式；含 <code>rowspan</code>/<code>colspan</code> 的表格保持 HTML（Markdown 无法表示合并单元格）</li>
+</ul>
+<pre><code class="language-python">MarkdownConverter(html_table=&quot;to_markdown&quot;)  # 需要 markdownify 包
+</code></pre>
+<h2 id="word">Word 文件转换</h2>
+<p>Word 文件完全绕过 OCR 流水线：</p>
+<table>
+<thead>
+<tr>
+<th>格式</th>
+<th>处理流程</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.docx</code></td>
+<td>markitdown（本地，即时）</td>
+</tr>
+<tr>
+<td><code>.doc</code></td>
+<td>LibreOffice headless → <code>.docx</code> → markitdown</td>
+</tr>
+<tr>
+<td><code>.pdf</code></td>
+<td>OCR 后端（API 或 GPU 模式）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_17">环境变量</h2>
+<p>简单场景下可通过环境变量代替 <code>ConverterConfig</code> 配置后端：</p>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SCRIVAI_GLM_API_KEY</code></td>
+<td>GLM-OCR API key（单 key；多 key 请用 <code>ConverterConfig.glm_api_keys</code>）</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_OCR_BASE_URL</code></td>
+<td>MonkeyOCR 端点 URL（单端点；多端点请用 <code>ConverterConfig.monkey_endpoints</code>）</td>
+</tr>
+<tr>
+<td><code>SCRIVAI_MINERU_URL</code></td>
+<td>MinerU router URL（留空则自动启动本地 router）</td>
+</tr>
+</tbody>
+</table>
+<p>环境变量在 <code>ConverterConfig.__post_init__()</code> 时读取。显式配置字段始终优先于环境变量。</p>
+<h2 id="_18">命令行</h2>
+<pre><code class="language-bash"># 基本转换（API 模式，默认）
+scrivai-cli io convert --input report.pdf --output report.md
+
+# GPU 模式（本地 MinerU）
+scrivai-cli io convert --input report.pdf --output report.md --mode gpu
+</code></pre>
+<p>CLI 使用默认 <code>ConverterConfig</code> 并从环境变量读取凭证。高级配置（多后端、调度策略、批量处理）请使用 Python API。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

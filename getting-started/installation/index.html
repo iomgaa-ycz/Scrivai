@@ -818,6 +818,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1313,40 +1341,26 @@ pip install -e &quot;.[dev]&quot;
 </tbody>
 </table>
 <h3 id="ocr-configuration">OCR Configuration</h3>
-<p>The <code>to_markdown()</code> function supports pluggable OCR backends. Configure via environment variables or function parameters (parameters take precedence).</p>
+<p>The IO module (<code>MarkdownConverter</code> / <code>to_markdown()</code>) supports multiple OCR backends. For simple setups, configure via environment variables. For multi-backend or advanced configuration, use <code>ConverterConfig</code> in code (see <a href="../../concepts/io/">Concepts: IO</a>).</p>
 <table>
 <thead>
 <tr>
 <th>Variable</th>
-<th>Default</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>SCRIVAI_OCR_BACKEND</code></td>
-<td><code>mineru</code></td>
-<td>OCR backend for PDF files: <code>mineru</code> (MinerU local pipeline, default), <code>glm</code> (ZhipuAI cloud), or <code>monkey</code> (self-hosted MonkeyOCR)</td>
-</tr>
-<tr>
-<td><code>SCRIVAI_MINERU_URL</code></td>
-<td>—</td>
-<td>MinerU router URL (leave empty to auto-start a local mineru-router)</td>
-</tr>
-<tr>
 <td><code>SCRIVAI_GLM_API_KEY</code></td>
-<td>—</td>
-<td>API key for GLM-OCR (required when using <code>glm</code> backend; get from <a href="https://open.bigmodel.cn">open.bigmodel.cn</a>)</td>
+<td>GLM-OCR API key (get from <a href="https://open.bigmodel.cn">open.bigmodel.cn</a>). For multiple keys, use <code>ConverterConfig.glm_api_keys</code> in code.</td>
 </tr>
 <tr>
 <td><code>SCRIVAI_OCR_BASE_URL</code></td>
-<td>—</td>
-<td>MonkeyOCR service URL (required when using <code>monkey</code> backend)</td>
+<td>MonkeyOCR endpoint URL. For multiple endpoints, use <code>ConverterConfig.monkey_endpoints</code> in code.</td>
 </tr>
 <tr>
-<td><code>SCRIVAI_OCR_UPLOAD_RATE</code></td>
-<td><code>512000</code></td>
-<td>MonkeyOCR upload rate limit in bytes/s (0 = unlimited)</td>
+<td><code>SCRIVAI_MINERU_URL</code></td>
+<td>MinerU router URL (leave empty to auto-start a local mineru-router in GPU mode)</td>
 </tr>
 </tbody>
 </table>

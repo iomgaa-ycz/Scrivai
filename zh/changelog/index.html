@@ -677,6 +677,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1020,6 +1048,56 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#023-2026-05-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.3] — 2026-05-28
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.3] — 2026-05-28">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed-multi-backend-converter-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed — Multi-Backend Converter Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#022-2026-05-26" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1054,7 +1132,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+  <a href="#added_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -1321,7 +1399,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
+  <a href="#added_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -1481,6 +1559,31 @@
 <h1 id="changelog">CHANGELOG</h1>
 <p>本项目遵循 <a href="https://semver.org/lang/zh-CN/">Semantic Versioning</a>。
 格式参考 <a href="https://keepachangelog.com/zh-CN/">Keep a Changelog</a>。</p>
+<h2 id="023-2026-05-28">[0.2.3] — 2026-05-28</h2>
+<h3 id="changed-multi-backend-converter-architecture">Changed — Multi-Backend Converter Architecture</h3>
+<ul>
+<li><strong>Breaking:</strong> <code>to_markdown()</code> signature simplified to <code>to_markdown(path)</code> — all backend/chunking/concurrency parameters removed. Use <code>MarkdownConverter</code> for advanced configuration</li>
+<li><strong>Breaking:</strong> CLI <code>scrivai-cli io convert</code> now uses <code>--mode api|gpu</code> instead of <code>--ocr-backend</code>, <code>--chunk-pages</code>, <code>--overlap-pages</code>, <code>--max-workers</code> flags. Backend credentials configured via environment variables or <code>ConverterConfig</code></li>
+<li><strong>Breaking:</strong> <code>SCRIVAI_OCR_BACKEND</code> and <code>SCRIVAI_OCR_UPLOAD_RATE</code> environment variables removed — mode selection via <code>ConverterConfig.mode</code>, backend selection via <code>ConverterConfig.api_backends</code></li>
+</ul>
+<h3 id="added">Added</h3>
+<ul>
+<li><code>MarkdownConverter</code> class — stateful multi-backend document-to-Markdown converter with context manager support, concurrent chunk dispatch, and batch processing</li>
+<li><code>ConverterConfig</code> dataclass — comprehensive configuration for mode, dispatch strategy, backend credentials, chunking, concurrency, retry, and failure handling</li>
+<li>Two dispatch strategies: <code>overflow</code> (fill primary backend, spill to secondary when busy) and <code>fallback</code> (degrade to next backend after N failures)</li>
+<li>Multi-group concurrency: multiple API keys / endpoints per backend with round-robin load balancing and per-group semaphores</li>
+<li>Three-layer fault tolerance: per-request retry with exponential backoff, per-group cooldown after failure threshold, and backend-level overflow/fallback</li>
+<li><code>convert_batch()</code> with <code>file_first</code> and <code>interleave</code> chunk strategies, plus <code>on_complete</code> callback for per-file progress tracking</li>
+<li><code>OcrBackendError</code> and <code>RateLimitError</code> typed exceptions exported from <code>scrivai.io</code></li>
+<li><code>html_table="to_markdown"</code> post-processing option for converting simple HTML tables to Markdown (requires <code>markdownify</code>)</li>
+<li>Extracted <code>scrivai.io.chunking</code> module with three-tier chunk merge deduplication (difflib matching → ratio estimation → direct concatenation)</li>
+</ul>
+<h3 id="documentation">Documentation</h3>
+<ul>
+<li>New concept page: IO — Document Conversion (<code>docs/concepts/io.md</code>) with full architecture guide</li>
+<li>Updated Quick Start and Installation pages for new <code>MarkdownConverter</code> API</li>
+<li>API reference expanded with <code>MarkdownConverter</code>, <code>ConverterConfig</code>, <code>OcrBackendError</code>, <code>RateLimitError</code></li>
+</ul>
 <h2 id="022-2026-05-26">[0.2.2] — 2026-05-26</h2>
 <h3 id="changed">Changed</h3>
 <ul>
@@ -1493,7 +1596,7 @@
 <ul>
 <li>MinerU HTTP backend: <code>lang_list</code> format correction, 409 status handling, timeout configuration</li>
 </ul>
-<h3 id="added">Added</h3>
+<h3 id="added_1">Added</h3>
 <ul>
 <li><code>markitdown[docx]&gt;=0.1.5</code> dependency for local Word→Markdown conversion</li>
 <li><code>SCRIVAI_MINERU_URL</code> environment variable for external MinerU router</li>
@@ -1604,7 +1707,7 @@
 <li>Auditor: auto-repair malformed JSON in findings/</li>
 <li>IO: MonkeyOCR bypass system proxy + timeout 120→300s</li>
 </ul>
-<h3 id="added_1">Added</h3>
+<h3 id="added_2">Added</h3>
 <ul>
 <li><code>TrajectoryStore.delete_run()</code> — cascade delete for run cleanup</li>
 <li><code>CONTRIBUTING.md</code> with documentation standards</li>
